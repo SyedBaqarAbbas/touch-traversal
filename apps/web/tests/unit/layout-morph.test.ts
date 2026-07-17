@@ -10,8 +10,14 @@ import {
   buildEdgeEndpointsFromRegistry,
   createIdleLayoutMorph,
   DEFAULT_LAYOUT_MORPH_DURATION_MS,
+  decorativeMotionEnabled,
   easeInOutCubic,
   edgeEndpointBufferFromRegistry,
+  interruptLayoutMorph,
+  layoutMorphDuration,
+  morphInteractionPolicy,
+  preserveSelectedNodeForTopology,
+  REDUCED_MOTION_LAYOUT_MORPH_DURATION_MS,
   startLayoutMorph,
   updateLayoutMorph,
 } from "../../lib/layout-morph";
@@ -30,6 +36,25 @@ describe("layout morph controller", () => {
     expect(easeInOutCubic(0)).toBe(0);
     expect(easeInOutCubic(0.5)).toBe(0.5);
     expect(easeInOutCubic(1)).toBe(1);
+    expect(layoutMorphDuration(false)).toBe(DEFAULT_LAYOUT_MORPH_DURATION_MS);
+    expect(layoutMorphDuration(true)).toBe(
+      REDUCED_MOTION_LAYOUT_MORPH_DURATION_MS,
+    );
+    expect(decorativeMotionEnabled(false)).toBe(true);
+    expect(decorativeMotionEnabled(true)).toBe(false);
+  });
+
+  it("defines how interaction transitions behave during morphs", () => {
+    expect(morphInteractionPolicy).toMatchObject({
+      HOVER_START: "allow",
+      HOVER_END: "allow",
+      SELECT_NODE: "block",
+      RETURN_OVERVIEW: "cancel",
+      START_TRAVERSAL: "block",
+      START_MORPH: "queue",
+      START_CALIBRATION: "block",
+      FOCUS_COMPLETE: "allow",
+    });
   });
 
   it("starts from current positions and finishes exactly at target values", () => {
@@ -91,5 +116,57 @@ describe("layout morph controller", () => {
     expect([...endpointBuffer.slice(0, 3)]).toEqual(endpoint.sourcePosition);
     expect([...endpointBuffer.slice(3, 6)]).toEqual(endpoint.targetPosition);
     expect(morph.mode).toBe("morphing");
+  });
+
+  it("repeated switching starts from currently interpolated positions", () => {
+    const registry = createLayoutRegistry(buildModel());
+    let morph = startLayoutMorph(registry, "clusters", 0);
+    morph = updateLayoutMorph(registry, morph, 1100);
+    const interruptedPosition = readLayoutPosition(
+      registry,
+      "thought-grounded-language",
+    );
+
+    morph = interruptLayoutMorph(registry, morph, "force", 1100);
+    expect([...registry.startPositions.slice(0, 3)]).toEqual(
+      interruptedPosition,
+    );
+    expect(morph).toMatchObject({
+      mode: "morphing",
+      startedAtMs: 1100,
+      targetLayoutName: "force",
+    });
+  });
+
+  it("preserves compatible selection and finishes exactly after cancellation", () => {
+    const registry = createLayoutRegistry(buildModel());
+    let morph = startLayoutMorph(registry, "clusters", 0);
+    morph = updateLayoutMorph(registry, morph, 900);
+    morph = interruptLayoutMorph(registry, morph, "temporal", 900, true);
+
+    expect(morph.mode).toBe("morphing");
+    if (morph.mode !== "morphing") {
+      throw new Error("expected reduced-motion morph");
+    }
+    expect(morph.durationMs).toBe(REDUCED_MOTION_LAYOUT_MORPH_DURATION_MS);
+    expect(
+      preserveSelectedNodeForTopology("thought-grounded-language", registry),
+    ).toBe("thought-grounded-language");
+    expect(
+      preserveSelectedNodeForTopology("missing-node", registry),
+    ).toBeNull();
+
+    morph = updateLayoutMorph(
+      registry,
+      morph,
+      900 + REDUCED_MOTION_LAYOUT_MORPH_DURATION_MS,
+    );
+    expect(morph).toMatchObject({
+      mode: "idle",
+      activeLayoutName: "temporal",
+    });
+    expect([...registry.currentPositions]).toEqual([
+      ...registry.layouts.temporal,
+    ]);
   });
 });

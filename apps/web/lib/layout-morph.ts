@@ -1,4 +1,5 @@
 import type { LayoutName, Vec3 } from "@/lib/artifacts/schema";
+import type { InteractionEvent } from "@/lib/interaction-model";
 import {
   type LayoutRegistry,
   readLayoutPosition,
@@ -7,6 +8,23 @@ import {
 } from "@/lib/layout-registry";
 
 export const DEFAULT_LAYOUT_MORPH_DURATION_MS = 2200;
+export const REDUCED_MOTION_LAYOUT_MORPH_DURATION_MS = 320;
+
+export type MorphConflictPolicy = "allow" | "block" | "cancel" | "queue";
+
+export const morphInteractionPolicy: Record<
+  InteractionEvent["type"],
+  MorphConflictPolicy
+> = {
+  FOCUS_COMPLETE: "allow",
+  HOVER_END: "allow",
+  HOVER_START: "allow",
+  RETURN_OVERVIEW: "cancel",
+  SELECT_NODE: "block",
+  START_CALIBRATION: "block",
+  START_MORPH: "queue",
+  START_TRAVERSAL: "block",
+};
 
 export type LayoutMorphState =
   | {
@@ -44,7 +62,7 @@ export function startLayoutMorph(
   registry: LayoutRegistry,
   targetLayoutName: LayoutName,
   timestampMs: number,
-  durationMs = DEFAULT_LAYOUT_MORPH_DURATION_MS,
+  durationMs = layoutMorphDuration(false),
 ): LayoutMorphState {
   startLayoutTransition(registry, targetLayoutName);
   return {
@@ -54,6 +72,22 @@ export function startLayoutMorph(
     startedAtMs: timestampMs,
     targetLayoutName,
   };
+}
+
+export function interruptLayoutMorph(
+  registry: LayoutRegistry,
+  morph: LayoutMorphState,
+  targetLayoutName: LayoutName,
+  timestampMs: number,
+  reducedMotion = false,
+): LayoutMorphState {
+  updateLayoutMorph(registry, morph, timestampMs);
+  return startLayoutMorph(
+    registry,
+    targetLayoutName,
+    timestampMs,
+    layoutMorphDuration(reducedMotion),
+  );
 }
 
 export function updateLayoutMorph(
@@ -123,6 +157,26 @@ export function edgeEndpointBufferFromRegistry(
     endpoints.set(target, offset + 3);
   });
   return endpoints;
+}
+
+export function layoutMorphDuration(reducedMotion: boolean): number {
+  return reducedMotion
+    ? REDUCED_MOTION_LAYOUT_MORPH_DURATION_MS
+    : DEFAULT_LAYOUT_MORPH_DURATION_MS;
+}
+
+export function decorativeMotionEnabled(reducedMotion: boolean): boolean {
+  return !reducedMotion;
+}
+
+export function preserveSelectedNodeForTopology(
+  selectedNodeId: string | null,
+  registry: LayoutRegistry,
+): string | null {
+  if (!selectedNodeId) {
+    return null;
+  }
+  return registry.indexByNodeId.has(selectedNodeId) ? selectedNodeId : null;
 }
 
 export function easeInOutCubic(progress: number): number {
