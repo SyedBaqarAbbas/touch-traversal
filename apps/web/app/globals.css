@@ -671,6 +671,14 @@ a {
   border-top-color: rgba(242, 240, 234, 0.32);
 }
 
+.camera-access-panel__video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .scene-topology-glyph {
   position: relative;
   width: 6rem;

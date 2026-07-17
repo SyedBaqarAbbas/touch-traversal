@@ -68,6 +68,15 @@ describe("web application contract", () => {
     expect(controls).toContain("`Escape`");
   });
 
+  it("documents the local hand-tracking worker contract", () => {
+    const workerContract = readRoot("docs/hand-tracking-worker.md");
+
+    expect(workerContract).toContain("hand.worker.ts");
+    expect(workerContract).toContain("/models/hand_landmarker");
+    expect(workerContract).toContain("15–30 FPS");
+    expect(workerContract).toContain("never uploaded");
+  });
+
   it("exposes development and verification scripts", () => {
     const packageJson = JSON.parse(read("package.json"));
 
