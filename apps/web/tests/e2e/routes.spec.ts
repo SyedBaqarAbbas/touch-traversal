@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 const routes = [
   ["/", "Explore the topologies of your thoughts."],
@@ -9,6 +9,17 @@ const routes = [
 
 const focusSettleTimeoutMs = 3200;
 const gestureHintTimeoutMs = 4400;
+
+async function attachVisual(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+): Promise<void> {
+  await testInfo.attach(name, {
+    body: await page.screenshot({ animations: "disabled", fullPage: true }),
+    contentType: "image/png",
+  });
+}
 
 for (const [path, heading] of routes) {
   test(`${path} renders its route shell`, async ({ page }) => {
@@ -236,6 +247,74 @@ test("/demo?input=mouse covers the repeatable mouse flow and label density", asy
   await page.getByRole("button", { name: "return" }).click();
   await expect(page.getByText("idle / overview")).toBeVisible();
   await expect(page.locator(".scene-thought-label")).toHaveCount(0);
+});
+
+test("/demo visual states cover temporal mode, hover, focus, and HUD idle", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/demo?input=mouse");
+
+  const scene = page.locator(".scene-shell");
+  await expect(scene).toHaveAttribute("data-hud", "visible");
+  await attachVisual(page, testInfo, "overview");
+  await page.getByRole("button", { name: /temporal/ }).click();
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "temporal topology",
+  );
+  await page.waitForTimeout(2300);
+  await attachVisual(page, testInfo, "temporal-topology");
+
+  const nodeButton = page.getByRole("button", {
+    name: /Distributed note topology/,
+  });
+  await nodeButton.hover();
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Distributed note topology",
+  );
+  await attachVisual(page, testInfo, "hovered-node");
+  await nodeButton.click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Thoughts become navigable",
+  );
+  await attachVisual(page, testInfo, "focused-node");
+
+  await page.waitForTimeout(4500);
+  await expect(scene).toHaveAttribute("data-hud", "dimmed");
+  await page.mouse.move(32, 32);
+  await expect(scene).toHaveAttribute("data-hud", "visible");
+});
+
+test("/demo respects reduced-motion media preferences", async ({
+  page,
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/demo?input=mouse");
+
+  const scene = page.locator(".scene-shell");
+  await expect(scene).toHaveAttribute("data-motion", "reduced");
+  await page
+    .getByRole("button", {
+      name: /Distributed note topology/,
+    })
+    .click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Thoughts become navigable",
+  );
+  await attachVisual(page, testInfo, "reduced-motion");
+});
+
+test("/calibration captures its visual state", async ({ page }, testInfo) => {
+  await page.goto("/calibration");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Calibrate hand traversal." }),
+  ).toBeVisible();
+  await attachVisual(page, testInfo, "calibration");
 });
 
 test("/demo?input=gesture-fixture routes injected hand gestures", async ({

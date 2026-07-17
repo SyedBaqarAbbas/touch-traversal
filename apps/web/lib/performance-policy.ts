@@ -154,6 +154,19 @@ export function sceneDecorationPreset(
   }
 }
 
+export function reducedMotionDecorationPreset(
+  preset: SceneDecorationPreset,
+): SceneDecorationPreset {
+  return {
+    ...preset,
+    bloom: { enabled: false, intensity: 0 },
+    cameraDriftAmplitude: 0,
+    dustCount: 0,
+    edgeShimmerAmplitude: 0,
+    nodeBreathAmplitude: 0,
+  };
+}
+
 export function limitVisibleItems<T extends { id: string; visible: number }>(
   items: readonly T[],
   maximumVisible: number,

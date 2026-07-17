@@ -5,6 +5,7 @@ import {
   decorativeDowngradeOrder,
   limitThoughtLabels,
   limitVisibleItems,
+  reducedMotionDecorationPreset,
   sceneDecorationPreset,
   sceneQualityNotice,
   scenePerformanceScenarios,
@@ -93,6 +94,21 @@ describe("performance policy", () => {
       cameraDriftAmplitude: 0,
       chromaticAberration: false,
       depthOfField: false,
+      dustCount: 0,
+      edgeShimmerAmplitude: 0,
+      nodeBreathAmplitude: 0,
+      vignette: { enabled: true },
+    });
+  });
+
+  it("disables ambient decorative motion for reduced-motion users", () => {
+    const reduced = reducedMotionDecorationPreset(
+      sceneDecorationPreset(chooseSceneQuality({ nodeCount: 4, edgeCount: 4 })),
+    );
+
+    expect(reduced).toMatchObject({
+      bloom: { enabled: false, intensity: 0 },
+      cameraDriftAmplitude: 0,
       dustCount: 0,
       edgeShimmerAmplitude: 0,
       nodeBreathAmplitude: 0,

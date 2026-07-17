@@ -121,6 +121,30 @@ describe("web application contract", () => {
     );
   });
 
+  it("documents HUD idle and reduced-motion timing contracts in the scene", () => {
+    const css = read("app/globals.css");
+    const graphScene = read("app/_components/graph-scene.tsx");
+
+    expect(graphScene).toContain("HUD_IDLE_TIMEOUT_MS = 4200");
+    expect(graphScene).toContain("FOCUS_TRANSITION_MS = 1100");
+    expect(graphScene).toContain("RETURN_OVERVIEW_TRANSITION_MS = 1400");
+    expect(graphScene).toContain("REDUCED_MOTION_FOCUS_TRANSITION_MS = 220");
+    expect(graphScene).toContain(
+      'data-hud={hudVisible ? "visible" : "dimmed"}',
+    );
+    expect(graphScene).toContain(
+      'data-motion={reducedMotion ? "reduced" : "full"}',
+    );
+    expect(graphScene).toContain("usePrefersReducedMotion");
+    expect(graphScene).toContain("layoutMorphDuration(reducedMotion)");
+    expect(graphScene).toContain("activeTraversal && !reducedMotion");
+
+    expect(css).toContain('.scene-shell[data-hud="dimmed"] .scene-overlay');
+    expect(css).toContain("opacity 320ms ease");
+    expect(css).toContain("@keyframes scene-label-enter");
+    expect(css).toContain(".scene-thought-label");
+  });
+
   it("documents mouse-route performance measurements", () => {
     const performanceReport = readRoot("docs/performance-report.md");
 

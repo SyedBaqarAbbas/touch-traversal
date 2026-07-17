@@ -801,6 +801,24 @@ a {
   opacity: 0;
 }
 
+.scene-overlay,
+.scene-topology-controls,
+.scene-node-list,
+.scene-nav {
+  transition:
+    opacity 320ms ease,
+    transform 320ms ease;
+}
+
+.scene-shell[data-hud="dimmed"] .scene-overlay,
+.scene-shell[data-hud="dimmed"] .scene-topology-controls,
+.scene-shell[data-hud="dimmed"] .scene-node-list,
+.scene-shell[data-hud="dimmed"] .scene-nav {
+  opacity: 0.08;
+  pointer-events: none;
+  transform: translateY(0.28rem);
+}
+
 .scene-header {
   animation-delay: 220ms;
 }
@@ -1298,8 +1316,11 @@ a {
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   line-height: 1.35;
+  opacity: var(--scene-label-opacity, 1);
   text-transform: lowercase;
   transform: translate(0.65rem, -50%);
+  animation: scene-label-enter 220ms ease both;
+  animation-delay: 140ms;
 }
 
 .scene-thought-label strong {
@@ -1337,6 +1358,7 @@ a {
   border-color: rgba(242, 240, 234, 0.38);
   background: rgba(5, 5, 5, 0.42);
   text-shadow: 0 0 0.75rem #050505;
+  animation-delay: 90ms;
 }
 
 .scene-thought-label--neighbor {
@@ -1659,6 +1681,7 @@ a {
   .scene-topology-hud,
   .scene-overlay,
   .scene-node-list,
+  .scene-thought-label,
   .camera-access-panel,
   .scene-nav {
     animation-duration: 1ms !important;
@@ -1691,5 +1714,15 @@ a {
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes scene-label-enter {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: var(--scene-label-opacity, 1);
   }
 }

@@ -24,6 +24,7 @@ import {
   reduceInteraction,
   type InteractionState,
 } from "@/lib/interaction-model";
+import { layoutMorphDuration } from "@/lib/layout-morph";
 import {
   advanceHoverState,
   createIdleHoverState,
@@ -38,6 +39,7 @@ import {
   chooseSceneQuality,
   limitThoughtLabels,
   limitVisibleItems,
+  reducedMotionDecorationPreset,
   sceneDecorationPreset,
   sceneQualityNotice,
   summarizeFrameDurations,
@@ -83,7 +85,12 @@ const routes = [
   { href: "/debug", label: "debug" },
 ] as const;
 
-const FOCUS_TRANSITION_MS = 850;
+const FOCUS_TRANSITION_MS = 1100;
+const RETURN_OVERVIEW_TRANSITION_MS = 1400;
+const REDUCED_MOTION_FOCUS_TRANSITION_MS = 220;
+const REDUCED_MOTION_RETURN_TRANSITION_MS = 240;
+const HUD_IDLE_TIMEOUT_MS = 4200;
+const HUD_ACTIVITY_THROTTLE_MS = 320;
 export const SCENE_INTRO_DURATION_MS = 3000;
 
 type PositionMotion = {
@@ -164,6 +171,12 @@ export function GraphScene({
   >([]);
   const [gestureHint, setGestureHint] = useState<GestureHint | null>(null);
   const [measuredFps, setMeasuredFps] = useState<number | undefined>();
+  const [hudVisible, setHudVisible] = useState(true);
+  const [hudActivityKey, setHudActivityKey] = useState(0);
+  const [sceneTransitionMs, setSceneTransitionMs] =
+    useState(FOCUS_TRANSITION_MS);
+  const reducedMotion = usePrefersReducedMotion();
+  const lastHudActivityAtRef = useRef(Number.NEGATIVE_INFINITY);
   const gestureActionsRef = useRef<GestureActionRefs | null>(null);
   const gestureFixtureStartedRef = useRef(false);
   const cameraMode = cameraModeForInteraction(interaction);
@@ -220,15 +233,27 @@ export function GraphScene({
       }),
     [measuredFps, model],
   );
-  const decorationPreset = useMemo(
-    () => sceneDecorationPreset(sceneQuality),
-    [sceneQuality],
-  );
+  const decorationPreset = useMemo(() => {
+    const preset = sceneDecorationPreset(sceneQuality);
+    return reducedMotion ? reducedMotionDecorationPreset(preset) : preset;
+  }, [reducedMotion, sceneQuality]);
+  const focusTransitionMs = reducedMotion
+    ? REDUCED_MOTION_FOCUS_TRANSITION_MS
+    : FOCUS_TRANSITION_MS;
   const sceneQualityNoticeCopy = sceneQualityNotice(sceneQuality);
   const recordMeasuredFps = useCallback((fps: number) => {
     setMeasuredFps((current) =>
       current == null ? fps : Math.min(current, fps),
     );
+  }, []);
+  const noteHudActivity = useCallback(() => {
+    const now = performance.now();
+    if (now - lastHudActivityAtRef.current < HUD_ACTIVITY_THROTTLE_MS) {
+      return;
+    }
+    lastHudActivityAtRef.current = now;
+    setHudVisible(true);
+    setHudActivityKey((key) => key + 1);
   }, []);
   const sceneNodes = useMemo(
     () =>
@@ -317,6 +342,29 @@ export function GraphScene({
     return () => window.clearTimeout(timeout);
   }, [hoverState]);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setHudVisible(false);
+    }, HUD_IDLE_TIMEOUT_MS);
+    return () => window.clearTimeout(timeout);
+  }, [hudActivityKey]);
+
+  useEffect(() => {
+    const restoreHud = () => noteHudActivity();
+    window.addEventListener("click", restoreHud);
+    window.addEventListener("keydown", restoreHud);
+    window.addEventListener("pointermove", restoreHud);
+    window.addEventListener("touchstart", restoreHud);
+    window.addEventListener("wheel", restoreHud);
+    return () => {
+      window.removeEventListener("click", restoreHud);
+      window.removeEventListener("keydown", restoreHud);
+      window.removeEventListener("pointermove", restoreHud);
+      window.removeEventListener("touchstart", restoreHud);
+      window.removeEventListener("wheel", restoreHud);
+    };
+  }, [noteHudActivity]);
+
   const handlePointerCandidate = (
     nodeId: string | null,
     pointer: ReturnType<typeof pointerFromThreeEvent>,
@@ -338,9 +386,9 @@ export function GraphScene({
         type: "FOCUS_COMPLETE",
         timestampMs: performance.now(),
       });
-    }, FOCUS_TRANSITION_MS);
+    }, focusTransitionMs);
     return () => window.clearTimeout(timeout);
-  }, [interaction.mode, interaction.selectedNodeId]);
+  }, [focusTransitionMs, interaction.mode, interaction.selectedNodeId]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -383,6 +431,7 @@ export function GraphScene({
         isTopologyAvailable(nextLayoutName, model.temporal.available)
       ) {
         event.preventDefault();
+        setSceneTransitionMs(layoutMorphDuration(reducedMotion));
         setLayoutName(nextLayoutName);
       }
     };
@@ -391,6 +440,7 @@ export function GraphScene({
   }, [
     canSwitchTopology,
     model.temporal.available,
+    reducedMotion,
     selectedNodeId,
     traversalHistory,
   ]);
@@ -442,13 +492,18 @@ export function GraphScene({
       return false;
     }
 
+    const choreography = createTraversalChoreography(
+      sourcePosition,
+      targetPosition,
+    );
     setActiveTraversal({
-      ...createTraversalChoreography(sourcePosition, targetPosition),
+      ...choreography,
       edgeId: neighbor.edgeId,
       sourceNodeId,
       startedAtMs: timestampMs,
       targetNodeId,
     });
+    setSceneTransitionMs(choreography.durationMs);
     dispatch({
       type: "START_TRAVERSAL",
       nodeId: targetNodeId,
@@ -467,6 +522,7 @@ export function GraphScene({
     }
 
     setActiveTraversal(null);
+    setSceneTransitionMs(focusTransitionMs);
     dispatch({
       type: "SELECT_NODE",
       nodeId,
@@ -476,6 +532,11 @@ export function GraphScene({
 
   const returnOverview = (timestampMs: number) => {
     setActiveTraversal(null);
+    setSceneTransitionMs(
+      reducedMotion
+        ? REDUCED_MOTION_RETURN_TRANSITION_MS
+        : RETURN_OVERVIEW_TRANSITION_MS,
+    );
     dispatch({
       type: "RETURN_OVERVIEW",
       timestampMs,
@@ -489,6 +550,7 @@ export function GraphScene({
     ) {
       return;
     }
+    setSceneTransitionMs(layoutMorphDuration(reducedMotion));
     setLayoutName(nextLayoutName);
   };
 
@@ -573,7 +635,12 @@ export function GraphScene({
   }, [inputMode, nodeSummaries]);
 
   return (
-    <main className="scene-shell" style={sceneIntroStyle()}>
+    <main
+      className="scene-shell"
+      data-hud={hudVisible ? "visible" : "dimmed"}
+      data-motion={reducedMotion ? "reduced" : "full"}
+      style={sceneIntroStyle()}
+    >
       <Canvas
         className="scene-canvas"
         dpr={sceneQuality.dpr}
@@ -588,6 +655,7 @@ export function GraphScene({
         <CameraRig
           driftAmplitude={decorationPreset.cameraDriftAmplitude}
           mode={cameraMode}
+          reducedMotion={reducedMotion}
           traversal={activeTraversal}
         />
         <SceneFrameBudgetMonitor onMeasuredFps={recordMeasuredFps} />
@@ -595,18 +663,21 @@ export function GraphScene({
         <RelationshipEdgeInstances
           edges={sceneEdges}
           shimmerAmplitude={decorationPreset.edgeShimmerAmplitude}
+          transitionDurationMs={sceneTransitionMs}
         />
-        {activeTraversal ? (
+        {activeTraversal && !reducedMotion ? (
           <TraversalEdgePulse traversal={activeTraversal} />
         ) : null}
         <ThoughtNodeInstances
           breathAmplitude={decorationPreset.nodeBreathAmplitude}
           halo
           nodes={sceneNodes}
+          transitionDurationMs={sceneTransitionMs}
         />
         <ThoughtNodeInstances
           breathAmplitude={decorationPreset.nodeBreathAmplitude}
           nodes={sceneNodes}
+          transitionDurationMs={sceneTransitionMs}
         />
         <ThoughtNodeHitTargets
           nodes={sceneNodes}
@@ -834,12 +905,26 @@ function sceneIntroStyle(): CSSProperties {
   } as CSSProperties;
 }
 
+function usePrefersReducedMotion(): boolean {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return reducedMotion;
+}
+
 function sceneLabelStyle(label: SceneThoughtLabel) {
   return {
     left: `${clampNumber(50 + label.position[0] * 34, 6, 92)}%`,
-    opacity: label.opacity,
+    "--scene-label-opacity": label.opacity,
     top: `${clampNumber(50 - label.position[1] * 38, 9, 88)}%`,
-  };
+  } as CSSProperties;
 }
 
 function pointerCueStyle(pointer: UnifiedPointer) {
@@ -998,10 +1083,12 @@ function persistTraversalHistory(history: readonly TraversalHistoryEntry[]) {
 function CameraRig({
   driftAmplitude,
   mode,
+  reducedMotion,
   traversal,
 }: {
   driftAmplitude: number;
   mode: CameraMode;
+  reducedMotion: boolean;
   traversal: ActiveTraversal | null;
 }) {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
@@ -1040,7 +1127,7 @@ function CameraRig({
       }
     }
 
-    const alpha = 1 - Math.exp(-delta * 3.2);
+    const alpha = 1 - Math.exp(-delta * (reducedMotion ? 12 : 3.2));
     camera.position.lerp(desiredPosition.current, alpha);
     target.current.lerp(desiredTarget.current, alpha);
     camera.lookAt(target.current);
@@ -1305,9 +1392,11 @@ function ThoughtNodeHitTargets({
 function RelationshipEdgeInstances({
   edges,
   shimmerAmplitude,
+  transitionDurationMs,
 }: {
   edges: SceneEdge[];
   shimmerAmplitude: number;
+  transitionDurationMs: number;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const scratch = useMemo(() => new THREE.Object3D(), []);
@@ -1348,7 +1437,7 @@ function RelationshipEdgeInstances({
     }
     motion.targetEndpoints = targetEndpoints;
     motion.startedAtMs = performance.now();
-    motion.durationMs = FOCUS_TRANSITION_MS;
+    motion.durationMs = transitionDurationMs;
 
     const opacity = new Float32Array(edges.length);
     const typeBand = new Float32Array(edges.length);
@@ -1388,7 +1477,7 @@ function RelationshipEdgeInstances({
       "edgeVisibility",
       new THREE.InstancedBufferAttribute(visibility, 1),
     );
-  }, [axis, direction, edges, midpoint, scratch]);
+  }, [axis, direction, edges, midpoint, scratch, transitionDurationMs]);
 
   useFrame((state) => {
     const mesh = meshRef.current;
@@ -1468,10 +1557,12 @@ function ThoughtNodeInstances({
   breathAmplitude,
   halo = false,
   nodes,
+  transitionDurationMs,
 }: {
   breathAmplitude: number;
   halo?: boolean;
   nodes: SceneNode[];
+  transitionDurationMs: number;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const scratch = useMemo(() => new THREE.Object3D(), []);
@@ -1506,7 +1597,7 @@ function ThoughtNodeInstances({
     }
     motion.targetPositions = targetPositions;
     motion.startedAtMs = performance.now();
-    motion.durationMs = FOCUS_TRANSITION_MS;
+    motion.durationMs = transitionDurationMs;
 
     const opacity = new Float32Array(nodes.length);
     const cluster = new Float32Array(nodes.length);
@@ -1552,7 +1643,7 @@ function ThoughtNodeInstances({
       "instanceVisibility",
       new THREE.InstancedBufferAttribute(visibility, 1),
     );
-  }, [halo, nodes, scratch]);
+  }, [halo, nodes, scratch, transitionDurationMs]);
 
   useFrame((state) => {
     const mesh = meshRef.current;
