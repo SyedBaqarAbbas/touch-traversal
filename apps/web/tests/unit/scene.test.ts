@@ -4,6 +4,7 @@ import { parseArtifactBundle } from "../../lib/artifacts/schema";
 import { buildGraphModel } from "../../lib/graph-model";
 import {
   buildSceneEdges,
+  buildFocusSceneNodes,
   buildSceneNodes,
   cameraModes,
   getCameraPose,
@@ -76,5 +77,26 @@ describe("scene model", () => {
     ).toBeLessThanOrEqual(0.04);
     expect(new Set(edges.map((edge) => edge.width)).size).toBeGreaterThan(1);
     expect(edges.every((edge) => edge.visible === 1)).toBe(true);
+  });
+
+  it("creates a selected-node focus topology with ranked inner neighbors", () => {
+    const nodes = buildFocusSceneNodes(
+      model,
+      "semantic",
+      "thought-grounded-language",
+    );
+    const selected = nodes.find(
+      (node) => node.id === "thought-grounded-language",
+    );
+    const depthOne = nodes.filter((node) => node.focusDepth === 1);
+    const pushed = nodes.filter((node) => node.focusDepth > 1);
+
+    expect(selected?.position).toEqual([0, 0, 0]);
+    expect(selected?.selected).toBe(1);
+    expect(depthOne.map((node) => node.id)).toEqual([
+      "thought-distributed-notes",
+      "thought-debug-evidence",
+    ]);
+    expect(pushed.every((node) => node.opacity <= 0.42)).toBe(true);
   });
 });

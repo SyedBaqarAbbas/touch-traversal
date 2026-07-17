@@ -15,12 +15,14 @@ export type SceneNode = {
   id: string;
   title: string;
   position: Vec3;
+  layoutPosition: Vec3;
   scale: number;
   opacity: number;
   cluster: number;
   hovered: number;
   selected: number;
   visible: number;
+  focusDepth: number;
 };
 
 export type SceneNodeState = {
@@ -84,21 +86,113 @@ export function buildSceneNodes(
       id: node,
       title: attributes.thought.title,
       position: attributes.layouts[layoutName],
+      layoutPosition: attributes.layouts[layoutName],
       scale: 0.018 + attributes.thought.visual.size * 0.018,
       opacity: attributes.baseOpacity,
       cluster: clusterIndex.get(attributes.clusterId) ?? 0,
       hovered: state.hoverNodeId === node ? 1 : 0,
       selected: state.selectedNodeId === node ? 1 : 0,
       visible: state.hiddenNodeIds?.has(node) ? 0 : 1,
+      focusDepth: Number.POSITIVE_INFINITY,
     });
   });
   return nodes;
+}
+
+export function buildFocusSceneNodes(
+  model: GraphModel,
+  layoutName: LayoutName,
+  selectedNodeId: string | null,
+  state: SceneNodeState = {},
+): SceneNode[] {
+  if (!selectedNodeId || !model.graph.hasNode(selectedNodeId)) {
+    return buildSceneNodes(model, layoutName, state);
+  }
+
+  const rankedDepthOne = model.graph
+    .neighbors(selectedNodeId)
+    .map((nodeId) => ({
+      nodeId,
+      weight: strongestEdgeWeight(model, selectedNodeId, nodeId),
+    }))
+    .sort(
+      (left, right) =>
+        right.weight - left.weight || left.nodeId.localeCompare(right.nodeId),
+    );
+  const depthOneIds = new Set(
+    rankedDepthOne.map((neighbor) => neighbor.nodeId),
+  );
+  const depthTwoIds = new Set<string>();
+  for (const neighbor of depthOneIds) {
+    for (const secondHop of model.graph.neighbors(neighbor)) {
+      if (secondHop !== selectedNodeId && !depthOneIds.has(secondHop)) {
+        depthTwoIds.add(secondHop);
+      }
+    }
+  }
+
+  return buildSceneNodes(model, layoutName, {
+    ...state,
+    selectedNodeId,
+  }).map((node) => {
+    if (node.id === selectedNodeId) {
+      return {
+        ...node,
+        position: [0, 0, 0],
+        opacity: 1,
+        scale: node.scale * 1.18,
+        selected: 1,
+        focusDepth: 0,
+      };
+    }
+
+    const depthOneIndex = rankedDepthOne.findIndex(
+      (neighbor) => neighbor.nodeId === node.id,
+    );
+    if (depthOneIndex >= 0) {
+      return {
+        ...node,
+        position: ringPosition(
+          depthOneIndex,
+          rankedDepthOne.length,
+          0.48,
+          node.layoutPosition[2],
+        ),
+        opacity: Math.max(node.opacity, 0.72),
+        focusDepth: 1,
+      };
+    }
+
+    if (depthTwoIds.has(node.id)) {
+      const depthTwoIndex = [...depthTwoIds].sort().indexOf(node.id);
+      return {
+        ...node,
+        position: ringPosition(
+          depthTwoIndex,
+          depthTwoIds.size,
+          0.88,
+          node.layoutPosition[2] * 0.55,
+        ),
+        opacity: Math.min(node.opacity, 0.42),
+        focusDepth: 2,
+      };
+    }
+
+    return {
+      ...node,
+      position: pushedOutPosition(node.layoutPosition),
+      opacity: Math.min(node.opacity, 0.2),
+      visible: 1,
+      focusDepth: 3,
+    };
+  });
 }
 
 export function buildSceneEdges(
   model: GraphModel,
   layoutName: LayoutName,
   state: SceneNodeState = {},
+  positionsByNodeId: ReadonlyMap<string, Vec3> | null = null,
 ): SceneEdge[] {
   const edges: SceneEdge[] = [];
   model.graph.forEachEdge(
@@ -121,8 +215,12 @@ export function buildSceneEdges(
         id: edge,
         source,
         target,
-        sourcePosition: sourceAttributes.layouts[layoutName],
-        targetPosition: targetAttributes.layouts[layoutName],
+        sourcePosition:
+          positionsByNodeId?.get(source) ??
+          sourceAttributes.layouts[layoutName],
+        targetPosition:
+          positionsByNodeId?.get(target) ??
+          targetAttributes.layouts[layoutName],
         opacity: edgeOpacity(attributes.type, attributes.weight, {
           hovered,
           selected,
@@ -137,6 +235,43 @@ export function buildSceneEdges(
     },
   );
   return edges;
+}
+
+function strongestEdgeWeight(
+  model: GraphModel,
+  source: string,
+  target: string,
+): number {
+  let strongest = 0;
+  model.graph.forEachEdge((_edge, attributes, edgeSource, edgeTarget) => {
+    if (
+      (edgeSource === source && edgeTarget === target) ||
+      (edgeSource === target && edgeTarget === source)
+    ) {
+      strongest = Math.max(strongest, attributes.weight);
+    }
+  });
+  return strongest;
+}
+
+function ringPosition(
+  index: number,
+  count: number,
+  radius: number,
+  z: number,
+): Vec3 {
+  const safeCount = Math.max(1, count);
+  const angle = -Math.PI / 2 + (index / safeCount) * Math.PI * 2;
+  return [Math.cos(angle) * radius, Math.sin(angle) * radius, z * 0.4];
+}
+
+function pushedOutPosition(position: Vec3): Vec3 {
+  const length = Math.hypot(position[0], position[1]) || 1;
+  return [
+    (position[0] / length) * 1.28,
+    (position[1] / length) * 1.28,
+    position[2] * 0.25,
+  ];
 }
 
 function edgeOpacity(

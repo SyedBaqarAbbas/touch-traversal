@@ -32,3 +32,27 @@ test("/demo reveals dwell preview after stable hover", async ({ page }) => {
   await expect(page.getByText("preview")).toBeVisible({ timeout: 1200 });
   await expect(page.getByText("Thoughts become navigable")).toBeVisible();
 });
+
+test("/demo focuses a node and returns by mouse or keyboard", async ({
+  page,
+}) => {
+  await page.goto("/demo");
+
+  const nodeButton = page.getByRole("button", {
+    name: /Distributed note topology/,
+  });
+  await nodeButton.click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 1600,
+  });
+
+  await page.getByRole("button", { name: "return" }).click();
+  await expect(page.getByText("idle / overview")).toBeVisible();
+
+  await nodeButton.click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 1600,
+  });
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("idle / overview")).toBeVisible();
+});
