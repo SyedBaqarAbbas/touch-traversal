@@ -16,9 +16,11 @@ export const morphInteractionPolicy: Record<
   InteractionEvent["type"],
   MorphConflictPolicy
 > = {
+  COMPLETE_TRAVERSAL: "allow",
   FOCUS_COMPLETE: "allow",
   HOVER_END: "allow",
   HOVER_START: "allow",
+  RESTORE_FOCUS: "block",
   RETURN_OVERVIEW: "cancel",
   SELECT_NODE: "block",
   START_CALIBRATION: "block",

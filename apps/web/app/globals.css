@@ -202,7 +202,8 @@ a {
 
 .debug-stat span,
 .debug-panel h2,
-.debug-edge-list dt {
+.debug-edge-list dt,
+.debug-history-list span {
   color: var(--secondary-text);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.68rem;
@@ -253,6 +254,38 @@ a {
 .debug-edge-list dd {
   margin: 0;
   font-size: 1.35rem;
+}
+
+.debug-history-breadcrumb,
+.debug-history-empty {
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.debug-history-breadcrumb {
+  color: var(--primary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  word-break: break-word;
+}
+
+.debug-history-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.debug-history-list li {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.debug-history-list small {
+  color: var(--secondary-text);
+  font-size: 0.74rem;
 }
 
 .debug-panel pre {

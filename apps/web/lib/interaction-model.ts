@@ -27,6 +27,8 @@ export type InteractionEvent =
   | { type: "FOCUS_COMPLETE"; timestampMs: number }
   | { type: "RETURN_OVERVIEW"; timestampMs: number }
   | { type: "START_TRAVERSAL"; nodeId: string; timestampMs: number }
+  | { type: "COMPLETE_TRAVERSAL"; nodeId: string; timestampMs: number }
+  | { type: "RESTORE_FOCUS"; nodeId: string; timestampMs: number }
   | { type: "START_MORPH"; timestampMs: number }
   | { type: "START_CALIBRATION"; timestampMs: number };
 
@@ -71,10 +73,7 @@ export function reduceInteraction(
         startedAtMs: event.timestampMs,
       };
     case "FOCUS_COMPLETE":
-      if (
-        !state.selectedNodeId ||
-        (state.mode !== "FOCUSING" && state.mode !== "TRAVERSING")
-      ) {
+      if (!state.selectedNodeId || state.mode !== "FOCUSING") {
         return state;
       }
       return {
@@ -94,8 +93,24 @@ export function reduceInteraction(
       return {
         ...state,
         mode: "TRAVERSING",
-        selectedNodeId: event.nodeId,
         hoveredNodeId: event.nodeId,
+        selectedNodeId: state.selectedNodeId ?? event.nodeId,
+        startedAtMs: event.timestampMs,
+      };
+    case "COMPLETE_TRAVERSAL":
+      return {
+        ...state,
+        mode: "FOCUSED",
+        hoveredNodeId: event.nodeId,
+        selectedNodeId: event.nodeId,
+        startedAtMs: event.timestampMs,
+      };
+    case "RESTORE_FOCUS":
+      return {
+        ...state,
+        mode: "FOCUSED",
+        hoveredNodeId: event.nodeId,
+        selectedNodeId: event.nodeId,
         startedAtMs: event.timestampMs,
       };
     case "START_MORPH":

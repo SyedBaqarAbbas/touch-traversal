@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { TraversalHistoryDebugPanel } from "@/app/_components/traversal-history-debug";
 import graph from "@/public/data/graph.json";
 import report from "@/public/data/pipeline-report.json";
 
@@ -71,6 +72,8 @@ export default function DebugPage() {
             ))}
           </dl>
         </article>
+
+        <TraversalHistoryDebugPanel />
 
         <article className="debug-panel debug-panel--wide">
           <h2>Raw node</h2>

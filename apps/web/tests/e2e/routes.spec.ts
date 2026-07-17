@@ -92,6 +92,27 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
   await expect(page.locator(".scene-selected-card")).toContainText(
     "Gestures turn the graph into a spatial traversal surface.",
   );
+  await expect(page.locator(".debug-history-breadcrumb")).toHaveCount(0);
+
+  await page.keyboard.press("Backspace");
+  await expect(page.getByText("focused / focus")).toBeVisible();
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Thoughts become navigable when notes are connected by typed edges.",
+  );
+});
+
+test("/debug exposes only the compact traversal history breadcrumb", async ({
+  page,
+}) => {
+  await page.goto("/debug");
+
+  await expect(
+    page.getByRole("heading", { name: "Traversal history" }),
+  ).toBeVisible();
+  await expect(page.locator(".debug-history-breadcrumb")).toContainText(
+    "no traversal history",
+  );
+  await expect(page.locator(".scene-traversal-status")).toHaveCount(0);
 });
 
 test("/demo?input=mouse covers the repeatable mouse flow and label density", async ({

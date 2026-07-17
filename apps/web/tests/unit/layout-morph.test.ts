@@ -51,6 +51,8 @@ describe("layout morph controller", () => {
       SELECT_NODE: "block",
       RETURN_OVERVIEW: "cancel",
       START_TRAVERSAL: "block",
+      COMPLETE_TRAVERSAL: "allow",
+      RESTORE_FOCUS: "block",
       START_MORPH: "queue",
       START_CALIBRATION: "block",
       FOCUS_COMPLETE: "allow",

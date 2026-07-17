@@ -47,6 +47,12 @@ import {
   sampleTraversalChoreography,
   type TraversalChoreography,
 } from "@/lib/traversal-choreography";
+import {
+  TRAVERSAL_HISTORY_STORAGE_KEY,
+  appendTraversalHistory,
+  restorePreviousFocus,
+  type TraversalHistoryEntry,
+} from "@/lib/traversal-history";
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
   buildSceneEdges,
@@ -110,6 +116,8 @@ type GraphSceneAction =
   | { type: "SELECT_NODE"; nodeId: string; timestampMs: number }
   | { type: "FOCUS_COMPLETE"; timestampMs: number }
   | { type: "START_TRAVERSAL"; nodeId: string; timestampMs: number }
+  | { type: "COMPLETE_TRAVERSAL"; nodeId: string; timestampMs: number }
+  | { type: "RESTORE_FOCUS"; nodeId: string; timestampMs: number }
   | { type: "RETURN_OVERVIEW"; timestampMs: number };
 
 export type GraphInputMode = "default" | "mouse";
@@ -130,6 +138,9 @@ export function GraphScene({
   const [layoutName, setLayoutName] = useState<LayoutName>("semantic");
   const [activeTraversal, setActiveTraversal] =
     useState<ActiveTraversal | null>(null);
+  const [traversalHistory, setTraversalHistory] = useState<
+    TraversalHistoryEntry[]
+  >([]);
   const cameraMode = cameraModeForInteraction(interaction);
   const activeTopology = topologyModesByLayout[layoutName];
   const canSwitchTopology =
@@ -310,6 +321,25 @@ export function GraphScene({
         return;
       }
 
+      if (event.key === "Backspace") {
+        const restoration = restorePreviousFocus(
+          traversalHistory,
+          selectedNodeId,
+        );
+        if (restoration) {
+          event.preventDefault();
+          setActiveTraversal(null);
+          setTraversalHistory(restoration.history);
+          persistTraversalHistory(restoration.history);
+          dispatch({
+            type: "RESTORE_FOCUS",
+            nodeId: restoration.nodeId,
+            timestampMs: event.timeStamp,
+          });
+        }
+        return;
+      }
+
       const nextLayoutName = topologyLayoutForKey(event);
       if (
         nextLayoutName &&
@@ -322,7 +352,12 @@ export function GraphScene({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [canSwitchTopology, model.temporal.available]);
+  }, [
+    canSwitchTopology,
+    model.temporal.available,
+    selectedNodeId,
+    traversalHistory,
+  ]);
 
   useEffect(() => {
     if (!activeTraversal || interaction.mode !== "TRAVERSING") {
@@ -336,10 +371,22 @@ export function GraphScene({
         performance.now(),
     );
     const timeout = window.setTimeout(() => {
+      const completedAtMs = performance.now();
       setActiveTraversal(null);
+      setTraversalHistory((history) => {
+        const nextHistory = appendTraversalHistory(history, {
+          edgeId: activeTraversal.edgeId,
+          sourceNodeId: activeTraversal.sourceNodeId,
+          targetNodeId: activeTraversal.targetNodeId,
+          timestampMs: completedAtMs,
+        });
+        persistTraversalHistory(nextHistory);
+        return nextHistory;
+      });
       dispatch({
-        type: "FOCUS_COMPLETE",
-        timestampMs: performance.now(),
+        type: "COMPLETE_TRAVERSAL",
+        nodeId: activeTraversal.targetNodeId,
+        timestampMs: completedAtMs,
       });
     }, remainingMs);
     return () => window.clearTimeout(timeout);
@@ -723,6 +770,24 @@ function reduceGraphSceneState(
           timestampMs: action.timestampMs,
         }),
       };
+    case "COMPLETE_TRAVERSAL":
+      return {
+        ...state,
+        interaction: reduceInteraction(state.interaction, {
+          type: "COMPLETE_TRAVERSAL",
+          nodeId: action.nodeId,
+          timestampMs: action.timestampMs,
+        }),
+      };
+    case "RESTORE_FOCUS":
+      return {
+        ...state,
+        interaction: reduceInteraction(state.interaction, {
+          type: "RESTORE_FOCUS",
+          nodeId: action.nodeId,
+          timestampMs: action.timestampMs,
+        }),
+      };
     case "FOCUS_COMPLETE":
       return {
         ...state,
@@ -761,6 +826,13 @@ function syncInteractionHover(
     });
   }
   return interaction;
+}
+
+function persistTraversalHistory(history: readonly TraversalHistoryEntry[]) {
+  window.sessionStorage.setItem(
+    TRAVERSAL_HISTORY_STORAGE_KEY,
+    JSON.stringify(history),
+  );
 }
 
 function CameraRig({

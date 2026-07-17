@@ -52,7 +52,7 @@ describe("interaction state machine", () => {
     });
   });
 
-  it("settles traversal back into focused mode", () => {
+  it("locks source during traversal and hands focus to the target at arrival", () => {
     const focused = reduceInteraction(
       reduceInteraction(createInteractionState(0), {
         type: "SELECT_NODE",
@@ -70,18 +70,28 @@ describe("interaction state machine", () => {
       timestampMs: 1300,
     });
     const settled = reduceInteraction(traversing, {
-      type: "FOCUS_COMPLETE",
+      type: "COMPLETE_TRAVERSAL",
       timestampMs: 2500,
+      nodeId: "target",
+    });
+    const restored = reduceInteraction(settled, {
+      type: "RESTORE_FOCUS",
+      nodeId: "source",
+      timestampMs: 2600,
     });
 
     expect(traversing).toMatchObject({
       hoveredNodeId: "target",
       mode: "TRAVERSING",
-      selectedNodeId: "target",
+      selectedNodeId: "source",
     });
     expect(settled).toMatchObject({
       mode: "FOCUSED",
       selectedNodeId: "target",
+    });
+    expect(restored).toMatchObject({
+      mode: "FOCUSED",
+      selectedNodeId: "source",
     });
   });
 });
