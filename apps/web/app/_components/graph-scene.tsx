@@ -8,10 +8,12 @@ import * as THREE from "three";
 
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
+  buildSceneEdges,
   buildSceneNodes,
   cameraModes,
   getCameraPose,
   type CameraMode,
+  type SceneEdge,
   type SceneNode,
 } from "@/lib/scene-model";
 
@@ -37,6 +39,14 @@ export function GraphScene({ model }: { model: GraphModel }) {
       }),
     [hoverNodeId, model, selectedNodeId],
   );
+  const sceneEdges = useMemo(
+    () =>
+      buildSceneEdges(model, "semantic", {
+        hoverNodeId,
+        selectedNodeId,
+      }),
+    [hoverNodeId, model, selectedNodeId],
+  );
 
   return (
     <main className="scene-shell">
@@ -51,6 +61,7 @@ export function GraphScene({ model }: { model: GraphModel }) {
       >
         <color attach="background" args={["#050505"]} />
         <CameraRig mode={cameraMode} />
+        <RelationshipEdgeInstances edges={sceneEdges} />
         <ThoughtNodeInstances halo nodes={sceneNodes} />
         <ThoughtNodeInstances nodes={sceneNodes} />
       </Canvas>
@@ -66,8 +77,8 @@ export function GraphScene({ model }: { model: GraphModel }) {
         <p className="eyebrow">demo</p>
         <h1 id="scene-title">Graph artifact boundary</h1>
         <p className="description">
-          {model.graph.order} thoughts rendered as shared-buffer instances from
-          the semantic layout.
+          {model.graph.order} thoughts and {model.graph.size} relationships
+          rendered as shared-buffer geometry from the semantic layout.
         </p>
 
         <div className="scene-controls" aria-label="Camera modes">
@@ -138,6 +149,86 @@ function CameraRig({ mode }: { mode: CameraMode }) {
       position={overview.position}
       ref={cameraRef}
     />
+  );
+}
+
+function RelationshipEdgeInstances({ edges }: { edges: SceneEdge[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const scratch = useMemo(() => new THREE.Object3D(), []);
+  const material = useMemo(() => createEdgeMaterial(), []);
+  const axis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  const direction = useMemo(() => new THREE.Vector3(), []);
+  const midpoint = useMemo(() => new THREE.Vector3(), []);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
+
+  useLayoutEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) {
+      return;
+    }
+
+    const opacity = new Float32Array(edges.length);
+    const typeBand = new Float32Array(edges.length);
+    const selected = new Float32Array(edges.length);
+    const visibility = new Float32Array(edges.length);
+
+    edges.forEach((edge, index) => {
+      const source = new THREE.Vector3(...edge.sourcePosition);
+      const target = new THREE.Vector3(...edge.targetPosition);
+      direction.copy(target).sub(source);
+      const length = direction.length();
+      midpoint.copy(source).add(target).multiplyScalar(0.5);
+
+      scratch.position.copy(midpoint);
+      scratch.quaternion.setFromUnitVectors(axis, direction.normalize());
+      scratch.scale.set(edge.width, length, edge.width);
+      scratch.updateMatrix();
+      mesh.setMatrixAt(index, scratch.matrix);
+
+      opacity[index] = edge.opacity;
+      typeBand[index] = edge.typeBand;
+      selected[index] = edge.selected;
+      visibility[index] = edge.visible;
+    });
+
+    mesh.count = edges.length;
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.geometry.setAttribute(
+      "edgeOpacity",
+      new THREE.InstancedBufferAttribute(opacity, 1),
+    );
+    mesh.geometry.setAttribute(
+      "edgeTypeBand",
+      new THREE.InstancedBufferAttribute(typeBand, 1),
+    );
+    mesh.geometry.setAttribute(
+      "edgeSelected",
+      new THREE.InstancedBufferAttribute(selected, 1),
+    );
+    mesh.geometry.setAttribute(
+      "edgeVisibility",
+      new THREE.InstancedBufferAttribute(visibility, 1),
+    );
+  }, [axis, direction, edges, midpoint, scratch]);
+
+  return (
+    <instancedMesh
+      args={[
+        undefined as unknown as THREE.BufferGeometry,
+        undefined as unknown as THREE.Material,
+        Math.max(edges.length, 1),
+      ]}
+      frustumCulled={false}
+      ref={meshRef}
+    >
+      <cylinderGeometry args={[1, 1, 1, 6, 1, true]} />
+      <primitive attach="material" object={material} />
+    </instancedMesh>
   );
 }
 
@@ -235,6 +326,52 @@ function createNodeMaterial(halo: boolean): THREE.ShaderMaterial {
     vertexShader: nodeVertexShader,
   });
 }
+
+function createEdgeMaterial(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    depthTest: true,
+    depthWrite: false,
+    fragmentShader: edgeFragmentShader,
+    transparent: true,
+    vertexShader: edgeVertexShader,
+  });
+}
+
+const edgeVertexShader = `
+attribute float edgeOpacity;
+attribute float edgeTypeBand;
+attribute float edgeSelected;
+attribute float edgeVisibility;
+
+varying float vOpacity;
+varying vec3 vColor;
+
+void main() {
+  vec3 base = vec3(0.82, 0.80, 0.75);
+  vec3 cool = vec3(0.56, 0.64, 0.68);
+  vec3 warm = vec3(0.92, 0.78, 0.56);
+  vec3 dim = vec3(0.48, 0.48, 0.45);
+
+  vColor = base;
+  vColor = mix(vColor, dim, step(0.5, edgeTypeBand));
+  vColor = mix(vColor, cool, step(1.5, edgeTypeBand));
+  vColor = mix(vColor, warm, step(2.5, edgeTypeBand) * 0.45);
+  vColor = mix(vColor, vec3(0.96, 0.94, 0.88), edgeSelected * 0.35);
+  vOpacity = edgeOpacity * edgeVisibility;
+
+  vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const edgeFragmentShader = `
+varying float vOpacity;
+varying vec3 vColor;
+
+void main() {
+  gl_FragColor = vec4(vColor, vOpacity);
+}
+`;
 
 const nodeVertexShader = `
 attribute float instanceOpacity;

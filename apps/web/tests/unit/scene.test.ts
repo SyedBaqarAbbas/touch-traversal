@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { parseArtifactBundle } from "../../lib/artifacts/schema";
 import { buildGraphModel } from "../../lib/graph-model";
 import {
+  buildSceneEdges,
   buildSceneNodes,
   cameraModes,
   getCameraPose,
@@ -55,5 +56,25 @@ describe("scene model", () => {
     expect(nodes.every((node) => node.scale > 0 && node.opacity > 0)).toBe(
       true,
     );
+  });
+
+  it("projects relationship edges with selected-neighborhood emphasis", () => {
+    const edges = buildSceneEdges(model, "semantic", {
+      selectedNodeId: "thought-grounded-language",
+    });
+    const selected = edges.filter((edge) => edge.selected === 1);
+    const unrelated = edges.filter((edge) => edge.selected === 0);
+
+    expect(edges).toHaveLength(graph.edges.length);
+    expect(selected.length).toBeGreaterThan(0);
+    expect(unrelated.length).toBeGreaterThan(0);
+    expect(
+      Math.min(...selected.map((edge) => edge.opacity)),
+    ).toBeGreaterThanOrEqual(0.55);
+    expect(
+      Math.max(...unrelated.map((edge) => edge.opacity)),
+    ).toBeLessThanOrEqual(0.04);
+    expect(new Set(edges.map((edge) => edge.width)).size).toBeGreaterThan(1);
+    expect(edges.every((edge) => edge.visible === 1)).toBe(true);
   });
 });
