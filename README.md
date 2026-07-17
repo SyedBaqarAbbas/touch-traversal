@@ -67,9 +67,9 @@ cd pipeline
 uv run touch-traversal --help
 ```
 
-The `validate` and `stats` commands already enforce the exported graph contracts. The `build` and
-`inspect` commands validate their paths and configuration, then exit with a clear message until
-document ingestion is added in the next pipeline task.
+The `inspect` command discovers and parses a note corpus, while `validate` and `stats` enforce the
+exported graph contracts. The `build` command currently parses its configured corpus, then exits
+with a clear message until thought chunking is added in the next pipeline task.
 
 ## Sample data and privacy
 

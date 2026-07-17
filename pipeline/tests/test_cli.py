@@ -86,7 +86,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(__version__, metadata["project"]["version"])
         self.assertEqual(result.stdout.strip(), f"touch-traversal {__version__}")
 
-    def test_build_validates_contract_before_ingestion_is_available(self) -> None:
+    def test_build_parses_documents_before_chunking_is_available(self) -> None:
         stderr = io.StringIO()
 
         with contextlib.redirect_stderr(stderr):
@@ -101,18 +101,22 @@ class CliTests(unittest.TestCase):
             )
 
         self.assertEqual(exit_code, 3)
-        self.assertIn("inputs and configuration are valid", stderr.getvalue())
-        self.assertIn("THO-20", stderr.getvalue())
+        self.assertIn("parsed 8 source documents", stderr.getvalue())
+        self.assertIn("THO-21", stderr.getvalue())
 
-    def test_inspect_validates_contract_before_ingestion_is_available(self) -> None:
-        stderr = io.StringIO()
+    def test_inspect_reports_the_sample_corpus_without_note_text(self) -> None:
+        stdout = io.StringIO()
 
-        with contextlib.redirect_stderr(stderr):
+        with contextlib.redirect_stdout(stdout):
             exit_code = main(["inspect", "--input", "../sample-notes"])
 
-        self.assertEqual(exit_code, 3)
-        self.assertIn("inputs and configuration are valid", stderr.getvalue())
-        self.assertIn("THO-20", stderr.getvalue())
+        self.assertEqual(exit_code, 0)
+        inspection = json.loads(stdout.getvalue())
+        self.assertEqual(inspection["documentCount"], 8)
+        self.assertEqual(inspection["markdownCount"], 8)
+        self.assertEqual(inspection["textCount"], 0)
+        self.assertEqual(len(inspection["documents"]), 8)
+        self.assertNotIn("displayText", stdout.getvalue())
 
     def test_validate_and_stats_accept_a_valid_graph(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

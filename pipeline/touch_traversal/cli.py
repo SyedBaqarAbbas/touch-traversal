@@ -15,7 +15,13 @@ from touch_traversal.artifacts import (
     load_artifact,
     validate_artifact_bundle,
 )
-from touch_traversal.config import ConfigurationError, load_config
+from touch_traversal.config import ConfigurationError, PipelineConfig, load_config
+from touch_traversal.documents import SourceDocument
+from touch_traversal.ingestion import (
+    DocumentIngestionError,
+    inspect_documents,
+    load_corpus,
+)
 from touch_traversal.models import GraphArtifact, GraphManifest, LayoutArtifact, PipelineReport
 
 _INVALID_INPUT_EXIT_CODE = 2
@@ -93,24 +99,27 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _validate_source_request(input_path: Path, config_path: Path) -> None:
+def _load_source_request(
+    input_path: Path, config_path: Path
+) -> tuple[PipelineConfig, tuple[SourceDocument, ...]]:
     if not input_path.exists():
         raise CommandInputError(f"input corpus does not exist: {input_path}")
     if not input_path.is_dir():
         raise CommandInputError(f"input corpus must be a directory: {input_path}")
-    load_config(config_path)
+    config = load_config(config_path)
+    return config, load_corpus(input_path, config.corpus)
 
 
 def _run_build(args: argparse.Namespace) -> int:
     input_path: Path = args.input
     output_path: Path = args.output
     config_path: Path = args.config
-    _validate_source_request(input_path, config_path)
     if output_path.exists() and not output_path.is_dir():
         raise CommandInputError(f"output path must be a directory: {output_path}")
+    _, documents = _load_source_request(input_path, config_path)
     print(
-        "error: build inputs and configuration are valid, but graph construction requires "
-        "document ingestion from THO-20.",
+        f"error: parsed {len(documents)} source documents, but graph construction requires "
+        "thought chunking from THO-21.",
         file=sys.stderr,
     )
     return _NOT_IMPLEMENTED_EXIT_CODE
@@ -119,13 +128,9 @@ def _run_build(args: argparse.Namespace) -> int:
 def _run_inspect(args: argparse.Namespace) -> int:
     input_path: Path = args.input
     config_path: Path = args.config
-    _validate_source_request(input_path, config_path)
-    print(
-        "error: inspect inputs and configuration are valid, but corpus inspection requires "
-        "document ingestion from THO-20.",
-        file=sys.stderr,
-    )
-    return _NOT_IMPLEMENTED_EXIT_CODE
+    _, documents = _load_source_request(input_path, config_path)
+    print(inspect_documents(documents).model_dump_json(indent=2))
+    return 0
 
 
 def _run_validate(args: argparse.Namespace) -> int:
@@ -181,7 +186,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_validate(args)
         if args.command == "stats":
             return _run_stats(args)
-    except (ArtifactValidationError, CommandInputError, ConfigurationError) as error:
+    except (
+        ArtifactValidationError,
+        CommandInputError,
+        ConfigurationError,
+        DocumentIngestionError,
+    ) as error:
         print(f"error: {error}", file=sys.stderr)
         return _INVALID_INPUT_EXIT_CODE
 
