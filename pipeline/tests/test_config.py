@@ -17,6 +17,7 @@ class PipelineConfigTests(unittest.TestCase):
         self.assertEqual(config.embeddings.model, "all-MiniLM-L6-v2")
         self.assertEqual(config.scoring.explicit, 1.0)
         self.assertEqual(config.pruning.maximum_degree, 12)
+        self.assertEqual(config.pruning.target_average_degree, 6.0)
         self.assertEqual(config.clustering.random_seed, 42)
         self.assertEqual(config.layouts.semantic.metric, "cosine")
         self.assertEqual(len(config.fingerprint()), 64)

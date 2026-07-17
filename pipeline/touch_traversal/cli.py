@@ -19,6 +19,7 @@ from touch_traversal.chunking import chunk_corpus
 from touch_traversal.config import ConfigurationError, PipelineConfig, load_config
 from touch_traversal.documents import SourceDocument
 from touch_traversal.embeddings import EmbeddingError, run_semantic_pipeline
+from touch_traversal.graph_relations import GraphAssemblyError, assemble_relation_graph
 from touch_traversal.ingestion import (
     DocumentIngestionError,
     inspect_documents,
@@ -127,11 +128,18 @@ def _run_build(args: argparse.Namespace) -> int:
         config.embeddings,
         config.semantic,
     )
+    graph = assemble_relation_graph(
+        chunks,
+        (*relations, *semantic_relations),
+        config.scoring,
+        config.pruning,
+        config.clustering,
+    )
     print(
-        f"error: generated {len(relations) + len(semantic_relations)} relation candidates "
-        f"({len(relations)} non-semantic, {len(semantic_relations)} semantic) across "
-        f"{len(chunks)} thought chunks with {embedding_batch.model_name}, but graph combination "
-        "and pruning require THO-24.",
+        f"error: retained {len(graph.edges)} weighted edges across "
+        f"{len(graph.communities)} communities from {len(chunks)} thought chunks "
+        f"(average degree {graph.average_degree:.2f}, {len(graph.isolated_node_ids)} isolated) "
+        f"with {embedding_batch.model_name}, but deterministic layouts require THO-25.",
         file=sys.stderr,
     )
     return _NOT_IMPLEMENTED_EXIT_CODE
@@ -204,6 +212,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ConfigurationError,
         DocumentIngestionError,
         EmbeddingError,
+        GraphAssemblyError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)
         return _INVALID_INPUT_EXIT_CODE

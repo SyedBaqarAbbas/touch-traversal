@@ -36,6 +36,7 @@ scoring:
 
 pruning:
   maximum_degree: 12
+  target_average_degree: 6.0
   minimum_score: 0.32
   maximum_edges: 5000
   repair_isolated_nodes: true

@@ -69,8 +69,8 @@ uv run touch-traversal --help
 
 The `inspect` command discovers and parses a note corpus, while `validate` and `stats` enforce the
 exported graph contracts. The `build` command currently parses, chunks, generates explainable
-relations, and computes cached local semantic neighbors, then exits with a clear message until
-graph combination and pruning are added in the next pipeline task.
+relations, computes cached local semantic neighbors, and builds a pruned weighted community graph,
+then exits with a clear message until deterministic layouts are added in the next pipeline task.
 
 ## Sample data and privacy
 

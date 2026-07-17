@@ -63,9 +63,16 @@ class ScoringConfig(ConfigModel):
 
 class PruningConfig(ConfigModel):
     maximum_degree: int = Field(ge=1)
+    target_average_degree: float = Field(ge=4.0, le=8.0)
     minimum_score: float = Field(ge=0.0, le=1.0)
     maximum_edges: int = Field(ge=1)
     repair_isolated_nodes: bool = True
+
+    @model_validator(mode="after")
+    def validate_degree_targets(self) -> Self:
+        if self.target_average_degree > self.maximum_degree:
+            raise ValueError("target_average_degree must not exceed maximum_degree")
+        return self
 
 
 class ClusteringConfig(ConfigModel):

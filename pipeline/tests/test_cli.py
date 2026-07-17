@@ -98,7 +98,7 @@ class CliTests(unittest.TestCase):
                 cache_hits=0,
                 cache_misses=0,
             ),
-            (object(), object()),
+            (),
         )
         with (
             patch("touch_traversal.cli.run_semantic_pipeline", return_value=semantic_result),
@@ -115,10 +115,10 @@ class CliTests(unittest.TestCase):
             )
 
         self.assertEqual(exit_code, 3)
-        self.assertIn("generated 77 relation candidates", stderr.getvalue())
-        self.assertIn("75 non-semantic, 2 semantic", stderr.getvalue())
-        self.assertIn("across 16 thought chunks", stderr.getvalue())
-        self.assertIn("THO-24", stderr.getvalue())
+        self.assertIn("weighted edges across", stderr.getvalue())
+        self.assertIn("communities from 16 thought chunks", stderr.getvalue())
+        self.assertIn("average degree", stderr.getvalue())
+        self.assertIn("THO-25", stderr.getvalue())
 
     def test_inspect_reports_the_sample_corpus_without_note_text(self) -> None:
         stdout = io.StringIO()

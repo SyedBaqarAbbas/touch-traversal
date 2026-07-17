@@ -9,8 +9,9 @@ text corpora. Artifact validation, graph statistics, and corpus inspection are
 available now, along with deterministic thought chunking, stable source
 provenance, and explainable explicit, structural, temporal, and entity relation
 candidates. A provider-based local Sentence Transformers path adds cached,
-normalized semantic neighbors without a paid API. Graph combination and pruning
-are implemented in the next Milestone 1 step.
+normalized semantic neighbors without a paid API. Configured signal combination,
+density-aware pruning, isolated-node repair, and seeded Louvain communities now
+produce the legible weighted relation graph. Layouts are the next Milestone 1 step.
 
 ## Local commands
 
@@ -26,7 +27,9 @@ uv run pytest
 
 The default pipeline settings live in `config/default.yaml`. The `build`
 command parses and chunks the configured corpus, generates non-semantic and
-semantic relation candidates, then reports that graph combination and pruning
-are the next required step. Embeddings are cached under `.cache/embeddings/` by
-model name and exact text hash; the first real build downloads the configured
-model, while later builds reuse local vectors.
+semantic relation candidates, combines and prunes them to the configured degree
+target, repairs explainable isolated nodes, and assigns corpus-derived community
+labels. It then reports that deterministic layouts are the next required step.
+Embeddings are cached under `.cache/embeddings/` by model name and exact text
+hash; the first real build downloads the configured model, while later builds
+reuse local vectors.
