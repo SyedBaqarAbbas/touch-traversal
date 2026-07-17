@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-13T09:10:00+00:00",
+  "fileCount": 4,
+  "chunkCount": 4,
+  "nodeCount": 4,
+  "edgeCount": 4,
+  "edgeCounts": {
+    "explicit": 1,
+    "structural": 0,
+    "semantic": 1,
+    "temporal": 1,
+    "entity": 1,
+    "manual": 0
+  },
+  "isolatedNodeCount": 0,
+  "averageDegree": 2,
+  "clusterCount": 2,
+  "similarityDistribution": {
+    "count": 1,
+    "minimum": 0.82,
+    "median": 0.82,
+    "p95": 0.82,
+    "maximum": 0.82
+  },
+  "buildDurationMs": 12.5,
+  "warnings": []
+}

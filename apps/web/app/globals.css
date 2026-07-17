@@ -154,6 +154,118 @@ a {
   color: var(--primary-text);
 }
 
+.debug-shell {
+  display: grid;
+  min-height: 100svh;
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+}
+
+.debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.debug-hero {
+  max-width: 44rem;
+  padding-top: clamp(1rem, 4vw, 4rem);
+}
+
+.debug-hero h1 {
+  max-width: 13ch;
+  margin: 1rem 0 1.2rem;
+  font-size: clamp(2.4rem, 6vw, 5.5rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.96;
+}
+
+.debug-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--subtle-line);
+  border-left: 1px solid var(--subtle-line);
+}
+
+.debug-stat {
+  min-height: 8rem;
+  padding: 1rem;
+  border-right: 1px solid var(--subtle-line);
+  border-bottom: 1px solid var(--subtle-line);
+}
+
+.debug-stat span,
+.debug-panel h2,
+.debug-edge-list dt {
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.debug-stat strong {
+  display: block;
+  margin-top: 1.3rem;
+  font-size: clamp(2rem, 5vw, 4.6rem);
+  font-weight: 400;
+  line-height: 0.9;
+}
+
+.debug-panels {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.8fr) minmax(0, 1.6fr);
+  gap: 1px;
+  background: var(--subtle-line);
+  border: 1px solid var(--subtle-line);
+}
+
+.debug-panel {
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  background: var(--surface-black);
+}
+
+.debug-panel h2 {
+  margin: 0 0 1rem;
+}
+
+.debug-edge-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.debug-edge-list div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.debug-edge-list dd {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.debug-panel pre {
+  max-height: 28rem;
+  margin: 0;
+  overflow: auto;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .constellation {
   position: absolute;
   top: 18%;
@@ -219,6 +331,11 @@ a {
 
   .route-shell__content {
     margin-left: 0;
+  }
+
+  .debug-grid,
+  .debug-panels {
+    grid-template-columns: 1fr;
   }
 
   .constellation {

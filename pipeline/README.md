@@ -13,7 +13,7 @@ normalized semantic neighbors without a paid API. Configured signal combination,
 density-aware pruning, isolated-node repair, and seeded Louvain communities now
 produce the legible weighted relation graph. Seeded UMAP, separated community,
 reliable-time, and settled weighted-force layouts provide four normalized views.
-Validated artifact export is the next Milestone 1 step.
+The build command exports the complete frontend bundle after cross-artifact validation.
 
 ## Local commands
 
@@ -31,8 +31,9 @@ The default pipeline settings live in `config/default.yaml`. The `build`
 command parses and chunks the configured corpus, generates non-semantic and
 semantic relation candidates, combines and prunes them to the configured degree
 target, repairs explainable isolated nodes, and assigns corpus-derived community
-labels and generates four stable normalized layouts. It then reports that
-validated artifact export is the next required step.
+labels, generates four stable normalized layouts, validates the complete bundle,
+and writes `graph.json`, `layouts.json`, `manifest.json`, and
+`pipeline-report.json`.
 Embeddings are cached under `.cache/embeddings/` by model name and exact text
 hash; the first real build downloads the configured model, while later builds
 reuse local vectors.

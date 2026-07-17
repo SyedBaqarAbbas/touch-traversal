@@ -7,6 +7,7 @@ import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from time import perf_counter
 
 from touch_traversal import __version__
 from touch_traversal.artifacts import (
@@ -19,6 +20,11 @@ from touch_traversal.chunking import chunk_corpus
 from touch_traversal.config import ConfigurationError, PipelineConfig, load_config
 from touch_traversal.documents import SourceDocument
 from touch_traversal.embeddings import EmbeddingError, run_semantic_pipeline
+from touch_traversal.exporting import (
+    ArtifactExportError,
+    build_artifact_bundle,
+    export_artifacts,
+)
 from touch_traversal.graph_relations import GraphAssemblyError, assemble_relation_graph
 from touch_traversal.ingestion import (
     DocumentIngestionError,
@@ -30,7 +36,6 @@ from touch_traversal.models import GraphArtifact, GraphManifest, LayoutArtifact,
 from touch_traversal.relations import generate_nonsemantic_relations
 
 _INVALID_INPUT_EXIT_CODE = 2
-_NOT_IMPLEMENTED_EXIT_CODE = 3
 
 
 def _default_config_path() -> Path:
@@ -116,6 +121,7 @@ def _load_source_request(
 
 
 def _run_build(args: argparse.Namespace) -> int:
+    started_at = perf_counter()
     input_path: Path = args.input
     output_path: Path = args.output
     config_path: Path = args.config
@@ -136,22 +142,30 @@ def _run_build(args: argparse.Namespace) -> int:
         config.pruning,
         config.clustering,
     )
-    generate_layouts(
+    layouts = generate_layouts(
         chunks,
         documents,
         embedding_batch,
         graph,
         config.layouts,
     )
-    print(
-        f"error: generated four deterministic layouts for {len(chunks)} thought chunks and "
-        f"retained {len(graph.edges)} weighted edges across "
-        f"{len(graph.communities)} communities from {len(chunks)} thought chunks "
-        f"(average degree {graph.average_degree:.2f}, {len(graph.isolated_node_ids)} isolated) "
-        f"with {embedding_batch.model_name}, but validated artifact export requires THO-26.",
-        file=sys.stderr,
+    bundle = build_artifact_bundle(
+        corpus_name=input_path.name,
+        documents=documents,
+        chunks=chunks,
+        embeddings=embedding_batch,
+        semantic_relations=semantic_relations,
+        relation_graph=graph,
+        layouts=layouts,
+        config=config,
+        build_duration_ms=(perf_counter() - started_at) * 1000,
     )
-    return _NOT_IMPLEMENTED_EXIT_CODE
+    exported = export_artifacts(output_path, bundle)
+    print(
+        f"exported {len(bundle.graph.nodes)} nodes, {len(bundle.graph.edges)} edges, and four "
+        f"layouts to {output_path}: {', '.join(path.name for path in exported)}"
+    )
+    return 0
 
 
 def _run_inspect(args: argparse.Namespace) -> int:
@@ -217,6 +231,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_stats(args)
     except (
         ArtifactValidationError,
+        ArtifactExportError,
         CommandInputError,
         ConfigurationError,
         DocumentIngestionError,

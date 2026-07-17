@@ -9,6 +9,7 @@ import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from touch_traversal import __version__
@@ -88,7 +89,8 @@ class CliTests(unittest.TestCase):
         self.assertEqual(__version__, metadata["project"]["version"])
         self.assertEqual(result.stdout.strip(), f"touch-traversal {__version__}")
 
-    def test_build_generates_semantic_candidates_before_graph_combination(self) -> None:
+    def test_build_exports_the_complete_validated_bundle(self) -> None:
+        stdout = io.StringIO()
         stderr = io.StringIO()
 
         semantic_result = (
@@ -100,9 +102,29 @@ class CliTests(unittest.TestCase):
             ),
             (),
         )
+        exported_bundle = SimpleNamespace(
+            graph=SimpleNamespace(nodes=tuple(range(16)), edges=tuple(range(48)))
+        )
         with (
             patch("touch_traversal.cli.run_semantic_pipeline", return_value=semantic_result),
             patch("touch_traversal.cli.generate_layouts", return_value=object()),
+            patch(
+                "touch_traversal.cli.build_artifact_bundle",
+                return_value=exported_bundle,
+            ),
+            patch(
+                "touch_traversal.cli.export_artifacts",
+                return_value=tuple(
+                    Path(name)
+                    for name in (
+                        "graph.json",
+                        "layouts.json",
+                        "manifest.json",
+                        "pipeline-report.json",
+                    )
+                ),
+            ),
+            contextlib.redirect_stdout(stdout),
             contextlib.redirect_stderr(stderr),
         ):
             exit_code = main(
@@ -115,12 +137,11 @@ class CliTests(unittest.TestCase):
                 ]
             )
 
-        self.assertEqual(exit_code, 3)
-        self.assertIn("generated four deterministic layouts", stderr.getvalue())
-        self.assertIn("weighted edges across", stderr.getvalue())
-        self.assertIn("communities from 16 thought chunks", stderr.getvalue())
-        self.assertIn("average degree", stderr.getvalue())
-        self.assertIn("THO-26", stderr.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn(
+            "graph.json, layouts.json, manifest.json, pipeline-report.json", stdout.getvalue()
+        )
 
     def test_inspect_reports_the_sample_corpus_without_note_text(self) -> None:
         stdout = io.StringIO()

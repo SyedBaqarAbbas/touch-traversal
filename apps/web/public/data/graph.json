@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {
+      "id": "thought-grounded-language",
+      "title": "Grounded language invention",
+      "text": "A grounded approach treats language as something invented from perception, action, and repeated local context.",
+      "summary": "Language invention starts from grounded perception and action.",
+      "source": {
+        "path": "notes/language-invention.md",
+        "documentId": "language-invention",
+        "headingPath": ["Grounding"],
+        "startLine": 4,
+        "endLine": 8
+      },
+      "metadata": {
+        "createdAt": "2026-07-10T09:00:00+00:00",
+        "modifiedAt": "2026-07-10T09:30:00+00:00",
+        "tags": ["language", "grounding"],
+        "entities": ["language", "perception"],
+        "wordCount": 15,
+        "importance": 1
+      },
+      "visual": {
+        "clusterId": "cluster-language",
+        "size": 1.6,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought-distributed-notes",
+      "title": "Distributed note topology",
+      "text": "A note graph stays legible when every thought is a node and every meaningful relation becomes an edge.",
+      "summary": "Thoughts become navigable when notes are connected by typed edges.",
+      "source": {
+        "path": "notes/topologies.md",
+        "documentId": "topologies",
+        "headingPath": ["Distributed mode"],
+        "startLine": 2,
+        "endLine": 7
+      },
+      "metadata": {
+        "createdAt": "2026-07-11T11:00:00+00:00",
+        "modifiedAt": "2026-07-11T12:15:00+00:00",
+        "tags": ["graphs", "notes"],
+        "entities": ["Graphology", "edges"],
+        "wordCount": 16,
+        "importance": 0.67
+      },
+      "visual": {
+        "clusterId": "cluster-language",
+        "size": 1.34,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought-gesture-traversal",
+      "title": "Gesture traversal",
+      "text": "A hand can pull related thoughts forward when traversal gestures map to selection, orbit, and focus intent.",
+      "summary": "Gestures turn the graph into a spatial traversal surface.",
+      "source": {
+        "path": "notes/gesture-traversal.md",
+        "documentId": "gesture-traversal",
+        "headingPath": ["Interaction"],
+        "startLine": 9,
+        "endLine": 14
+      },
+      "metadata": {
+        "createdAt": "2026-07-12T14:00:00+00:00",
+        "modifiedAt": "2026-07-12T14:40:00+00:00",
+        "tags": ["gesture", "traversal"],
+        "entities": ["hand tracking", "selection"],
+        "wordCount": 16,
+        "importance": 0.67
+      },
+      "visual": {
+        "clusterId": "cluster-interface",
+        "size": 1.34,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought-debug-evidence",
+      "title": "Debug evidence",
+      "text": "A separate diagnostics route keeps artifact statistics, raw node payloads, and relation evidence inspectable.",
+      "summary": "Diagnostics stay outside the cinematic traversal surface.",
+      "source": {
+        "path": "notes/debug-evidence.md",
+        "documentId": "debug-evidence",
+        "headingPath": ["Diagnostics"],
+        "startLine": 3,
+        "endLine": 6
+      },
+      "metadata": {
+        "createdAt": "2026-07-13T08:30:00+00:00",
+        "modifiedAt": "2026-07-13T09:10:00+00:00",
+        "tags": ["debug", "evidence"],
+        "entities": ["artifacts", "statistics"],
+        "wordCount": 13,
+        "importance": 0.33
+      },
+      "visual": {
+        "clusterId": "cluster-interface",
+        "size": 1.07,
+        "baseOpacity": 0.82
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-language-topology",
+      "source": "thought-grounded-language",
+      "target": "thought-distributed-notes",
+      "directed": false,
+      "type": "explicit",
+      "weight": 0.91,
+      "confidence": 1,
+      "evidence": {
+        "description": "The language note links to distributed note topology.",
+        "sharedTerms": ["language", "note"],
+        "sharedEntities": ["language"]
+      },
+      "visual": {
+        "opacity": 0.76,
+        "width": 1.6
+      }
+    },
+    {
+      "id": "edge-topology-gesture",
+      "source": "thought-distributed-notes",
+      "target": "thought-gesture-traversal",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.82,
+      "confidence": 0.86,
+      "evidence": {
+        "description": "Both thoughts describe traversing a structured spatial graph.",
+        "sharedTerms": ["graph", "traversal"],
+        "sharedEntities": ["Graphology"],
+        "similarity": 0.82
+      },
+      "visual": {
+        "opacity": 0.68,
+        "width": 1.36
+      }
+    },
+    {
+      "id": "edge-gesture-debug",
+      "source": "thought-gesture-traversal",
+      "target": "thought-debug-evidence",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.66,
+      "confidence": 0.72,
+      "evidence": {
+        "description": "Both thoughts discuss interaction evidence that needs inspection.",
+        "sharedTerms": ["evidence", "traversal"],
+        "sharedEntities": ["selection"]
+      },
+      "visual": {
+        "opacity": 0.58,
+        "width": 1.08
+      }
+    },
+    {
+      "id": "edge-language-debug-temporal",
+      "source": "thought-grounded-language",
+      "target": "thought-debug-evidence",
+      "directed": true,
+      "type": "temporal",
+      "weight": 0.55,
+      "confidence": 0.7,
+      "evidence": {
+        "description": "The diagnostic note follows the language note in the sample timeline.",
+        "sharedTerms": ["thought", "note"],
+        "timeDistanceDays": 3
+      },
+      "visual": {
+        "opacity": 0.5,
+        "width": 0.96
+      }
+    }
+  ]
+}

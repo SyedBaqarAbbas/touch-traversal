@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-13T09:10:00+00:00",
+  "corpusName": "sample-notes",
+  "nodeCount": 4,
+  "edgeCount": 4,
+  "embeddingModel": "fixture-model",
+  "pipelineConfigHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+}

@@ -4,7 +4,7 @@ const routes = [
   ["/", "Explore the topologies of your thoughts."],
   ["/demo", "The graph will emerge here."],
   ["/calibration", "Camera calibration comes later."],
-  ["/debug", "Graph diagnostics will live here."],
+  ["/debug", "Graph diagnostics"],
 ] as const;
 
 for (const [path, heading] of routes) {

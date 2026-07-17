@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "bounds": {
+    "min": [-1, -1, -1],
+    "max": [1, 1, 1]
+  },
+  "layouts": {
+    "semantic": {
+      "thought-grounded-language": [-0.78, -0.18, 0.12],
+      "thought-distributed-notes": [-0.18, 0.1, 0.02],
+      "thought-gesture-traversal": [0.42, 0.16, -0.06],
+      "thought-debug-evidence": [0.76, -0.34, 0.18]
+    },
+    "clusters": {
+      "thought-grounded-language": [-0.72, -0.24, 0],
+      "thought-distributed-notes": [-0.42, 0.28, 0.1],
+      "thought-gesture-traversal": [0.46, 0.3, -0.08],
+      "thought-debug-evidence": [0.72, -0.24, 0.08]
+    },
+    "temporal": {
+      "thought-grounded-language": [-0.9, 0, 0],
+      "thought-distributed-notes": [-0.3, 0.14, 0.06],
+      "thought-gesture-traversal": [0.3, -0.12, -0.04],
+      "thought-debug-evidence": [0.9, 0.04, 0.02]
+    },
+    "force": {
+      "thought-grounded-language": [-0.54, -0.58, 0.12],
+      "thought-distributed-notes": [-0.36, 0.46, -0.18],
+      "thought-gesture-traversal": [0.34, 0.5, 0.1],
+      "thought-debug-evidence": [0.58, -0.36, -0.04]
+    }
+  }
+}
