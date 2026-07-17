@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   chooseSceneQuality,
+  decorativeDowngradeOrder,
   limitThoughtLabels,
   limitVisibleItems,
+  sceneDecorationPreset,
   sceneQualityNotice,
   scenePerformanceScenarios,
   summarizeFrameDurations,
@@ -53,6 +55,48 @@ describe("performance policy", () => {
     expect(notice).toMatchObject({
       title: "low quality",
       description: expect.stringContaining("traversal remains available"),
+    });
+  });
+
+  it("defines decorative presets and disables effects in downgrade order", () => {
+    expect(decorativeDowngradeOrder).toEqual([
+      "edge shimmer",
+      "dust",
+      "bloom",
+      "camera drift",
+      "node breathing",
+      "vignette",
+    ]);
+
+    const high = sceneDecorationPreset(
+      chooseSceneQuality({ nodeCount: 4, edgeCount: 4 }),
+    );
+    const medium = sceneDecorationPreset(
+      chooseSceneQuality({ nodeCount: 200, edgeCount: 800 }),
+    );
+    const low = sceneDecorationPreset(
+      chooseSceneQuality({ nodeCount: 300, edgeCount: 1500 }),
+    );
+
+    expect(high).toMatchObject({
+      bloom: { enabled: true },
+      chromaticAberration: false,
+      depthOfField: false,
+      dustCount: 72,
+      edgeShimmerAmplitude: expect.any(Number),
+      vignette: { enabled: true },
+    });
+    expect(medium.edgeShimmerAmplitude).toBe(0);
+    expect(medium.dustCount).toBeGreaterThan(0);
+    expect(low).toMatchObject({
+      bloom: { enabled: false },
+      cameraDriftAmplitude: 0,
+      chromaticAberration: false,
+      depthOfField: false,
+      dustCount: 0,
+      edgeShimmerAmplitude: 0,
+      nodeBreathAmplitude: 0,
+      vignette: { enabled: true },
     });
   });
 

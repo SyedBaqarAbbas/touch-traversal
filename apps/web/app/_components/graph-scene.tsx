@@ -2,9 +2,11 @@
 
 import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
+import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import Link from "next/link";
 import {
   type CSSProperties,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -36,7 +38,10 @@ import {
   chooseSceneQuality,
   limitThoughtLabels,
   limitVisibleItems,
+  sceneDecorationPreset,
   sceneQualityNotice,
+  summarizeFrameDurations,
+  type SceneDecorationPreset,
 } from "@/lib/performance-policy";
 import {
   isEditableKeyboardTarget,
@@ -78,7 +83,7 @@ const routes = [
   { href: "/debug", label: "debug" },
 ] as const;
 
-const FOCUS_TRANSITION_MS = 1100;
+const FOCUS_TRANSITION_MS = 850;
 export const SCENE_INTRO_DURATION_MS = 3000;
 
 type PositionMotion = {
@@ -158,6 +163,7 @@ export function GraphScene({
     TraversalHistoryEntry[]
   >([]);
   const [gestureHint, setGestureHint] = useState<GestureHint | null>(null);
+  const [measuredFps, setMeasuredFps] = useState<number | undefined>();
   const gestureActionsRef = useRef<GestureActionRefs | null>(null);
   const gestureFixtureStartedRef = useRef(false);
   const cameraMode = cameraModeForInteraction(interaction);
@@ -209,11 +215,21 @@ export function GraphScene({
     () =>
       chooseSceneQuality({
         edgeCount: model.graph.size,
+        measuredFps,
         nodeCount: model.graph.order,
       }),
-    [model],
+    [measuredFps, model],
+  );
+  const decorationPreset = useMemo(
+    () => sceneDecorationPreset(sceneQuality),
+    [sceneQuality],
   );
   const sceneQualityNoticeCopy = sceneQualityNotice(sceneQuality);
+  const recordMeasuredFps = useCallback((fps: number) => {
+    setMeasuredFps((current) =>
+      current == null ? fps : Math.min(current, fps),
+    );
+  }, []);
   const sceneNodes = useMemo(
     () =>
       selectedNodeId
@@ -495,7 +511,7 @@ export function GraphScene({
     };
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (inputMode !== "gesture-fixture") {
       gestureFixtureStartedRef.current = false;
       return;
@@ -526,7 +542,7 @@ export function GraphScene({
           timestampMs,
         );
         gestureActionsRef.current?.selectNode(firstNodeId, timestampMs);
-      }, 500),
+      }, 250),
       window.setTimeout(() => {
         const timestampMs = performance.now();
         gestureActionsRef.current?.showGestureHint(
@@ -566,19 +582,37 @@ export function GraphScene({
           antialias: true,
           powerPreference: "high-performance",
         }}
+        onCreated={({ gl }) => configureSceneRenderer(gl)}
       >
         <color attach="background" args={["#050505"]} />
-        <CameraRig mode={cameraMode} traversal={activeTraversal} />
-        <RelationshipEdgeInstances edges={sceneEdges} />
+        <CameraRig
+          driftAmplitude={decorationPreset.cameraDriftAmplitude}
+          mode={cameraMode}
+          traversal={activeTraversal}
+        />
+        <SceneFrameBudgetMonitor onMeasuredFps={recordMeasuredFps} />
+        <AmbientDustField count={decorationPreset.dustCount} />
+        <RelationshipEdgeInstances
+          edges={sceneEdges}
+          shimmerAmplitude={decorationPreset.edgeShimmerAmplitude}
+        />
         {activeTraversal ? (
           <TraversalEdgePulse traversal={activeTraversal} />
         ) : null}
-        <ThoughtNodeInstances halo nodes={sceneNodes} />
-        <ThoughtNodeInstances nodes={sceneNodes} />
+        <ThoughtNodeInstances
+          breathAmplitude={decorationPreset.nodeBreathAmplitude}
+          halo
+          nodes={sceneNodes}
+        />
+        <ThoughtNodeInstances
+          breathAmplitude={decorationPreset.nodeBreathAmplitude}
+          nodes={sceneNodes}
+        />
         <ThoughtNodeHitTargets
           nodes={sceneNodes}
           onPointerCandidate={handlePointerCandidate}
         />
+        <ScenePostProcessing preset={decorationPreset} />
       </Canvas>
 
       <header className="scene-header">
@@ -962,9 +996,11 @@ function persistTraversalHistory(history: readonly TraversalHistoryEntry[]) {
 }
 
 function CameraRig({
+  driftAmplitude,
   mode,
   traversal,
 }: {
+  driftAmplitude: number;
   mode: CameraMode;
   traversal: ActiveTraversal | null;
 }) {
@@ -974,7 +1010,7 @@ function CameraRig({
   const desiredTarget = useRef(new THREE.Vector3());
   const overview = getCameraPose("overview");
 
-  useFrame((_state, delta) => {
+  useFrame((state, delta) => {
     const camera = cameraRef.current;
     if (!camera) {
       return;
@@ -992,6 +1028,16 @@ function CameraRig({
     } else {
       setVector(desiredPosition.current, pose.position);
       setVector(desiredTarget.current, pose.target);
+      if (driftAmplitude > 0) {
+        const elapsed = state.clock.elapsedTime;
+        desiredPosition.current.x += Math.sin(elapsed * 0.11) * driftAmplitude;
+        desiredPosition.current.y +=
+          Math.cos(elapsed * 0.07) * driftAmplitude * 0.42;
+        desiredTarget.current.x +=
+          Math.cos(elapsed * 0.09) * driftAmplitude * 0.18;
+        desiredTarget.current.y +=
+          Math.sin(elapsed * 0.08) * driftAmplitude * 0.14;
+      }
     }
 
     const alpha = 1 - Math.exp(-delta * 3.2);
@@ -1047,6 +1093,135 @@ function TraversalEdgePulse({ traversal }: { traversal: ActiveTraversal }) {
       />
     </mesh>
   );
+}
+
+function AmbientDustField({ count }: { count: number }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const materialRef = useRef<THREE.PointsMaterial>(null);
+  const geometry = useMemo(() => createDustGeometry(count), [count]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  useFrame((state) => {
+    const points = pointsRef.current;
+    const material = materialRef.current;
+    if (!points || !material) {
+      return;
+    }
+    points.rotation.y = state.clock.elapsedTime * 0.006;
+    points.rotation.x = Math.sin(state.clock.elapsedTime * 0.018) * 0.006;
+    material.opacity = 0.1 + Math.sin(state.clock.elapsedTime * 0.09) * 0.018;
+  });
+
+  if (count <= 0) {
+    return null;
+  }
+
+  return (
+    <points frustumCulled={false} ref={pointsRef}>
+      <primitive attach="geometry" object={geometry} />
+      <pointsMaterial
+        attach="material"
+        color="#f2f0ea"
+        depthWrite={false}
+        opacity={0.1}
+        ref={materialRef}
+        size={0.0075}
+        sizeAttenuation
+        transparent
+      />
+    </points>
+  );
+}
+
+function SceneFrameBudgetMonitor({
+  onMeasuredFps,
+}: {
+  onMeasuredFps: (fps: number) => void;
+}) {
+  const samplesRef = useRef<number[]>([]);
+  const lastReportAtRef = useRef(0);
+
+  useFrame((_state, delta) => {
+    const samples = samplesRef.current;
+    samples.push(delta * 1000);
+    if (samples.length > 150) {
+      samples.shift();
+    }
+
+    const now = performance.now();
+    if (samples.length < 45 || now - lastReportAtRef.current < 1500) {
+      return;
+    }
+
+    lastReportAtRef.current = now;
+    onMeasuredFps(summarizeFrameDurations(samples).averageFps);
+  });
+
+  return null;
+}
+
+function ScenePostProcessing({ preset }: { preset: SceneDecorationPreset }) {
+  if (!preset.bloom.enabled && !preset.vignette.enabled) {
+    return null;
+  }
+
+  const bloom = (
+    <Bloom
+      intensity={preset.bloom.intensity}
+      luminanceSmoothing={0.42}
+      luminanceThreshold={0.72}
+      mipmapBlur
+      radius={0.18}
+    />
+  );
+  const vignette = (
+    <Vignette darkness={preset.vignette.darkness} eskil={false} offset={0.38} />
+  );
+
+  if (preset.bloom.enabled && preset.vignette.enabled) {
+    return (
+      <EffectComposer multisampling={0}>
+        {bloom}
+        {vignette}
+      </EffectComposer>
+    );
+  }
+
+  return (
+    <EffectComposer multisampling={0}>
+      {preset.bloom.enabled ? bloom : vignette}
+    </EffectComposer>
+  );
+}
+
+function configureSceneRenderer(gl: THREE.WebGLRenderer) {
+  gl.outputColorSpace = THREE.SRGBColorSpace;
+  gl.toneMapping = THREE.ACESFilmicToneMapping;
+  gl.toneMappingExposure = 0.82;
+}
+
+function createDustGeometry(count: number): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(Math.max(count, 0) * 3);
+  for (let index = 0; index < count; index += 1) {
+    const offset = index * 3;
+    const seed = index + 1;
+    positions[offset] = (seededUnit(seed * 17) - 0.5) * 5.4;
+    positions[offset + 1] = (seededUnit(seed * 29) - 0.5) * 2.8;
+    positions[offset + 2] = -0.35 - seededUnit(seed * 41) * 2.8;
+  }
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  return geometry;
+}
+
+function seededUnit(seed: number): number {
+  const value = Math.sin(seed * 12.9898) * 43758.5453;
+  return value - Math.floor(value);
 }
 
 function setVector(target: THREE.Vector3, value: Vec3) {
@@ -1127,10 +1302,17 @@ function ThoughtNodeHitTargets({
   );
 }
 
-function RelationshipEdgeInstances({ edges }: { edges: SceneEdge[] }) {
+function RelationshipEdgeInstances({
+  edges,
+  shimmerAmplitude,
+}: {
+  edges: SceneEdge[];
+  shimmerAmplitude: number;
+}) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const scratch = useMemo(() => new THREE.Object3D(), []);
   const material = useMemo(() => createEdgeMaterial(), []);
+  const materialRef = useRef<THREE.ShaderMaterial | null>(material);
   const axis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   const direction = useMemo(() => new THREE.Vector3(), []);
   const midpoint = useMemo(() => new THREE.Vector3(), []);
@@ -1143,8 +1325,10 @@ function RelationshipEdgeInstances({ edges }: { edges: SceneEdge[] }) {
   });
 
   useEffect(() => {
+    materialRef.current = material;
     return () => {
       material.dispose();
+      materialRef.current = null;
     };
   }, [material]);
 
@@ -1206,10 +1390,15 @@ function RelationshipEdgeInstances({ edges }: { edges: SceneEdge[] }) {
     );
   }, [axis, direction, edges, midpoint, scratch]);
 
-  useFrame(() => {
+  useFrame((state) => {
     const mesh = meshRef.current;
     if (!mesh) {
       return;
+    }
+    const edgeMaterial = materialRef.current;
+    if (edgeMaterial) {
+      edgeMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+      edgeMaterial.uniforms.uShimmerAmplitude.value = shimmerAmplitude;
     }
 
     const motion = motionRef.current;
@@ -1276,9 +1465,11 @@ function pointerFromThreeEvent(event: ThreeEvent<PointerEvent>) {
 }
 
 function ThoughtNodeInstances({
+  breathAmplitude,
   halo = false,
   nodes,
 }: {
+  breathAmplitude: number;
   halo?: boolean;
   nodes: SceneNode[];
 }) {
@@ -1332,7 +1523,15 @@ function ThoughtNodeInstances({
     });
 
     mesh.count = nodes.length;
-    writeNodeMatrices(mesh, nodes, motion.currentPositions, scratch, halo);
+    writeNodeMatrices(
+      mesh,
+      nodes,
+      motion.currentPositions,
+      scratch,
+      halo,
+      0,
+      0,
+    );
     mesh.geometry.setAttribute(
       "instanceOpacity",
       new THREE.InstancedBufferAttribute(opacity, 1),
@@ -1355,7 +1554,7 @@ function ThoughtNodeInstances({
     );
   }, [halo, nodes, scratch]);
 
-  useFrame(() => {
+  useFrame((state) => {
     const mesh = meshRef.current;
     if (!mesh) {
       return;
@@ -1372,7 +1571,15 @@ function ThoughtNodeInstances({
       motion.targetPositions,
       transitionProgress(motion.startedAtMs, motion.durationMs),
     );
-    writeNodeMatrices(mesh, nodes, motion.currentPositions, scratch, halo);
+    writeNodeMatrices(
+      mesh,
+      nodes,
+      motion.currentPositions,
+      scratch,
+      halo,
+      state.clock.elapsedTime,
+      breathAmplitude,
+    );
   });
 
   return (
@@ -1446,16 +1653,25 @@ function writeNodeMatrices(
   positions: Float32Array,
   scratch: THREE.Object3D,
   halo: boolean,
+  elapsedSeconds: number,
+  breathAmplitude: number,
 ) {
   nodes.forEach((node, index) => {
     const offset = index * 3;
     const stateScale = 1 + node.hovered * 0.22 + node.selected * 0.36;
+    const breathScale =
+      1 +
+      Math.sin(elapsedSeconds * 0.82 + index * 1.91) *
+        breathAmplitude *
+        node.visible;
     scratch.position.set(
       positions[offset],
       positions[offset + 1],
       positions[offset + 2],
     );
-    scratch.scale.setScalar(node.scale * stateScale * (halo ? 2.15 : 1));
+    scratch.scale.setScalar(
+      node.scale * stateScale * breathScale * (halo ? 2.15 : 1),
+    );
     scratch.updateMatrix();
     mesh.setMatrixAt(index, scratch.matrix);
   });
@@ -1522,6 +1738,10 @@ function createEdgeMaterial(): THREE.ShaderMaterial {
     depthWrite: false,
     fragmentShader: edgeFragmentShader,
     transparent: true,
+    uniforms: {
+      uShimmerAmplitude: { value: 0 },
+      uTime: { value: 0 },
+    },
     vertexShader: edgeVertexShader,
   });
 }
@@ -1531,6 +1751,9 @@ attribute float edgeOpacity;
 attribute float edgeTypeBand;
 attribute float edgeSelected;
 attribute float edgeVisibility;
+
+uniform float uShimmerAmplitude;
+uniform float uTime;
 
 varying float vOpacity;
 varying vec3 vColor;
@@ -1546,7 +1769,8 @@ void main() {
   vColor = mix(vColor, bridge, step(1.5, edgeTypeBand) * 0.34);
   vColor = mix(vColor, distant, step(2.5, edgeTypeBand) * 0.24);
   vColor = mix(vColor, vec3(0.96, 0.94, 0.88), edgeSelected * 0.32);
-  vOpacity = edgeOpacity * edgeVisibility;
+  float shimmer = 1.0 + sin(uTime * 0.62 + edgeTypeBand * 1.7) * uShimmerAmplitude;
+  vOpacity = clamp(edgeOpacity * edgeVisibility * shimmer, 0.0, 1.0);
 
   vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mvPosition;

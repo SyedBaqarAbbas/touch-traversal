@@ -23,7 +23,18 @@ The scene now chooses a quality preset from node count, edge count, and optional
 - `medium`: DPR `[1, 1.4]`, cap visible edges at 1200, up to 4 thought labels.
 - `low`: DPR `[1, 1.15]`, cap visible edges at 900, up to 3 thought labels.
 
-This is intentionally a hook, not a premature optimizer. The current small sample stays on `high`; larger artifacts can downgrade DPR, edge visibility, and label density without changing the interaction model.
+The runtime also samples sustained frame time inside the scene and feeds measured FPS back into the same preset chooser. Once a session downgrades, it keeps the lower measured FPS for stability instead of bouncing between presets.
+
+Decorative features are disabled in this order as quality drops:
+
+1. Edge shimmer.
+2. Dust.
+3. Bloom.
+4. Camera drift.
+5. Node breathing.
+6. Vignette, retained as the final low-cost depth cue.
+
+Depth of field and chromatic aberration remain off in all presets. The current small sample stays on `high`; larger artifacts can downgrade DPR, edge visibility, label density, and decorative features without changing the interaction model.
 
 ## Mouse route coverage
 

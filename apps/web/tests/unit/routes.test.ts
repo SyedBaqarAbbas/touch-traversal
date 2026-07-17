@@ -103,6 +103,24 @@ describe("web application contract", () => {
     expect(cameraPanel).toContain("Mouse and keyboard remain available");
   });
 
+  it("wires ambient scene effects without unsupported cinematic artifacts", () => {
+    const graphScene = read("app/_components/graph-scene.tsx");
+    const performanceReport = readRoot("docs/performance-report.md");
+
+    expect(graphScene).toContain("AmbientDustField");
+    expect(graphScene).toContain("SceneFrameBudgetMonitor");
+    expect(graphScene).toContain("ACESFilmicToneMapping");
+    expect(graphScene).toContain("Bloom");
+    expect(graphScene).toContain("Vignette");
+    expect(graphScene).not.toContain("ChromaticAberration");
+    expect(graphScene).not.toContain("DepthOfField");
+
+    expect(performanceReport).toContain("Decorative features are disabled");
+    expect(performanceReport).toContain(
+      "Depth of field and chromatic aberration remain off",
+    );
+  });
+
   it("documents mouse-route performance measurements", () => {
     const performanceReport = readRoot("docs/performance-report.md");
 

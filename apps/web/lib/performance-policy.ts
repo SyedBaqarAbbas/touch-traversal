@@ -17,6 +17,33 @@ export type SceneQualityNotice = {
   title: string;
 };
 
+export type SceneDecorationPreset = {
+  bloom: {
+    enabled: boolean;
+    intensity: number;
+  };
+  cameraDriftAmplitude: number;
+  chromaticAberration: false;
+  depthOfField: false;
+  dustCount: number;
+  edgeShimmerAmplitude: number;
+  name: SceneQuality["name"];
+  nodeBreathAmplitude: number;
+  vignette: {
+    darkness: number;
+    enabled: boolean;
+  };
+};
+
+export const decorativeDowngradeOrder = [
+  "edge shimmer",
+  "dust",
+  "bloom",
+  "camera drift",
+  "node breathing",
+  "vignette",
+] as const;
+
 export const scenePerformanceScenarios: ScenePerformanceScenario[] = [
   { id: "overview-100-400", mode: "overview", nodeCount: 100, edgeCount: 400 },
   { id: "focus-100-400", mode: "focus", nodeCount: 100, edgeCount: 400 },
@@ -82,6 +109,49 @@ export function sceneQualityNotice(
         : "Medium-performance guard is active: decorative density is trimmed while traversal remains available.",
     title: `${quality.name} quality`,
   };
+}
+
+export function sceneDecorationPreset(
+  quality: SceneQuality,
+): SceneDecorationPreset {
+  switch (quality.name) {
+    case "high":
+      return {
+        bloom: { enabled: true, intensity: 0.18 },
+        cameraDriftAmplitude: 0.026,
+        chromaticAberration: false,
+        depthOfField: false,
+        dustCount: 72,
+        edgeShimmerAmplitude: 0.075,
+        name: "high",
+        nodeBreathAmplitude: 0.012,
+        vignette: { darkness: 0.34, enabled: true },
+      };
+    case "medium":
+      return {
+        bloom: { enabled: true, intensity: 0.11 },
+        cameraDriftAmplitude: 0.014,
+        chromaticAberration: false,
+        depthOfField: false,
+        dustCount: 32,
+        edgeShimmerAmplitude: 0,
+        name: "medium",
+        nodeBreathAmplitude: 0.008,
+        vignette: { darkness: 0.3, enabled: true },
+      };
+    case "low":
+      return {
+        bloom: { enabled: false, intensity: 0 },
+        cameraDriftAmplitude: 0,
+        chromaticAberration: false,
+        depthOfField: false,
+        dustCount: 0,
+        edgeShimmerAmplitude: 0,
+        name: "low",
+        nodeBreathAmplitude: 0,
+        vignette: { darkness: 0.24, enabled: true },
+      };
+  }
 }
 
 export function limitVisibleItems<T extends { id: string; visible: number }>(

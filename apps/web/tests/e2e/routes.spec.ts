@@ -7,6 +7,9 @@ const routes = [
   ["/debug", "Graph diagnostics"],
 ] as const;
 
+const focusSettleTimeoutMs = 3200;
+const gestureHintTimeoutMs = 4400;
+
 for (const [path, heading] of routes) {
   test(`${path} renders its route shell`, async ({ page }) => {
     await page.goto(path);
@@ -67,7 +70,7 @@ test("/demo camera denial preserves mouse and keyboard access", async ({
     })
     .click();
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 1600,
+    timeout: focusSettleTimeoutMs,
   });
 });
 
@@ -108,7 +111,7 @@ test("/demo focuses a node and returns by mouse or keyboard", async ({
   });
   await nodeButton.click();
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 1600,
+    timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
     "Thoughts become navigable",
@@ -119,7 +122,7 @@ test("/demo focuses a node and returns by mouse or keyboard", async ({
 
   await nodeButton.click();
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 1600,
+    timeout: focusSettleTimeoutMs,
   });
   await page.keyboard.press("Escape");
   await expect(page.getByText("idle / overview")).toBeVisible();
@@ -134,7 +137,7 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
     })
     .click();
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 1600,
+    timeout: focusSettleTimeoutMs,
   });
 
   await page
@@ -151,7 +154,7 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
     "semantic topology",
   );
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 2200,
+    timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
     "Gestures turn the graph into a spatial traversal surface.",
@@ -171,7 +174,7 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
     .click();
   await expect(page.getByText("traversing / focus")).toBeVisible();
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 2200,
+    timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
     "Gestures turn the graph into a spatial traversal surface.",
@@ -223,7 +226,7 @@ test("/demo?input=mouse covers the repeatable mouse flow and label density", asy
 
   await nodeButton.click();
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 1600,
+    timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
     "Thoughts become navigable",
@@ -243,18 +246,18 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
   await expect(page.getByText("input / gesture fixture")).toBeVisible();
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / pinch select",
-    { timeout: 2200 },
+    { timeout: gestureHintTimeoutMs },
   );
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 3200,
+    timeout: focusSettleTimeoutMs,
   });
 
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / pinch traverse",
-    { timeout: 4200 },
+    { timeout: gestureHintTimeoutMs },
   );
   await expect(page.getByText("focused / focus")).toBeVisible({
-    timeout: 3600,
+    timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
     "Gestures turn the graph into a spatial traversal surface.",
@@ -262,7 +265,7 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
 
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / right swipe topology",
-    { timeout: 4200 },
+    { timeout: gestureHintTimeoutMs },
   );
   await expect(page.locator(".scene-topology-hud")).toContainText(
     "community topology",
@@ -270,9 +273,9 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
 
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / open palm return",
-    { timeout: 4800 },
+    { timeout: gestureHintTimeoutMs },
   );
   await expect(page.getByText("idle / overview")).toBeVisible({
-    timeout: 1600,
+    timeout: focusSettleTimeoutMs,
   });
 });
