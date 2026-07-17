@@ -25,6 +25,7 @@ from touch_traversal.ingestion import (
     inspect_documents,
     load_corpus,
 )
+from touch_traversal.layouts import LayoutError, generate_layouts
 from touch_traversal.models import GraphArtifact, GraphManifest, LayoutArtifact, PipelineReport
 from touch_traversal.relations import generate_nonsemantic_relations
 
@@ -135,11 +136,19 @@ def _run_build(args: argparse.Namespace) -> int:
         config.pruning,
         config.clustering,
     )
+    generate_layouts(
+        chunks,
+        documents,
+        embedding_batch,
+        graph,
+        config.layouts,
+    )
     print(
-        f"error: retained {len(graph.edges)} weighted edges across "
+        f"error: generated four deterministic layouts for {len(chunks)} thought chunks and "
+        f"retained {len(graph.edges)} weighted edges across "
         f"{len(graph.communities)} communities from {len(chunks)} thought chunks "
         f"(average degree {graph.average_degree:.2f}, {len(graph.isolated_node_ids)} isolated) "
-        f"with {embedding_batch.model_name}, but deterministic layouts require THO-25.",
+        f"with {embedding_batch.model_name}, but validated artifact export requires THO-26.",
         file=sys.stderr,
     )
     return _NOT_IMPLEMENTED_EXIT_CODE
@@ -213,6 +222,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         DocumentIngestionError,
         EmbeddingError,
         GraphAssemblyError,
+        LayoutError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)
         return _INVALID_INPUT_EXIT_CODE

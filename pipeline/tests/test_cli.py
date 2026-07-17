@@ -102,6 +102,7 @@ class CliTests(unittest.TestCase):
         )
         with (
             patch("touch_traversal.cli.run_semantic_pipeline", return_value=semantic_result),
+            patch("touch_traversal.cli.generate_layouts", return_value=object()),
             contextlib.redirect_stderr(stderr),
         ):
             exit_code = main(
@@ -115,10 +116,11 @@ class CliTests(unittest.TestCase):
             )
 
         self.assertEqual(exit_code, 3)
+        self.assertIn("generated four deterministic layouts", stderr.getvalue())
         self.assertIn("weighted edges across", stderr.getvalue())
         self.assertIn("communities from 16 thought chunks", stderr.getvalue())
         self.assertIn("average degree", stderr.getvalue())
-        self.assertIn("THO-25", stderr.getvalue())
+        self.assertIn("THO-26", stderr.getvalue())
 
     def test_inspect_reports_the_sample_corpus_without_note_text(self) -> None:
         stdout = io.StringIO()
