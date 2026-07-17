@@ -24,6 +24,7 @@ from touch_traversal.ingestion import (
     load_corpus,
 )
 from touch_traversal.models import GraphArtifact, GraphManifest, LayoutArtifact, PipelineReport
+from touch_traversal.relations import generate_nonsemantic_relations
 
 _INVALID_INPUT_EXIT_CODE = 2
 _NOT_IMPLEMENTED_EXIT_CODE = 3
@@ -119,9 +120,10 @@ def _run_build(args: argparse.Namespace) -> int:
         raise CommandInputError(f"output path must be a directory: {output_path}")
     config, documents = _load_source_request(input_path, config_path)
     chunks = chunk_corpus(documents, config.chunking)
+    relations = generate_nonsemantic_relations(documents, chunks)
     print(
-        f"error: generated {len(chunks)} thought chunks from {len(documents)} source documents, "
-        "but relationship generation requires THO-22.",
+        f"error: generated {len(relations)} non-semantic relation candidates across "
+        f"{len(chunks)} thought chunks, but local embeddings require THO-23.",
         file=sys.stderr,
     )
     return _NOT_IMPLEMENTED_EXIT_CODE
