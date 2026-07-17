@@ -50,6 +50,7 @@ import {
   buildSceneThoughtLabels,
   cameraModes,
   getCameraPose,
+  rankTraversableNeighbors,
   type CameraMode,
   type SceneEdge,
   type SceneNode,
@@ -135,6 +136,15 @@ export function GraphScene({
     selectedNodeId && model.graph.hasNode(selectedNodeId)
       ? model.graph.degree(selectedNodeId)
       : null;
+  const selectedActiveTargetCount = useMemo(
+    () =>
+      selectedNodeId
+        ? rankTraversableNeighbors(model, selectedNodeId).filter(
+            (neighbor) => neighbor.selectable,
+          ).length
+        : null,
+    [model, selectedNodeId],
+  );
   const sceneQuality = useMemo(
     () =>
       chooseSceneQuality({
@@ -492,7 +502,10 @@ export function GraphScene({
           <span>selected thought</span>
           <strong>{selectedThought.title}</strong>
           <p>{selectedThought.summary}</p>
-          <small>{selectedNeighborCount} immediate neighbors</small>
+          <small>
+            {selectedActiveTargetCount} active targets / {selectedNeighborCount}{" "}
+            immediate neighbors
+          </small>
         </aside>
       ) : null}
 
@@ -701,7 +714,9 @@ function ThoughtNodeHitTargets({
 
     nodes.forEach((node, index) => {
       scratch.position.set(...node.position);
-      scratch.scale.setScalar(Math.max(0.11, node.scale * 3.4));
+      scratch.scale.setScalar(
+        node.selectable > 0 && node.visible > 0 ? node.hitRadius : 0.0001,
+      );
       scratch.updateMatrix();
       mesh.setMatrixAt(index, scratch.matrix);
     });
@@ -719,10 +734,10 @@ function ThoughtNodeHitTargets({
       frustumCulled={false}
       onPointerMove={(event) => {
         event.stopPropagation();
+        const node =
+          typeof event.instanceId === "number" ? nodes[event.instanceId] : null;
         const nodeId =
-          typeof event.instanceId === "number"
-            ? nodes[event.instanceId]?.id
-            : null;
+          node && node.selectable > 0 && node.visible > 0 ? node.id : null;
         onPointerCandidate(nodeId ?? null, pointerFromThreeEvent(event));
       }}
       onPointerOut={(event) => {

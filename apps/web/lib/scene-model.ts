@@ -1,5 +1,5 @@
 import type { EdgeType, LayoutName, Vec3 } from "@/lib/artifacts/schema";
-import type { GraphModel } from "@/lib/graph-model";
+import type { GraphModel, ThoughtEdgeAttributes } from "@/lib/graph-model";
 
 export const cameraModes = ["overview", "focus", "inspect"] as const;
 
@@ -21,8 +21,12 @@ export type SceneNode = {
   cluster: number;
   hovered: number;
   selected: number;
+  selectable: number;
   visible: number;
   focusDepth: number;
+  focusRing: FocusRing;
+  hitRadius: number;
+  relationSector: number | null;
 };
 
 export type SceneNodeState = {
@@ -55,6 +59,34 @@ export type SceneThoughtLabel = {
   position: Vec3;
   opacity: number;
 };
+
+export type FocusRing = "overview" | "selected" | "inner" | "outer" | "context";
+
+export type TraversableNeighbor = {
+  nodeId: string;
+  edgeId: string;
+  edgeType: EdgeType;
+  weight: number;
+  confidence: number;
+  evidenceScore: number;
+  relationTypeScore: number;
+  score: number;
+  rank: number;
+  selectable: boolean;
+};
+
+export type TraversableNeighborOptions = {
+  maxActiveTargets?: number;
+  minimumActiveScore?: number;
+};
+
+export const MIN_ACTIVE_FOCUS_TARGETS = 5;
+export const DEFAULT_MAX_ACTIVE_FOCUS_TARGETS = 8;
+export const MAX_ACTIVE_FOCUS_TARGETS = 10;
+export const MIN_TRAVERSABLE_NEIGHBOR_SCORE = 0.42;
+
+const INNER_FOCUS_RING_TARGETS = 4;
+const RELATION_SECTOR_COUNT = 6;
 
 const cameraPoses: Record<CameraMode, CameraPose> = {
   overview: {
@@ -93,18 +125,24 @@ export function buildSceneNodes(
 
   const nodes: SceneNode[] = [];
   model.graph.forEachNode((node, attributes) => {
+    const visible = state.hiddenNodeIds?.has(node) ? 0 : 1;
+    const scale = 0.018 + attributes.thought.visual.size * 0.018;
     nodes.push({
       id: node,
       title: attributes.thought.title,
       position: attributes.layouts[layoutName],
       layoutPosition: attributes.layouts[layoutName],
-      scale: 0.018 + attributes.thought.visual.size * 0.018,
+      scale,
       opacity: attributes.baseOpacity,
       cluster: clusterIndex.get(attributes.clusterId) ?? 0,
       hovered: state.hoverNodeId === node ? 1 : 0,
       selected: state.selectedNodeId === node ? 1 : 0,
-      visible: state.hiddenNodeIds?.has(node) ? 0 : 1,
+      selectable: visible,
+      visible,
       focusDepth: Number.POSITIVE_INFINITY,
+      focusRing: "overview",
+      hitRadius: overviewHitRadius(scale),
+      relationSector: null,
     });
   });
   return nodes;
@@ -120,16 +158,8 @@ export function buildFocusSceneNodes(
     return buildSceneNodes(model, layoutName, state);
   }
 
-  const rankedDepthOne = model.graph
-    .neighbors(selectedNodeId)
-    .map((nodeId) => ({
-      nodeId,
-      weight: strongestEdgeWeight(model, selectedNodeId, nodeId),
-    }))
-    .sort(
-      (left, right) =>
-        right.weight - left.weight || left.nodeId.localeCompare(right.nodeId),
-    );
+  const rankedDepthOne = rankTraversableNeighbors(model, selectedNodeId);
+  const placementsByNodeId = placeFocusNeighbors(rankedDepthOne);
   const depthOneIds = new Set(
     rankedDepthOne.map((neighbor) => neighbor.nodeId),
   );
@@ -152,25 +182,30 @@ export function buildFocusSceneNodes(
         position: [0, 0, 0],
         opacity: 1,
         scale: node.scale * 1.18,
+        selectable: 1,
         selected: 1,
         focusDepth: 0,
+        focusRing: "selected",
+        hitRadius: focusTargetHitRadius(node.scale, "inner"),
+        relationSector: null,
       };
     }
 
-    const depthOneIndex = rankedDepthOne.findIndex(
-      (neighbor) => neighbor.nodeId === node.id,
-    );
-    if (depthOneIndex >= 0) {
+    const placement = placementsByNodeId.get(node.id);
+    if (placement) {
+      const active = placement.neighbor.selectable;
       return {
         ...node,
-        position: ringPosition(
-          depthOneIndex,
-          rankedDepthOne.length,
-          0.48,
-          node.layoutPosition[2],
-        ),
-        opacity: Math.max(node.opacity, 0.72),
-        focusDepth: 1,
+        position: placement.position,
+        opacity: active ? Math.max(node.opacity, 0.72) : 0.26,
+        selectable: active ? 1 : 0,
+        visible: 1,
+        focusDepth: active ? 1 : 2,
+        focusRing: placement.focusRing,
+        hitRadius: active
+          ? focusTargetHitRadius(node.scale, placement.focusRing)
+          : 0,
+        relationSector: edgeTypeBand(placement.neighbor.edgeType),
       };
     }
 
@@ -185,7 +220,11 @@ export function buildFocusSceneNodes(
           node.layoutPosition[2] * 0.55,
         ),
         opacity: Math.min(node.opacity, 0.42),
+        selectable: 0,
         focusDepth: 2,
+        focusRing: "context",
+        hitRadius: 0,
+        relationSector: null,
       };
     }
 
@@ -193,10 +232,57 @@ export function buildFocusSceneNodes(
       ...node,
       position: pushedOutPosition(node.layoutPosition),
       opacity: Math.min(node.opacity, 0.2),
+      selectable: 0,
       visible: 1,
       focusDepth: 3,
+      focusRing: "context",
+      hitRadius: 0,
+      relationSector: null,
     };
   });
+}
+
+export function rankTraversableNeighbors(
+  model: GraphModel,
+  selectedNodeId: string | null,
+  options: TraversableNeighborOptions = {},
+): TraversableNeighbor[] {
+  if (!selectedNodeId || !model.graph.hasNode(selectedNodeId)) {
+    return [];
+  }
+
+  const maxActiveTargets = normalizeActiveTargetLimit(options.maxActiveTargets);
+  const minimumActiveScore =
+    options.minimumActiveScore ?? MIN_TRAVERSABLE_NEIGHBOR_SCORE;
+
+  const ranked = model.graph
+    .neighbors(selectedNodeId)
+    .flatMap((nodeId) => {
+      const relation = strongestNeighborRelation(model, selectedNodeId, nodeId);
+      if (!relation) {
+        return [];
+      }
+      return [
+        {
+          ...relation,
+          nodeId,
+        },
+      ];
+    })
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        right.weight - left.weight ||
+        right.confidence - left.confidence ||
+        left.nodeId.localeCompare(right.nodeId),
+    );
+
+  return ranked.map((neighbor, index) => ({
+    ...neighbor,
+    rank: index + 1,
+    selectable:
+      index < maxActiveTargets && neighbor.score >= minimumActiveScore,
+  }));
 }
 
 export function buildSceneEdges(
@@ -206,17 +292,42 @@ export function buildSceneEdges(
   positionsByNodeId: ReadonlyMap<string, Vec3> | null = null,
 ): SceneEdge[] {
   const edges: SceneEdge[] = [];
+  const focusNeighbors =
+    state.selectedNodeId && model.graph.hasNode(state.selectedNodeId)
+      ? new Map(
+          rankTraversableNeighbors(model, state.selectedNodeId).map(
+            (neighbor) => [neighbor.nodeId, neighbor],
+          ),
+        )
+      : null;
   model.graph.forEachEdge(
     (edge, attributes, source, target, sourceAttributes, targetAttributes) => {
       const sourceSelected = source === state.selectedNodeId;
       const targetSelected = target === state.selectedNodeId;
       const sourceHovered = source === state.hoverNodeId;
       const targetHovered = target === state.hoverNodeId;
-      const selected = sourceSelected || targetSelected;
+      const selectedNeighborId = sourceSelected
+        ? target
+        : targetSelected
+          ? source
+          : null;
+      const focusNeighbor = selectedNeighborId
+        ? focusNeighbors?.get(selectedNeighborId)
+        : null;
+      const contextNeighbor =
+        focusNeighbor != null && focusNeighbor.selectable === false;
+      const selected =
+        focusNeighbor != null
+          ? focusNeighbor.selectable
+          : sourceSelected || targetSelected;
       const hovered = sourceHovered || targetHovered;
-      const unrelated = Boolean(state.selectedNodeId) && !selected;
+      const unrelated =
+        Boolean(state.selectedNodeId) && !selected && !contextNeighbor;
       const strongEnough =
-        attributes.weight >= 0.5 || attributes.confidence >= 0.7;
+        selected ||
+        contextNeighbor ||
+        attributes.weight >= 0.5 ||
+        attributes.confidence >= 0.7;
       const hidden =
         state.hiddenNodeIds?.has(source) === true ||
         state.hiddenNodeIds?.has(target) === true ||
@@ -233,6 +344,7 @@ export function buildSceneEdges(
           positionsByNodeId?.get(target) ??
           targetAttributes.layouts[layoutName],
         opacity: edgeOpacity(attributes.type, attributes.weight, {
+          context: contextNeighbor,
           hovered,
           selected,
           unrelated,
@@ -271,12 +383,9 @@ export function buildSceneThoughtLabels(
       });
     }
 
-    const neighborIds = [...model.graph.neighbors(selectedNodeId)].sort(
-      (left, right) =>
-        strongestEdgeWeight(model, selectedNodeId, right) -
-          strongestEdgeWeight(model, selectedNodeId, left) ||
-        left.localeCompare(right),
-    );
+    const neighborIds = rankTraversableNeighbors(model, selectedNodeId)
+      .filter((neighbor) => neighbor.selectable)
+      .map((neighbor) => neighbor.nodeId);
 
     for (const neighborId of neighborIds) {
       if (neighborId === state.hoverNodeId) {
@@ -318,21 +427,210 @@ export function buildSceneThoughtLabels(
   return labels;
 }
 
-function strongestEdgeWeight(
+function strongestNeighborRelation(
   model: GraphModel,
   source: string,
   target: string,
-): number {
-  let strongest = 0;
-  model.graph.forEachEdge((_edge, attributes, edgeSource, edgeTarget) => {
+): Omit<TraversableNeighbor, "nodeId" | "rank" | "selectable"> | null {
+  let strongest: Omit<
+    TraversableNeighbor,
+    "nodeId" | "rank" | "selectable"
+  > | null = null;
+  model.graph.forEachEdge((edge, attributes, edgeSource, edgeTarget) => {
     if (
       (edgeSource === source && edgeTarget === target) ||
       (edgeSource === target && edgeTarget === source)
     ) {
-      strongest = Math.max(strongest, attributes.weight);
+      const evidenceScore = edgeEvidenceScore(attributes.relation);
+      const relationTypeScore = edgeRelationTypeScore(attributes.type);
+      const score = neighborScore({
+        confidence: attributes.confidence,
+        evidenceScore,
+        relationTypeScore,
+        weight: attributes.weight,
+      });
+      if (!strongest || score > strongest.score) {
+        strongest = {
+          confidence: attributes.confidence,
+          edgeId: edge,
+          edgeType: attributes.type,
+          evidenceScore,
+          relationTypeScore,
+          score,
+          weight: attributes.weight,
+        };
+      }
     }
   });
   return strongest;
+}
+
+type FocusNeighborPlacement = {
+  focusRing: FocusRing;
+  neighbor: TraversableNeighbor;
+  position: Vec3;
+};
+
+function placeFocusNeighbors(
+  neighbors: readonly TraversableNeighbor[],
+): Map<string, FocusNeighborPlacement> {
+  const placements = new Map<string, FocusNeighborPlacement>();
+  const activeNeighbors = neighbors.filter((neighbor) => neighbor.selectable);
+  const innerCount = Math.min(
+    INNER_FOCUS_RING_TARGETS,
+    Math.ceil(activeNeighbors.length * 0.5),
+  );
+  const ringByNodeId = new Map<string, FocusRing>();
+
+  activeNeighbors.forEach((neighbor, index) => {
+    ringByNodeId.set(neighbor.nodeId, index < innerCount ? "inner" : "outer");
+  });
+  for (const neighbor of neighbors) {
+    if (!neighbor.selectable) {
+      ringByNodeId.set(neighbor.nodeId, "context");
+    }
+  }
+
+  const totalsByRingAndType = countRingAndType(neighbors, ringByNodeId);
+  const indexesByRingAndType = new Map<string, number>();
+  for (const neighbor of neighbors) {
+    const focusRing = ringByNodeId.get(neighbor.nodeId);
+    if (!focusRing) {
+      continue;
+    }
+    const key = ringTypeKey(focusRing, neighbor.edgeType);
+    const index = indexesByRingAndType.get(key) ?? 0;
+    const count = totalsByRingAndType.get(key) ?? 1;
+    indexesByRingAndType.set(key, index + 1);
+    placements.set(neighbor.nodeId, {
+      focusRing,
+      neighbor,
+      position: relationSectorPosition(
+        neighbor.edgeType,
+        index,
+        count,
+        focusRingRadius(focusRing),
+      ),
+    });
+  }
+
+  return placements;
+}
+
+function countRingAndType(
+  neighbors: readonly TraversableNeighbor[],
+  ringByNodeId: ReadonlyMap<string, FocusRing>,
+): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const neighbor of neighbors) {
+    const ring = ringByNodeId.get(neighbor.nodeId);
+    if (!ring) {
+      continue;
+    }
+    const key = ringTypeKey(ring, neighbor.edgeType);
+    totals.set(key, (totals.get(key) ?? 0) + 1);
+  }
+  return totals;
+}
+
+function ringTypeKey(ring: FocusRing, type: EdgeType): string {
+  return `${ring}:${type}`;
+}
+
+function relationSectorPosition(
+  type: EdgeType,
+  index: number,
+  count: number,
+  radius: number,
+): Vec3 {
+  const sector = edgeTypeBand(type);
+  const sectorWidth = (Math.PI * 2) / RELATION_SECTOR_COUNT;
+  const sectorCenter = -Math.PI / 2 + sector * sectorWidth;
+  const spread = sectorWidth * 0.52;
+  const offset = count <= 1 ? 0 : (index / (count - 1) - 0.5) * spread;
+  const angle = sectorCenter + offset;
+  return [Math.cos(angle) * radius, Math.sin(angle) * radius, 0.02 * sector];
+}
+
+function focusRingRadius(ring: FocusRing): number {
+  if (ring === "inner") {
+    return 0.46;
+  }
+  if (ring === "outer") {
+    return 0.72;
+  }
+  return 0.96;
+}
+
+function overviewHitRadius(scale: number): number {
+  return Math.max(0.11, scale * 3.4);
+}
+
+function focusTargetHitRadius(scale: number, ring: FocusRing): number {
+  const multiplier = ring === "inner" ? 4.9 : 4.4;
+  return Math.max(ring === "inner" ? 0.16 : 0.145, scale * multiplier);
+}
+
+function normalizeActiveTargetLimit(value: number | undefined): number {
+  if (value == null || !Number.isFinite(value)) {
+    return DEFAULT_MAX_ACTIVE_FOCUS_TARGETS;
+  }
+  return Math.min(
+    MAX_ACTIVE_FOCUS_TARGETS,
+    Math.max(MIN_ACTIVE_FOCUS_TARGETS, Math.floor(value)),
+  );
+}
+
+function neighborScore(input: {
+  weight: number;
+  confidence: number;
+  evidenceScore: number;
+  relationTypeScore: number;
+}): number {
+  return clamp(
+    input.weight * 0.45 +
+      input.confidence * 0.25 +
+      input.evidenceScore * 0.2 +
+      input.relationTypeScore * 0.1,
+    0,
+    1,
+  );
+}
+
+function edgeEvidenceScore(
+  relation: ThoughtEdgeAttributes["relation"],
+): number {
+  const evidence = relation.evidence;
+  const descriptionScore = evidence.description.trim().length > 0 ? 0.12 : 0;
+  const termScore = Math.min(0.3, evidence.sharedTerms.length * 0.075);
+  const entityScore = Math.min(0.28, evidence.sharedEntities.length * 0.1);
+  const similarityScore =
+    typeof evidence.similarity === "number" ? evidence.similarity * 0.22 : 0;
+  const temporalScore =
+    typeof evidence.timeDistanceDays === "number"
+      ? Math.max(0, 1 - Math.min(evidence.timeDistanceDays, 30) / 30) * 0.16
+      : 0;
+  return clamp(
+    descriptionScore +
+      termScore +
+      entityScore +
+      similarityScore +
+      temporalScore,
+    0,
+    1,
+  );
+}
+
+function edgeRelationTypeScore(type: EdgeType): number {
+  const values: Record<EdgeType, number> = {
+    manual: 1,
+    explicit: 0.95,
+    semantic: 0.78,
+    entity: 0.68,
+    temporal: 0.54,
+    structural: 0.35,
+  };
+  return values[type];
 }
 
 function ringPosition(
@@ -358,7 +656,12 @@ function pushedOutPosition(position: Vec3): Vec3 {
 function edgeOpacity(
   type: EdgeType,
   weight: number,
-  state: { hovered: boolean; selected: boolean; unrelated: boolean },
+  state: {
+    context: boolean;
+    hovered: boolean;
+    selected: boolean;
+    unrelated: boolean;
+  },
 ): number {
   const base = clamp(edgeTypeBaseOpacity(type) + weight * 0.06, 0.04, 0.2);
   if (state.selected) {
@@ -366,6 +669,9 @@ function edgeOpacity(
   }
   if (state.hovered) {
     return clamp(0.28 + weight * 0.18, 0.28, 0.5);
+  }
+  if (state.context) {
+    return clamp(0.1 + weight * 0.18, 0.1, 0.28);
   }
   if (state.unrelated) {
     return clamp(base * 0.18, 0.01, 0.04);
