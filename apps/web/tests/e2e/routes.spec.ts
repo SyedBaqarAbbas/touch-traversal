@@ -234,3 +234,45 @@ test("/demo?input=mouse covers the repeatable mouse flow and label density", asy
   await expect(page.getByText("idle / overview")).toBeVisible();
   await expect(page.locator(".scene-thought-label")).toHaveCount(0);
 });
+
+test("/demo?input=gesture-fixture routes injected hand gestures", async ({
+  page,
+}) => {
+  await page.goto("/demo?input=gesture-fixture");
+
+  await expect(page.getByText("input / gesture fixture")).toBeVisible();
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "gesture / pinch select",
+    { timeout: 2200 },
+  );
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 3200,
+  });
+
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "gesture / pinch traverse",
+    { timeout: 4200 },
+  );
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 3600,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Gestures turn the graph into a spatial traversal surface.",
+  );
+
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "gesture / right swipe topology",
+    { timeout: 4200 },
+  );
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "community topology",
+  );
+
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "gesture / open palm return",
+    { timeout: 4800 },
+  );
+  await expect(page.getByText("idle / overview")).toBeVisible({
+    timeout: 1600,
+  });
+});

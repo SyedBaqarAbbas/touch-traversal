@@ -723,6 +723,7 @@ a {
 .scene-traversal-status,
 .scene-pointer-cue,
 .hand-gesture-cursor,
+.scene-gesture-hint,
 .camera-access-panel,
 .scene-nav {
   position: relative;
@@ -1324,6 +1325,25 @@ a {
   font-size: 0.78rem;
   font-weight: 400;
   line-height: 1.35;
+}
+
+.scene-gesture-hint {
+  position: absolute;
+  right: clamp(1.25rem, 3vw, 2.75rem);
+  bottom: clamp(8.9rem, 18vh, 12rem);
+  width: fit-content;
+  max-width: min(20rem, calc(100vw - 2.5rem));
+  padding: 0.42rem 0.58rem;
+  border: 1px solid rgba(242, 240, 234, 0.18);
+  color: var(--primary-text);
+  background: rgba(5, 5, 5, 0.62);
+  backdrop-filter: blur(12px);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  pointer-events: none;
+  text-transform: lowercase;
 }
 
 .scene-preview-card {

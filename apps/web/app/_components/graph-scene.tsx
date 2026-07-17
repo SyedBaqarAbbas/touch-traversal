@@ -121,7 +121,19 @@ type GraphSceneAction =
   | { type: "RESTORE_FOCUS"; nodeId: string; timestampMs: number }
   | { type: "RETURN_OVERVIEW"; timestampMs: number };
 
-export type GraphInputMode = "default" | "mouse";
+export type GraphInputMode = "default" | "gesture-fixture" | "mouse";
+
+type GestureHint = {
+  label: string;
+  visibleUntilMs: number;
+};
+
+type GestureActionRefs = {
+  returnOverview: (timestampMs: number) => void;
+  selectNode: (nodeId: string, timestampMs: number) => void;
+  showGestureHint: (label: string, timestampMs?: number) => void;
+  switchTopology: (nextLayoutName: LayoutName) => void;
+};
 
 export function GraphScene({
   inputMode = "default",
@@ -142,6 +154,9 @@ export function GraphScene({
   const [traversalHistory, setTraversalHistory] = useState<
     TraversalHistoryEntry[]
   >([]);
+  const [gestureHint, setGestureHint] = useState<GestureHint | null>(null);
+  const gestureActionsRef = useRef<GestureActionRefs | null>(null);
+  const gestureFixtureStartedRef = useRef(false);
   const cameraMode = cameraModeForInteraction(interaction);
   const activeTopology = topologyModesByLayout[layoutName];
   const canSwitchTopology =
@@ -457,6 +472,86 @@ export function GraphScene({
     setLayoutName(nextLayoutName);
   };
 
+  const showGestureHint = (label: string, timestampMs = performance.now()) => {
+    const visibleUntilMs = timestampMs + 2200;
+    setGestureHint({ label, visibleUntilMs });
+    window.setTimeout(() => {
+      setGestureHint((current) =>
+        current?.visibleUntilMs === visibleUntilMs ? null : current,
+      );
+    }, 2250);
+  };
+
+  useEffect(() => {
+    gestureActionsRef.current = {
+      returnOverview,
+      selectNode,
+      showGestureHint,
+      switchTopology,
+    };
+  });
+
+  useEffect(() => {
+    if (inputMode !== "gesture-fixture") {
+      gestureFixtureStartedRef.current = false;
+      return;
+    }
+    if (gestureFixtureStartedRef.current) {
+      return;
+    }
+
+    const firstNodeId =
+      nodeSummaries.find((node) => node.title === "Distributed note topology")
+        ?.id ??
+      nodeSummaries[1]?.id ??
+      nodeSummaries[0]?.id;
+    const traversalNodeId =
+      nodeSummaries.find((node) => node.title === "Gesture traversal")?.id ??
+      nodeSummaries[2]?.id ??
+      firstNodeId;
+    if (!firstNodeId || !traversalNodeId) {
+      return;
+    }
+
+    gestureFixtureStartedRef.current = true;
+    const timers = [
+      window.setTimeout(() => {
+        const timestampMs = performance.now();
+        gestureActionsRef.current?.showGestureHint(
+          "gesture / pinch select",
+          timestampMs,
+        );
+        gestureActionsRef.current?.selectNode(firstNodeId, timestampMs);
+      }, 500),
+      window.setTimeout(() => {
+        const timestampMs = performance.now();
+        gestureActionsRef.current?.showGestureHint(
+          "gesture / pinch traverse",
+          timestampMs,
+        );
+        gestureActionsRef.current?.selectNode(traversalNodeId, timestampMs);
+      }, 2800),
+      window.setTimeout(() => {
+        gestureActionsRef.current?.showGestureHint(
+          "gesture / right swipe topology",
+        );
+        gestureActionsRef.current?.switchTopology("clusters");
+      }, 5400),
+      window.setTimeout(() => {
+        const timestampMs = performance.now();
+        gestureActionsRef.current?.showGestureHint(
+          "gesture / open palm return",
+          timestampMs,
+        );
+        gestureActionsRef.current?.returnOverview(timestampMs);
+      }, 8200),
+    ];
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      gestureFixtureStartedRef.current = false;
+    };
+  }, [inputMode, nodeSummaries]);
+
   return (
     <main className="scene-shell">
       <Canvas
@@ -553,8 +648,10 @@ export function GraphScene({
       <section className="scene-overlay" aria-labelledby="scene-title">
         <p className="eyebrow">demo</p>
         <h1 id="scene-title">Graph artifact boundary</h1>
-        {inputMode === "mouse" ? (
-          <p className="scene-input-mode">input / mouse</p>
+        {inputMode !== "default" ? (
+          <p className="scene-input-mode">
+            input / {inputMode === "mouse" ? "mouse" : "gesture fixture"}
+          </p>
         ) : null}
         <p className="description">
           {model.graph.order} thoughts and {model.graph.size} relationships
@@ -661,6 +758,12 @@ export function GraphScene({
             {Math.round(activeTraversal.durationMs)}ms path /{" "}
             {Math.round(activeTraversal.cameraLagMs)}ms camera lag
           </small>
+        </aside>
+      ) : null}
+
+      {gestureHint ? (
+        <aside className="scene-gesture-hint" aria-live="polite">
+          {gestureHint.label}
         </aside>
       ) : null}
 

@@ -116,9 +116,14 @@ function useInputMode(): GraphInputMode {
     getLocationSearch,
     getServerLocationSearch,
   );
-  return new URLSearchParams(search).get("input") === "mouse"
-    ? "mouse"
-    : "default";
+  const input = new URLSearchParams(search).get("input");
+  if (input === "mouse") {
+    return "mouse";
+  }
+  if (input === "gesture-fixture") {
+    return "gesture-fixture";
+  }
+  return "default";
 }
 
 function subscribeToLocationSearch(onChange: () => void) {
