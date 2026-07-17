@@ -266,6 +266,133 @@ a {
   white-space: pre-wrap;
 }
 
+.artifact-shell {
+  display: grid;
+  min-height: 100svh;
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+}
+
+.artifact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.artifact-hero {
+  max-width: 46rem;
+  padding-top: clamp(1rem, 3vw, 3rem);
+}
+
+.artifact-hero h1,
+.artifact-status-screen h1 {
+  max-width: 13ch;
+  margin: 1rem 0 1.2rem;
+  font-size: clamp(2.4rem, 6vw, 5.5rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.96;
+}
+
+.artifact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--subtle-line);
+  border-left: 1px solid var(--subtle-line);
+}
+
+.artifact-grid article {
+  min-height: 8rem;
+  padding: 1rem;
+  border-right: 1px solid var(--subtle-line);
+  border-bottom: 1px solid var(--subtle-line);
+}
+
+.artifact-grid span,
+.artifact-panel h2,
+.artifact-list small {
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.artifact-grid strong {
+  display: block;
+  margin-top: 1.3rem;
+  font-size: clamp(2rem, 5vw, 4.6rem);
+  font-weight: 400;
+  line-height: 0.9;
+}
+
+.artifact-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--subtle-line);
+  border: 1px solid var(--subtle-line);
+}
+
+.artifact-panel {
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  background: var(--surface-black);
+}
+
+.artifact-panel--wide {
+  grid-column: 1 / -1;
+}
+
+.artifact-panel h2 {
+  margin: 0 0 1rem;
+}
+
+.artifact-list {
+  display: grid;
+  gap: 0.95rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.artifact-list li {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.artifact-list span {
+  line-height: 1.35;
+}
+
+.artifact-panel pre {
+  max-height: 22rem;
+  margin: 0;
+  overflow: auto;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.artifact-status-screen {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+}
+
+.artifact-status-screen section {
+  width: min(42rem, 88vw);
+}
+
 .constellation {
   position: absolute;
   top: 18%;
@@ -334,7 +461,9 @@ a {
   }
 
   .debug-grid,
-  .debug-panels {
+  .debug-panels,
+  .artifact-grid,
+  .artifact-panels {
     grid-template-columns: 1fr;
   }
 

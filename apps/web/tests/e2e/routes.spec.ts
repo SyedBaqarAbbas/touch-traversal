@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const routes = [
   ["/", "Explore the topologies of your thoughts."],
-  ["/demo", "The graph will emerge here."],
+  ["/demo", "Graph artifact boundary"],
   ["/calibration", "Camera calibration comes later."],
   ["/debug", "Graph diagnostics"],
 ] as const;

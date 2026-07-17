@@ -16,7 +16,7 @@ describe("web application contract", () => {
 
   it.each([
     ["app/page.tsx", "Explore the topologies of your thoughts."],
-    ["app/demo/page.tsx", "The graph will emerge here."],
+    ["app/_components/artifact-boundary.tsx", "Graph artifact boundary"],
     ["app/calibration/page.tsx", "Camera calibration comes later."],
     ["app/debug/page.tsx", "Graph diagnostics"],
   ])("keeps the route shell at %s", (path, marker) => {
