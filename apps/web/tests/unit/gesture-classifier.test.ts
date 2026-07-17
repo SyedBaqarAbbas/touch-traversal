@@ -104,8 +104,8 @@ describe("gesture classifier primitives", () => {
           sample?.point != null,
       );
 
-    expect(velocityWindow(leftSwipe, 220).x).toBeGreaterThan(0);
-    expect(velocityWindow(rightSwipe, 220).x).toBeLessThan(0);
+    expect(velocityWindow(leftSwipe, 220).x).toBeLessThan(0);
+    expect(velocityWindow(rightSwipe, 220).x).toBeGreaterThan(0);
   });
 
   it("debounces booleans and enforces cooldown windows", () => {
