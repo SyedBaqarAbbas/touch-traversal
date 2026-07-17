@@ -17,6 +17,7 @@ chunking:
 embeddings:
   provider: sentence_transformers
   model: all-MiniLM-L6-v2
+  device: cpu
   batch_size: 32
   normalize: true
   cache_dir: .cache/embeddings

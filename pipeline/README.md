@@ -8,13 +8,15 @@ YAML configuration, and deterministic discovery and parsing for Markdown and
 text corpora. Artifact validation, graph statistics, and corpus inspection are
 available now, along with deterministic thought chunking, stable source
 provenance, and explainable explicit, structural, temporal, and entity relation
-candidates. Local semantic relations and graph construction are implemented in
-the next Milestone 1 steps.
+candidates. A provider-based local Sentence Transformers path adds cached,
+normalized semantic neighbors without a paid API. Graph combination and pruning
+are implemented in the next Milestone 1 step.
 
 ## Local commands
 
 ```bash
-uv sync
+uv sync --all-groups
+uv sync --extra embeddings --all-groups  # required for graph builds
 uv run touch-traversal --help
 uv run touch-traversal inspect --input ../sample-notes
 uv run touch-traversal validate --graph path/to/graph.json
@@ -23,5 +25,8 @@ uv run pytest
 ```
 
 The default pipeline settings live in `config/default.yaml`. The `build`
-command parses and chunks the configured corpus, generates non-semantic relation
-candidates, then reports that local embeddings are the next required step.
+command parses and chunks the configured corpus, generates non-semantic and
+semantic relation candidates, then reports that graph combination and pruning
+are the next required step. Embeddings are cached under `.cache/embeddings/` by
+model name and exact text hash; the first real build downloads the configured
+model, while later builds reuse local vectors.

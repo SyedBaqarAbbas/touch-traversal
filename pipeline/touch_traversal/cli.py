@@ -18,6 +18,7 @@ from touch_traversal.artifacts import (
 from touch_traversal.chunking import chunk_corpus
 from touch_traversal.config import ConfigurationError, PipelineConfig, load_config
 from touch_traversal.documents import SourceDocument
+from touch_traversal.embeddings import EmbeddingError, run_semantic_pipeline
 from touch_traversal.ingestion import (
     DocumentIngestionError,
     inspect_documents,
@@ -121,9 +122,16 @@ def _run_build(args: argparse.Namespace) -> int:
     config, documents = _load_source_request(input_path, config_path)
     chunks = chunk_corpus(documents, config.chunking)
     relations = generate_nonsemantic_relations(documents, chunks)
+    embedding_batch, semantic_relations = run_semantic_pipeline(
+        chunks,
+        config.embeddings,
+        config.semantic,
+    )
     print(
-        f"error: generated {len(relations)} non-semantic relation candidates across "
-        f"{len(chunks)} thought chunks, but local embeddings require THO-23.",
+        f"error: generated {len(relations) + len(semantic_relations)} relation candidates "
+        f"({len(relations)} non-semantic, {len(semantic_relations)} semantic) across "
+        f"{len(chunks)} thought chunks with {embedding_batch.model_name}, but graph combination "
+        "and pruning require THO-24.",
         file=sys.stderr,
     )
     return _NOT_IMPLEMENTED_EXIT_CODE
@@ -195,6 +203,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         CommandInputError,
         ConfigurationError,
         DocumentIngestionError,
+        EmbeddingError,
     ) as error:
         print(f"error: {error}", file=sys.stderr)
         return _INVALID_INPUT_EXIT_CODE

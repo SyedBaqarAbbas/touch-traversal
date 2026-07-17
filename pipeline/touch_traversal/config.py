@@ -41,6 +41,7 @@ class ChunkingConfig(ConfigModel):
 class EmbeddingConfig(ConfigModel):
     provider: Literal["sentence_transformers"]
     model: str = Field(min_length=1)
+    device: str = Field(min_length=1)
     batch_size: int = Field(ge=1)
     normalize: bool = True
     cache_dir: Path

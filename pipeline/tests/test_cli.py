@@ -9,9 +9,11 @@ import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from touch_traversal import __version__
 from touch_traversal.cli import main
+from touch_traversal.embeddings import EmbeddingBatch
 from touch_traversal.models import GraphArtifact
 
 
@@ -86,10 +88,22 @@ class CliTests(unittest.TestCase):
         self.assertEqual(__version__, metadata["project"]["version"])
         self.assertEqual(result.stdout.strip(), f"touch-traversal {__version__}")
 
-    def test_build_generates_relations_before_local_embeddings_are_available(self) -> None:
+    def test_build_generates_semantic_candidates_before_graph_combination(self) -> None:
         stderr = io.StringIO()
 
-        with contextlib.redirect_stderr(stderr):
+        semantic_result = (
+            EmbeddingBatch(
+                model_name="all-MiniLM-L6-v2",
+                records=(),
+                cache_hits=0,
+                cache_misses=0,
+            ),
+            (object(), object()),
+        )
+        with (
+            patch("touch_traversal.cli.run_semantic_pipeline", return_value=semantic_result),
+            contextlib.redirect_stderr(stderr),
+        ):
             exit_code = main(
                 [
                     "build",
@@ -101,9 +115,10 @@ class CliTests(unittest.TestCase):
             )
 
         self.assertEqual(exit_code, 3)
-        self.assertIn("generated 75 non-semantic relation candidates", stderr.getvalue())
+        self.assertIn("generated 77 relation candidates", stderr.getvalue())
+        self.assertIn("75 non-semantic, 2 semantic", stderr.getvalue())
         self.assertIn("across 16 thought chunks", stderr.getvalue())
-        self.assertIn("THO-23", stderr.getvalue())
+        self.assertIn("THO-24", stderr.getvalue())
 
     def test_inspect_reports_the_sample_corpus_without_note_text(self) -> None:
         stdout = io.StringIO()
