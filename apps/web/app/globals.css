@@ -299,6 +299,280 @@ a {
   white-space: pre-wrap;
 }
 
+.calibration-shell {
+  display: grid;
+  min-height: 100svh;
+  grid-template-rows: auto auto 1fr auto;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+}
+
+.hand-calibration-panel {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.hand-calibration-panel__intro {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 42rem;
+}
+
+.hand-calibration-panel__intro h2,
+.hand-calibration-steps h3,
+.hand-calibration-metrics h3 {
+  margin: 0;
+  color: var(--primary-text);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.hand-calibration-panel__intro p:not(.eyebrow),
+.hand-preview-card__privacy,
+.hand-calibration-steps p {
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.hand-calibration-panel__workspace {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.25fr) minmax(15rem, 0.75fr);
+  gap: 1px;
+  border: 1px solid var(--subtle-line);
+  background: var(--subtle-line);
+}
+
+.hand-preview-card,
+.hand-calibration-steps,
+.hand-calibration-metrics {
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.25rem);
+  background: var(--surface-black);
+}
+
+.hand-preview-card {
+  display: grid;
+  grid-row: span 2;
+  gap: 0.85rem;
+}
+
+.hand-preview {
+  position: relative;
+  min-height: clamp(16rem, 35vw, 25rem);
+  overflow: hidden;
+  border: 1px solid rgba(242, 240, 234, 0.12);
+  background:
+    radial-gradient(
+      circle at 50% 34%,
+      rgba(255, 253, 246, 0.08),
+      transparent 14rem
+    ),
+    #030303;
+}
+
+.hand-preview::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(242, 240, 234, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242, 240, 234, 0.08) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  content: "";
+  opacity: 0.18;
+}
+
+.hand-preview__video,
+.hand-preview__skeleton {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hand-preview__video {
+  object-fit: cover;
+  opacity: 0.42;
+  transform: scaleX(-1);
+}
+
+.hand-preview__skeleton {
+  z-index: 1;
+}
+
+.hand-preview__skeleton line {
+  stroke: rgba(242, 240, 234, 0.34);
+  stroke-width: 0.22;
+}
+
+.hand-preview__skeleton circle {
+  fill: var(--selected-core);
+  opacity: 0.74;
+}
+
+.hand-preview__cursor {
+  position: absolute;
+  z-index: 2;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1px solid rgba(255, 253, 246, 0.62);
+  border-radius: 999px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.hand-preview__cursor::after {
+  position: absolute;
+  inset: 50%;
+  width: 0.24rem;
+  height: 0.24rem;
+  border-radius: inherit;
+  background: var(--selected-core);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.hand-preview__label {
+  position: absolute;
+  z-index: 2;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.hand-preview-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hand-preview-card__actions div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.hand-preview-card__actions strong {
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+.hand-preview-card__actions button,
+.hand-calibration-actions button {
+  min-height: 2rem;
+  border: 1px solid rgba(242, 240, 234, 0.16);
+  color: var(--primary-text);
+  background: rgba(5, 5, 5, 0.72);
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.hand-preview-card__actions button {
+  padding: 0 0.72rem;
+  white-space: nowrap;
+}
+
+.hand-preview-card__actions button:hover,
+.hand-preview-card__actions button:focus-visible,
+.hand-calibration-actions button:hover,
+.hand-calibration-actions button:focus-visible {
+  background: rgba(242, 240, 234, 0.08);
+}
+
+.hand-preview-card__privacy code {
+  color: var(--primary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+}
+
+.hand-calibration-steps,
+.hand-calibration-metrics {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.hand-calibration-steps ol {
+  display: grid;
+  gap: 0.68rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hand-calibration-steps li {
+  display: grid;
+  gap: 0.24rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(242, 240, 234, 0.14);
+}
+
+.hand-calibration-steps li[data-step-state="complete"] {
+  border-color: rgba(242, 240, 234, 0.52);
+}
+
+.hand-calibration-steps li[data-step-state="blocked"] {
+  opacity: 0.52;
+}
+
+.hand-calibration-steps span,
+.hand-calibration-metrics dt,
+.hand-calibration-metrics dd {
+  margin: 0;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-transform: lowercase;
+}
+
+.hand-calibration-steps strong {
+  color: var(--primary-text);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.hand-calibration-metrics dl {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.hand-calibration-metrics dl div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hand-calibration-metrics dd {
+  color: var(--primary-text);
+}
+
+.hand-calibration-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid rgba(242, 240, 234, 0.12);
+  background: rgba(242, 240, 234, 0.12);
+}
+
+.hand-calibration-actions button {
+  min-width: 0;
+  padding: 0 0.5rem;
+  border: 0;
+}
+
 .artifact-shell {
   display: grid;
   min-height: 100svh;
@@ -1140,8 +1414,17 @@ a {
 
   .debug-grid,
   .debug-panels,
+  .hand-calibration-panel__workspace,
   .artifact-grid,
   .artifact-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .hand-preview-card {
+    grid-row: auto;
+  }
+
+  .hand-calibration-actions {
     grid-template-columns: 1fr;
   }
 

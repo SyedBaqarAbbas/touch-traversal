@@ -19,7 +19,7 @@ describe("web application contract", () => {
   it.each([
     ["app/page.tsx", "Explore the topologies of your thoughts."],
     ["app/_components/graph-scene.tsx", "Graph artifact boundary"],
-    ["app/calibration/page.tsx", "Camera calibration comes later."],
+    ["app/calibration/page.tsx", "Calibrate hand traversal."],
     ["app/debug/page.tsx", "Graph diagnostics"],
   ])("keeps the route shell at %s", (path, marker) => {
     expect(read(path)).toContain(marker);

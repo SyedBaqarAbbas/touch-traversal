@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { HandCalibrationPanel } from "@/app/_components/hand-calibration-panel";
 import { TraversalHistoryDebugPanel } from "@/app/_components/traversal-history-debug";
 import graph from "@/public/data/graph.json";
 import report from "@/public/data/pipeline-report.json";
@@ -80,6 +81,8 @@ export default function DebugPage() {
           <pre>{JSON.stringify(firstNode, null, 2)}</pre>
         </article>
       </section>
+
+      <HandCalibrationPanel mode="debug" />
 
       <nav className="route-shell__nav" aria-label="Prototype routes">
         {routes.map((route) => (
