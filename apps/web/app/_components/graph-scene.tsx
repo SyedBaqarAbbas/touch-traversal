@@ -3,9 +3,17 @@
 import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useReducer, useRef } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import * as THREE from "three";
 
+import type { LayoutName } from "@/lib/artifacts/schema";
 import {
   cameraModeForInteraction,
   createInteractionState,
@@ -27,6 +35,13 @@ import {
   limitThoughtLabels,
   limitVisibleItems,
 } from "@/lib/performance-policy";
+import {
+  isEditableKeyboardTarget,
+  isTopologyAvailable,
+  topologyLayoutForKey,
+  topologyModes,
+  topologyModesByLayout,
+} from "@/lib/topology-controls";
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
   buildSceneEdges,
@@ -98,7 +113,14 @@ export function GraphScene({
     undefined,
     createGraphSceneState,
   );
+  const [layoutName, setLayoutName] = useState<LayoutName>("semantic");
   const cameraMode = cameraModeForInteraction(interaction);
+  const activeTopology = topologyModesByLayout[layoutName];
+  const canSwitchTopology =
+    interaction.mode !== "FOCUSING" &&
+    interaction.mode !== "TRAVERSING" &&
+    interaction.mode !== "MORPHING" &&
+    interaction.mode !== "CALIBRATING";
   const hoverNodeId = hoverState.hoveredNodeId;
   const previewNodeId = hoverState.previewNodeId;
   const selectedNodeId = interaction.selectedNodeId;
@@ -124,13 +146,13 @@ export function GraphScene({
   const sceneNodes = useMemo(
     () =>
       selectedNodeId
-        ? buildFocusSceneNodes(model, "semantic", selectedNodeId, {
+        ? buildFocusSceneNodes(model, layoutName, selectedNodeId, {
             hoverNodeId,
           })
-        : buildSceneNodes(model, "semantic", {
+        : buildSceneNodes(model, layoutName, {
             hoverNodeId,
           }),
-    [hoverNodeId, model, selectedNodeId],
+    [hoverNodeId, layoutName, model, selectedNodeId],
   );
   const positionsByNodeId = useMemo(
     () => new Map(sceneNodes.map((node) => [node.id, node.position])),
@@ -141,7 +163,7 @@ export function GraphScene({
       limitVisibleItems(
         buildSceneEdges(
           model,
-          "semantic",
+          layoutName,
           {
             hoverNodeId,
             selectedNodeId,
@@ -152,6 +174,7 @@ export function GraphScene({
       ),
     [
       hoverNodeId,
+      layoutName,
       model,
       positionsByNodeId,
       sceneQuality.maxVisibleEdges,
@@ -239,11 +262,26 @@ export function GraphScene({
           type: "RETURN_OVERVIEW",
           timestampMs: event.timeStamp,
         });
+        return;
+      }
+
+      if (isEditableKeyboardTarget(event.target)) {
+        return;
+      }
+
+      const nextLayoutName = topologyLayoutForKey(event);
+      if (
+        nextLayoutName &&
+        canSwitchTopology &&
+        isTopologyAvailable(nextLayoutName, model.temporal.available)
+      ) {
+        event.preventDefault();
+        setLayoutName(nextLayoutName);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [canSwitchTopology, model.temporal.available]);
 
   const selectNode = (nodeId: string, timestampMs: number) => {
     dispatch({
@@ -258,6 +296,16 @@ export function GraphScene({
       type: "RETURN_OVERVIEW",
       timestampMs,
     });
+  };
+
+  const switchTopology = (nextLayoutName: LayoutName) => {
+    if (
+      !canSwitchTopology ||
+      !isTopologyAvailable(nextLayoutName, model.temporal.available)
+    ) {
+      return;
+    }
+    setLayoutName(nextLayoutName);
   };
 
   return (
@@ -293,7 +341,7 @@ export function GraphScene({
 
       <aside className="scene-topology-hud" aria-labelledby="topology-title">
         <p className="eyebrow">Topologies of Thoughts</p>
-        <h2 id="topology-title">semantic topology</h2>
+        <h2 id="topology-title">{activeTopology.title}</h2>
         <div className="scene-topology-glyph" aria-hidden="true">
           <span />
           <span />
@@ -306,7 +354,7 @@ export function GraphScene({
         <dl>
           <div>
             <dt>mode</dt>
-            <dd>distributed</dd>
+            <dd>{activeTopology.label}</dd>
           </div>
           <div>
             <dt>nodes</dt>
@@ -317,6 +365,37 @@ export function GraphScene({
             <dd>typed relationships</dd>
           </div>
         </dl>
+        <div className="scene-topology-controls" aria-label="Topology modes">
+          {topologyModes.map((mode) => {
+            const available = isTopologyAvailable(
+              mode.layoutName,
+              model.temporal.available,
+            );
+            return (
+              <button
+                aria-pressed={layoutName === mode.layoutName}
+                disabled={!available || !canSwitchTopology}
+                key={mode.layoutName}
+                onClick={() => switchTopology(mode.layoutName)}
+                title={
+                  available
+                    ? `${mode.description}; key ${mode.key}`
+                    : (model.temporal.reason ??
+                      "Temporal topology needs dated notes.")
+                }
+                type="button"
+              >
+                <span>{mode.label}</span>
+                <kbd>{mode.key}</kbd>
+              </button>
+            );
+          })}
+        </div>
+        {!model.temporal.available ? (
+          <p className="scene-topology-note">
+            temporal disabled: {model.temporal.reason}
+          </p>
+        ) : null}
       </aside>
 
       <section className="scene-overlay" aria-labelledby="scene-title">
@@ -327,8 +406,8 @@ export function GraphScene({
         ) : null}
         <p className="description">
           {model.graph.order} thoughts and {model.graph.size} relationships
-          rendered as shared-buffer geometry from the semantic layout at{" "}
-          {sceneQuality.name} quality.
+          rendered as shared-buffer geometry from the {activeTopology.label}{" "}
+          layout at {sceneQuality.name} quality.
         </p>
 
         <div className="scene-controls" aria-label="Camera modes">

@@ -58,6 +58,16 @@ describe("web application contract", () => {
     expect(performanceReport).toContain("cap visible edges at 900");
   });
 
+  it("documents topology keyboard controls", () => {
+    const controls = readRoot("docs/interaction-controls.md");
+
+    expect(controls).toContain("| `1` | semantic |");
+    expect(controls).toContain("| `2` | communities |");
+    expect(controls).toContain("| `3` | temporal |");
+    expect(controls).toContain("| `4` | force |");
+    expect(controls).toContain("`Escape`");
+  });
+
   it("exposes development and verification scripts", () => {
     const packageJson = JSON.parse(read("package.json"));
 

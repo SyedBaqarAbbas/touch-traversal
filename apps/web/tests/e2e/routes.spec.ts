@@ -74,6 +74,14 @@ test("/demo?input=mouse covers the repeatable mouse flow and label density", asy
   await expect(page.locator(".scene-topology-hud")).toContainText(
     "semantic topology",
   );
+  await page.keyboard.press("2");
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "community topology",
+  );
+  await page.getByRole("button", { name: /force/ }).click();
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "force topology",
+  );
 
   const nodeButton = page.getByRole("button", {
     name: /Distributed note topology/,

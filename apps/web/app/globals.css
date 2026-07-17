@@ -525,6 +525,61 @@ a {
   color: var(--primary-text);
 }
 
+.scene-topology-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  width: min(12rem, 100%);
+  border: 1px solid var(--subtle-line);
+  background: var(--subtle-line);
+  pointer-events: auto;
+}
+
+.scene-topology-controls button {
+  display: flex;
+  min-height: 1.9rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 0;
+  color: var(--secondary-text);
+  background: rgba(5, 5, 5, 0.76);
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.scene-topology-controls button[aria-pressed="true"],
+.scene-topology-controls button:hover,
+.scene-topology-controls button:focus-visible {
+  color: var(--primary-text);
+  background: rgba(242, 240, 234, 0.08);
+}
+
+.scene-topology-controls button:disabled {
+  color: rgba(166, 163, 155, 0.42);
+  cursor: not-allowed;
+}
+
+.scene-topology-controls kbd {
+  color: var(--secondary-text);
+  font: inherit;
+}
+
+.scene-topology-note {
+  max-width: 13rem;
+  margin: -0.4rem 0 0;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  text-transform: lowercase;
+}
+
 .scene-topology-glyph {
   position: relative;
   width: 6rem;
