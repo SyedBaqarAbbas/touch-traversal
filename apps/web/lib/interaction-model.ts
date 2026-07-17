@@ -71,7 +71,10 @@ export function reduceInteraction(
         startedAtMs: event.timestampMs,
       };
     case "FOCUS_COMPLETE":
-      if (!state.selectedNodeId || state.mode !== "FOCUSING") {
+      if (
+        !state.selectedNodeId ||
+        (state.mode !== "FOCUSING" && state.mode !== "TRAVERSING")
+      ) {
         return state;
       }
       return {

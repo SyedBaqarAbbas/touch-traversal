@@ -13,7 +13,7 @@ import {
 } from "react";
 import * as THREE from "three";
 
-import type { LayoutName } from "@/lib/artifacts/schema";
+import type { LayoutName, Vec3 } from "@/lib/artifacts/schema";
 import {
   cameraModeForInteraction,
   createInteractionState,
@@ -42,6 +42,11 @@ import {
   topologyModes,
   topologyModesByLayout,
 } from "@/lib/topology-controls";
+import {
+  createTraversalChoreography,
+  sampleTraversalChoreography,
+  type TraversalChoreography,
+} from "@/lib/traversal-choreography";
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
   buildSceneEdges,
@@ -82,6 +87,13 @@ type EdgeEndpointMotion = {
   durationMs: number;
 };
 
+type ActiveTraversal = TraversalChoreography & {
+  edgeId: string;
+  sourceNodeId: string;
+  startedAtMs: number;
+  targetNodeId: string;
+};
+
 type GraphSceneState = {
   hoverState: HoverState;
   interaction: InteractionState;
@@ -97,6 +109,7 @@ type GraphSceneAction =
   | { type: "IMMEDIATE_HOVER"; nodeId: string | null; timestampMs: number }
   | { type: "SELECT_NODE"; nodeId: string; timestampMs: number }
   | { type: "FOCUS_COMPLETE"; timestampMs: number }
+  | { type: "START_TRAVERSAL"; nodeId: string; timestampMs: number }
   | { type: "RETURN_OVERVIEW"; timestampMs: number };
 
 export type GraphInputMode = "default" | "mouse";
@@ -115,6 +128,8 @@ export function GraphScene({
     createGraphSceneState,
   );
   const [layoutName, setLayoutName] = useState<LayoutName>("semantic");
+  const [activeTraversal, setActiveTraversal] =
+    useState<ActiveTraversal | null>(null);
   const cameraMode = cameraModeForInteraction(interaction);
   const activeTopology = topologyModesByLayout[layoutName];
   const canSwitchTopology =
@@ -132,6 +147,21 @@ export function GraphScene({
     selectedNodeId && model.graph.hasNode(selectedNodeId)
       ? model.graph.getNodeAttributes(selectedNodeId).thought
       : null;
+  const activeTraversalLabel = useMemo(() => {
+    if (!activeTraversal) {
+      return null;
+    }
+    return {
+      source: model.graph.hasNode(activeTraversal.sourceNodeId)
+        ? model.graph.getNodeAttributes(activeTraversal.sourceNodeId).thought
+            .title
+        : activeTraversal.sourceNodeId,
+      target: model.graph.hasNode(activeTraversal.targetNodeId)
+        ? model.graph.getNodeAttributes(activeTraversal.targetNodeId).thought
+            .title
+        : activeTraversal.targetNodeId,
+    };
+  }, [activeTraversal, model]);
   const selectedNeighborCount =
     selectedNodeId && model.graph.hasNode(selectedNodeId)
       ? model.graph.degree(selectedNodeId)
@@ -268,6 +298,7 @@ export function GraphScene({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        setActiveTraversal(null);
         dispatch({
           type: "RETURN_OVERVIEW",
           timestampMs: event.timeStamp,
@@ -293,7 +324,66 @@ export function GraphScene({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [canSwitchTopology, model.temporal.available]);
 
+  useEffect(() => {
+    if (!activeTraversal || interaction.mode !== "TRAVERSING") {
+      return;
+    }
+
+    const remainingMs = Math.max(
+      0,
+      activeTraversal.startedAtMs +
+        activeTraversal.durationMs -
+        performance.now(),
+    );
+    const timeout = window.setTimeout(() => {
+      setActiveTraversal(null);
+      dispatch({
+        type: "FOCUS_COMPLETE",
+        timestampMs: performance.now(),
+      });
+    }, remainingMs);
+    return () => window.clearTimeout(timeout);
+  }, [activeTraversal, interaction.mode]);
+
+  const startTraversal = (
+    sourceNodeId: string,
+    targetNodeId: string,
+    timestampMs: number,
+  ): boolean => {
+    const neighbor = rankTraversableNeighbors(model, sourceNodeId).find(
+      (candidate) => candidate.nodeId === targetNodeId && candidate.selectable,
+    );
+    const sourcePosition = positionsByNodeId.get(sourceNodeId);
+    const targetPosition = positionsByNodeId.get(targetNodeId);
+    if (!neighbor || !sourcePosition || !targetPosition) {
+      return false;
+    }
+
+    setActiveTraversal({
+      ...createTraversalChoreography(sourcePosition, targetPosition),
+      edgeId: neighbor.edgeId,
+      sourceNodeId,
+      startedAtMs: timestampMs,
+      targetNodeId,
+    });
+    dispatch({
+      type: "START_TRAVERSAL",
+      nodeId: targetNodeId,
+      timestampMs,
+    });
+    return true;
+  };
+
   const selectNode = (nodeId: string, timestampMs: number) => {
+    if (
+      selectedNodeId &&
+      selectedNodeId !== nodeId &&
+      startTraversal(selectedNodeId, nodeId, timestampMs)
+    ) {
+      return;
+    }
+
+    setActiveTraversal(null);
     dispatch({
       type: "SELECT_NODE",
       nodeId,
@@ -302,6 +392,7 @@ export function GraphScene({
   };
 
   const returnOverview = (timestampMs: number) => {
+    setActiveTraversal(null);
     dispatch({
       type: "RETURN_OVERVIEW",
       timestampMs,
@@ -330,8 +421,11 @@ export function GraphScene({
         }}
       >
         <color attach="background" args={["#050505"]} />
-        <CameraRig mode={cameraMode} />
+        <CameraRig mode={cameraMode} traversal={activeTraversal} />
         <RelationshipEdgeInstances edges={sceneEdges} />
+        {activeTraversal ? (
+          <TraversalEdgePulse traversal={activeTraversal} />
+        ) : null}
         <ThoughtNodeInstances halo nodes={sceneNodes} />
         <ThoughtNodeInstances nodes={sceneNodes} />
         <ThoughtNodeHitTargets
@@ -509,6 +603,19 @@ export function GraphScene({
         </aside>
       ) : null}
 
+      {activeTraversal && activeTraversalLabel ? (
+        <aside className="scene-traversal-status" aria-live="polite">
+          <span>traversal edge</span>
+          <strong>
+            {activeTraversalLabel.source} → {activeTraversalLabel.target}
+          </strong>
+          <small>
+            {Math.round(activeTraversal.durationMs)}ms path /{" "}
+            {Math.round(activeTraversal.cameraLagMs)}ms camera lag
+          </small>
+        </aside>
+      ) : null}
+
       <nav className="route-shell__nav scene-nav" aria-label="Prototype routes">
         {routes.map((route) => (
           <Link href={route.href} key={route.href}>
@@ -607,6 +714,15 @@ function reduceGraphSceneState(
           timestampMs: action.timestampMs,
         }),
       };
+    case "START_TRAVERSAL":
+      return {
+        ...state,
+        interaction: reduceInteraction(state.interaction, {
+          type: "START_TRAVERSAL",
+          nodeId: action.nodeId,
+          timestampMs: action.timestampMs,
+        }),
+      };
     case "FOCUS_COMPLETE":
       return {
         ...state,
@@ -647,9 +763,17 @@ function syncInteractionHover(
   return interaction;
 }
 
-function CameraRig({ mode }: { mode: CameraMode }) {
+function CameraRig({
+  mode,
+  traversal,
+}: {
+  mode: CameraMode;
+  traversal: ActiveTraversal | null;
+}) {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const target = useRef(new THREE.Vector3());
+  const desiredPosition = useRef(new THREE.Vector3());
+  const desiredTarget = useRef(new THREE.Vector3());
   const overview = getCameraPose("overview");
 
   useFrame((_state, delta) => {
@@ -659,9 +783,22 @@ function CameraRig({ mode }: { mode: CameraMode }) {
     }
 
     const pose = getCameraPose(mode);
+    if (traversal) {
+      const sample = sampleTraversalChoreography(
+        traversal,
+        performance.now() - traversal.startedAtMs,
+        getCameraPose("focus"),
+      );
+      setVector(desiredPosition.current, sample.cameraPosition);
+      setVector(desiredTarget.current, sample.cameraTarget);
+    } else {
+      setVector(desiredPosition.current, pose.position);
+      setVector(desiredTarget.current, pose.target);
+    }
+
     const alpha = 1 - Math.exp(-delta * 3.2);
-    camera.position.lerp(new THREE.Vector3(...pose.position), alpha);
-    target.current.lerp(new THREE.Vector3(...pose.target), alpha);
+    camera.position.lerp(desiredPosition.current, alpha);
+    target.current.lerp(desiredTarget.current, alpha);
     camera.lookAt(target.current);
     camera.fov = THREE.MathUtils.lerp(camera.fov, pose.fov, alpha);
     camera.updateProjectionMatrix();
@@ -675,6 +812,48 @@ function CameraRig({ mode }: { mode: CameraMode }) {
       ref={cameraRef}
     />
   );
+}
+
+function TraversalEdgePulse({ traversal }: { traversal: ActiveTraversal }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  useFrame(() => {
+    const mesh = meshRef.current;
+    const material = materialRef.current;
+    if (!mesh || !material) {
+      return;
+    }
+
+    const sample = sampleTraversalChoreography(
+      traversal,
+      performance.now() - traversal.startedAtMs,
+      getCameraPose("focus"),
+    );
+    mesh.position.set(...sample.pulsePosition);
+    mesh.scale.setScalar(0.032 + sample.pulseOpacity * 0.03);
+    material.opacity = sample.pulseOpacity * 0.92;
+    mesh.visible = material.opacity > 0.01;
+  });
+
+  return (
+    <mesh frustumCulled={false} ref={meshRef}>
+      <sphereGeometry args={[1, 16, 8]} />
+      <meshBasicMaterial
+        attach="material"
+        blending={THREE.AdditiveBlending}
+        color="#fff1b8"
+        depthWrite={false}
+        opacity={0}
+        ref={materialRef}
+        transparent
+      />
+    </mesh>
+  );
+}
+
+function setVector(target: THREE.Vector3, value: Vec3) {
+  target.set(value[0], value[1], value[2]);
 }
 
 function ThoughtNodeHitTargets({

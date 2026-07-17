@@ -51,4 +51,37 @@ describe("interaction state machine", () => {
       selectedNodeId: null,
     });
   });
+
+  it("settles traversal back into focused mode", () => {
+    const focused = reduceInteraction(
+      reduceInteraction(createInteractionState(0), {
+        type: "SELECT_NODE",
+        nodeId: "source",
+        timestampMs: 20,
+      }),
+      {
+        type: "FOCUS_COMPLETE",
+        timestampMs: 1120,
+      },
+    );
+    const traversing = reduceInteraction(focused, {
+      type: "START_TRAVERSAL",
+      nodeId: "target",
+      timestampMs: 1300,
+    });
+    const settled = reduceInteraction(traversing, {
+      type: "FOCUS_COMPLETE",
+      timestampMs: 2500,
+    });
+
+    expect(traversing).toMatchObject({
+      hoveredNodeId: "target",
+      mode: "TRAVERSING",
+      selectedNodeId: "target",
+    });
+    expect(settled).toMatchObject({
+      mode: "FOCUSED",
+      selectedNodeId: "target",
+    });
+  });
 });

@@ -65,6 +65,35 @@ test("/demo focuses a node and returns by mouse or keyboard", async ({
   await expect(page.getByText("idle / overview")).toBeVisible();
 });
 
+test("/demo traverses an active focused neighbor", async ({ page }) => {
+  await page.goto("/demo");
+
+  await page
+    .getByRole("button", {
+      name: /Distributed note topology/,
+    })
+    .click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 1600,
+  });
+
+  await page
+    .getByRole("button", {
+      name: /Gesture traversal/,
+    })
+    .click();
+  await expect(page.getByText("traversing / focus")).toBeVisible();
+  await expect(page.locator(".scene-traversal-status")).toContainText(
+    "Distributed note topology → Gesture traversal",
+  );
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 2200,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Gestures turn the graph into a spatial traversal surface.",
+  );
+});
+
 test("/demo?input=mouse covers the repeatable mouse flow and label density", async ({
   page,
 }) => {
