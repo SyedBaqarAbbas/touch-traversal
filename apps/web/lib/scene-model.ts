@@ -45,6 +45,17 @@ export type SceneEdge = {
   visible: number;
 };
 
+export type SceneThoughtLabelKind = "hover" | "selected" | "neighbor";
+
+export type SceneThoughtLabel = {
+  nodeId: string;
+  title: string;
+  excerpt: string | null;
+  kind: SceneThoughtLabelKind;
+  position: Vec3;
+  opacity: number;
+};
+
 const cameraPoses: Record<CameraMode, CameraPose> = {
   overview: {
     position: [0, 0, 3.7],
@@ -235,6 +246,76 @@ export function buildSceneEdges(
     },
   );
   return edges;
+}
+
+export function buildSceneThoughtLabels(
+  model: GraphModel,
+  nodes: readonly SceneNode[],
+  state: Pick<SceneNodeState, "hoverNodeId" | "selectedNodeId"> = {},
+): SceneThoughtLabel[] {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const labels: SceneThoughtLabel[] = [];
+
+  const selectedNodeId = state.selectedNodeId;
+  if (selectedNodeId && model.graph.hasNode(selectedNodeId)) {
+    const node = nodesById.get(selectedNodeId);
+    if (node) {
+      const thought = model.graph.getNodeAttributes(selectedNodeId).thought;
+      labels.push({
+        nodeId: selectedNodeId,
+        title: thought.title,
+        excerpt: thought.summary,
+        kind: "selected",
+        position: node.position,
+        opacity: 0.96,
+      });
+    }
+
+    const neighborIds = [...model.graph.neighbors(selectedNodeId)].sort(
+      (left, right) =>
+        strongestEdgeWeight(model, selectedNodeId, right) -
+          strongestEdgeWeight(model, selectedNodeId, left) ||
+        left.localeCompare(right),
+    );
+
+    for (const neighborId of neighborIds) {
+      if (neighborId === state.hoverNodeId) {
+        continue;
+      }
+      const node = nodesById.get(neighborId);
+      if (!node) {
+        continue;
+      }
+      labels.push({
+        nodeId: neighborId,
+        title: model.graph.getNodeAttributes(neighborId).thought.title,
+        excerpt: null,
+        kind: "neighbor",
+        position: node.position,
+        opacity: 0.34,
+      });
+    }
+  }
+
+  if (
+    state.hoverNodeId &&
+    state.hoverNodeId !== state.selectedNodeId &&
+    model.graph.hasNode(state.hoverNodeId)
+  ) {
+    const node = nodesById.get(state.hoverNodeId);
+    if (node) {
+      labels.push({
+        nodeId: state.hoverNodeId,
+        title: model.graph.getNodeAttributes(state.hoverNodeId).thought.title,
+        excerpt: null,
+        kind: "hover",
+        position: node.position,
+        opacity: 0.92,
+      });
+    }
+  }
+
+  return labels;
 }
 
 function strongestEdgeWeight(

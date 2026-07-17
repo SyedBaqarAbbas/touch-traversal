@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const read = (path: string) =>
   readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
+const readRoot = (path: string) =>
+  readFileSync(new URL(`../../../../${path}`, import.meta.url), "utf8");
 
 describe("web application contract", () => {
   it("keeps TypeScript strict and uses the App Router plugin", () => {
@@ -36,6 +38,15 @@ describe("web application contract", () => {
     expect(Object.keys(layouts.layouts.semantic).sort()).toEqual(
       graph.nodes.map((node: { id: string }) => node.id).sort(),
     );
+  });
+
+  it("documents the reference-driven visual language", () => {
+    const visualLanguage = readRoot("docs/visual-language.md");
+
+    expect(visualLanguage).toContain("Hover labels are title-only");
+    expect(visualLanguage).toContain("Background: `#050505`");
+    expect(visualLanguage).toContain("dot rail");
+    expect(visualLanguage).toContain("does not recreate the camera pane");
   });
 
   it("exposes development and verification scripts", () => {

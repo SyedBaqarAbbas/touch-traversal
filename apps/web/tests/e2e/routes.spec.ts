@@ -21,7 +21,9 @@ for (const [path, heading] of routes) {
   });
 }
 
-test("/demo reveals dwell preview after stable hover", async ({ page }) => {
+test("/demo reveals a title-only hover label after stable hover", async ({
+  page,
+}) => {
   await page.goto("/demo");
 
   await expect(
@@ -29,8 +31,11 @@ test("/demo reveals dwell preview after stable hover", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("button", { name: /Distributed note topology/ }).hover();
 
-  await expect(page.getByText("preview")).toBeVisible({ timeout: 1200 });
-  await expect(page.getByText("Thoughts become navigable")).toBeVisible();
+  const hoverLabel = page.locator(".scene-thought-label--hover");
+  await expect(hoverLabel).toContainText("Distributed note topology", {
+    timeout: 1200,
+  });
+  await expect(hoverLabel).not.toContainText("Thoughts become navigable");
 });
 
 test("/demo focuses a node and returns by mouse or keyboard", async ({
@@ -45,6 +50,9 @@ test("/demo focuses a node and returns by mouse or keyboard", async ({
   await expect(page.getByText("focused / focus")).toBeVisible({
     timeout: 1600,
   });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Thoughts become navigable",
+  );
 
   await page.getByRole("button", { name: "return" }).click();
   await expect(page.getByText("idle / overview")).toBeVisible();

@@ -27,11 +27,13 @@ import {
   buildSceneEdges,
   buildFocusSceneNodes,
   buildSceneNodes,
+  buildSceneThoughtLabels,
   cameraModes,
   getCameraPose,
   type CameraMode,
   type SceneEdge,
   type SceneNode,
+  type SceneThoughtLabel,
 } from "@/lib/scene-model";
 
 const routes = [
@@ -87,9 +89,17 @@ export function GraphScene({ model }: { model: GraphModel }) {
   const hoverNodeId = hoverState.hoveredNodeId;
   const previewNodeId = hoverState.previewNodeId;
   const selectedNodeId = interaction.selectedNodeId;
-  const previewThought = previewNodeId
-    ? model.graph.getNodeAttributes(previewNodeId).thought
-    : null;
+  const labelHoverNodeId = selectedNodeId
+    ? hoverNodeId
+    : (previewNodeId ?? hoverNodeId);
+  const selectedThought =
+    selectedNodeId && model.graph.hasNode(selectedNodeId)
+      ? model.graph.getNodeAttributes(selectedNodeId).thought
+      : null;
+  const selectedNeighborCount =
+    selectedNodeId && model.graph.hasNode(selectedNodeId)
+      ? model.graph.degree(selectedNodeId)
+      : null;
   const sceneNodes = useMemo(
     () =>
       selectedNodeId
@@ -117,6 +127,14 @@ export function GraphScene({ model }: { model: GraphModel }) {
         positionsByNodeId,
       ),
     [hoverNodeId, model, positionsByNodeId, selectedNodeId],
+  );
+  const sceneLabels = useMemo(
+    () =>
+      buildSceneThoughtLabels(model, sceneNodes, {
+        hoverNodeId: labelHoverNodeId,
+        selectedNodeId,
+      }),
+    [labelHoverNodeId, model, sceneNodes, selectedNodeId],
   );
 
   useEffect(() => {
@@ -234,6 +252,34 @@ export function GraphScene({ model }: { model: GraphModel }) {
         </p>
       </header>
 
+      <aside className="scene-topology-hud" aria-labelledby="topology-title">
+        <p className="eyebrow">Topologies of Thoughts</p>
+        <h2 id="topology-title">semantic topology</h2>
+        <div className="scene-topology-glyph" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+          <i />
+          <i />
+          <i />
+        </div>
+        <dl>
+          <div>
+            <dt>mode</dt>
+            <dd>distributed</dd>
+          </div>
+          <div>
+            <dt>nodes</dt>
+            <dd>thought notes</dd>
+          </div>
+          <div>
+            <dt>edges</dt>
+            <dd>typed relationships</dd>
+          </div>
+        </dl>
+      </aside>
+
       <section className="scene-overlay" aria-labelledby="scene-title">
         <p className="eyebrow">demo</p>
         <h1 id="scene-title">Graph artifact boundary</h1>
@@ -270,8 +316,9 @@ export function GraphScene({ model }: { model: GraphModel }) {
       </section>
 
       <aside className="scene-node-list" aria-label="Thought nodes">
-        {nodeSummaries.slice(0, 5).map((node) => (
+        {nodeSummaries.slice(0, 5).map((node, index) => (
           <button
+            aria-label={`Select ${node.title}`}
             aria-pressed={selectedNodeId === node.id}
             key={node.id}
             onClick={(event) => selectNode(node.id, event.timeStamp)}
@@ -292,16 +339,38 @@ export function GraphScene({ model }: { model: GraphModel }) {
             type="button"
           >
             <span>{node.title}</span>
-            <small>degree {node.degree}</small>
+            <small>{index + 1}</small>
           </button>
         ))}
       </aside>
 
-      {previewThought ? (
-        <aside className="scene-preview-card" aria-live="polite">
-          <span>preview</span>
-          <strong>{previewThought.title}</strong>
-          <p>{previewThought.summary}</p>
+      <div className="scene-label-layer" aria-live="polite">
+        {sceneLabels.map((label) => (
+          <aside
+            className={`scene-thought-label scene-thought-label--${label.kind}`}
+            key={`${label.kind}-${label.nodeId}`}
+            style={sceneLabelStyle(label)}
+          >
+            <strong>{label.title}</strong>
+            {label.excerpt ? <p>{label.excerpt}</p> : null}
+          </aside>
+        ))}
+      </div>
+
+      {hoverState.lastPointer ? (
+        <span
+          aria-hidden="true"
+          className="scene-pointer-cue"
+          style={pointerCueStyle(hoverState.lastPointer)}
+        />
+      ) : null}
+
+      {selectedThought ? (
+        <aside className="scene-selected-card" aria-live="polite">
+          <span>selected thought</span>
+          <strong>{selectedThought.title}</strong>
+          <p>{selectedThought.summary}</p>
+          <small>{selectedNeighborCount} immediate neighbors</small>
         </aside>
       ) : null}
 
@@ -314,6 +383,25 @@ export function GraphScene({ model }: { model: GraphModel }) {
       </nav>
     </main>
   );
+}
+
+function sceneLabelStyle(label: SceneThoughtLabel) {
+  return {
+    left: `${clampNumber(50 + label.position[0] * 34, 6, 92)}%`,
+    opacity: label.opacity,
+    top: `${clampNumber(50 - label.position[1] * 38, 9, 88)}%`,
+  };
+}
+
+function pointerCueStyle(pointer: UnifiedPointer) {
+  return {
+    left: `${pointer.screen.x}px`,
+    top: `${pointer.screen.y}px`,
+  };
+}
+
+function clampNumber(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function createGraphSceneState(): GraphSceneState {
@@ -846,7 +934,7 @@ function writeNodeMatrices(
       positions[offset + 1],
       positions[offset + 2],
     );
-    scratch.scale.setScalar(node.scale * stateScale * (halo ? 3.8 : 1));
+    scratch.scale.setScalar(node.scale * stateScale * (halo ? 2.15 : 1));
     scratch.updateMatrix();
     mesh.setMatrixAt(index, scratch.matrix);
   });
@@ -967,7 +1055,7 @@ varying vec3 vColor;
 
 void main() {
   float emphasis = max(instanceHover * 0.2, instanceSelected * 0.36);
-  float haloScale = mix(1.0, 0.22, uHalo);
+  float haloScale = mix(1.0, 0.09, uHalo);
   vOpacity = clamp(instanceOpacity * instanceVisibility * haloScale * (1.0 + emphasis), 0.0, 1.0);
 
   vec3 base = vec3(0.96, 0.94, 0.88);

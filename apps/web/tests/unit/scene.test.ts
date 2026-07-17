@@ -6,6 +6,7 @@ import {
   buildSceneEdges,
   buildFocusSceneNodes,
   buildSceneNodes,
+  buildSceneThoughtLabels,
   cameraModes,
   getCameraPose,
 } from "../../lib/scene-model";
@@ -98,5 +99,55 @@ describe("scene model", () => {
       "thought-debug-evidence",
     ]);
     expect(pushed.every((node) => node.opacity <= 0.42)).toBe(true);
+  });
+
+  it("builds sparse hover, selected, and neighbor labels", () => {
+    const overviewLabels = buildSceneThoughtLabels(
+      model,
+      buildSceneNodes(model, "semantic"),
+      {
+        hoverNodeId: "thought-distributed-notes",
+      },
+    );
+
+    expect(overviewLabels).toEqual([
+      expect.objectContaining({
+        nodeId: "thought-distributed-notes",
+        kind: "hover",
+        title: "Distributed note topology",
+        excerpt: null,
+      }),
+    ]);
+
+    const focusLabels = buildSceneThoughtLabels(
+      model,
+      buildFocusSceneNodes(model, "semantic", "thought-grounded-language"),
+      {
+        hoverNodeId: "thought-distributed-notes",
+        selectedNodeId: "thought-grounded-language",
+      },
+    );
+
+    expect(focusLabels).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          nodeId: "thought-grounded-language",
+          kind: "selected",
+          excerpt:
+            "Language invention starts from grounded perception and action.",
+        }),
+        expect.objectContaining({
+          nodeId: "thought-debug-evidence",
+          kind: "neighbor",
+          excerpt: null,
+          opacity: 0.34,
+        }),
+        expect.objectContaining({
+          nodeId: "thought-distributed-notes",
+          kind: "hover",
+          excerpt: null,
+        }),
+      ]),
+    );
   });
 });
