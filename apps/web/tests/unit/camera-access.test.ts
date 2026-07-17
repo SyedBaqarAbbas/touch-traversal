@@ -45,9 +45,27 @@ describe("camera access flow", () => {
       classifyCameraAccessError(new DOMException("missing", "NotFoundError")),
     ).toMatchObject({ type: "ERROR" });
     expect(classifyCameraAccessError(new Error("boom"))).toMatchObject({
-      message: "boom Mouse and keyboard remain available.",
+      message:
+        "Camera startup failed: boom. Mouse and keyboard remain available.",
       type: "ERROR",
     });
+  });
+
+  it("distinguishes hand-model failure from camera permission failure", () => {
+    const failed = reduceCameraAccess(initialCameraAccessState, {
+      message:
+        "Hand model could not load. Mouse and keyboard remain available.",
+      type: "ERROR",
+    });
+
+    expect(cameraAccessCopy(failed)).toMatchObject({
+      actionLabel: "Retry camera",
+      statusLabel: "hand model unavailable",
+      title: "Hand tracking unavailable",
+    });
+    expect(cameraAccessCopy(failed).description).toContain(
+      "Mouse and keyboard remain available",
+    );
   });
 
   it("states local-only processing in idle, requesting, and active states", () => {

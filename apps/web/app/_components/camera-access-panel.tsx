@@ -185,7 +185,7 @@ export function CameraAccessPanel() {
           workerRef.current ??
           createHandTrackingWorkerController({
             onMessage: handleWorkerMessage,
-            onError: (message) => {
+            onError: () => {
               resetHandTrackingState({
                 displayFrameRef,
                 lastSeenAtRef,
@@ -194,7 +194,8 @@ export function CameraAccessPanel() {
               });
               setWorkerPhase("error");
               dispatch({
-                message: `Hand model failed: ${message.message}. Mouse and keyboard remain available.`,
+                message:
+                  "Hand model could not load. Mouse and keyboard remain available.",
                 type: "ERROR",
               });
             },

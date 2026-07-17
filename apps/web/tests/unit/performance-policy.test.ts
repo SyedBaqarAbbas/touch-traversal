@@ -4,6 +4,7 @@ import {
   chooseSceneQuality,
   limitThoughtLabels,
   limitVisibleItems,
+  sceneQualityNotice,
   scenePerformanceScenarios,
   summarizeFrameDurations,
 } from "../../lib/performance-policy";
@@ -37,6 +38,21 @@ describe("performance policy", () => {
     ).toMatchObject({
       name: "low",
       maxVisibleEdges: 900,
+    });
+  });
+
+  it("surfaces sparse low-performance copy only when quality is reduced", () => {
+    expect(
+      sceneQualityNotice(chooseSceneQuality({ nodeCount: 4, edgeCount: 4 })),
+    ).toBeNull();
+
+    const notice = sceneQualityNotice(
+      chooseSceneQuality({ nodeCount: 300, edgeCount: 1500 }),
+    );
+
+    expect(notice).toMatchObject({
+      title: "low quality",
+      description: expect.stringContaining("traversal remains available"),
     });
   });
 

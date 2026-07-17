@@ -80,6 +80,29 @@ describe("web application contract", () => {
     expect(graphScene).toContain("vec3 clusterB = vec3(0.66, 0.65, 0.61)");
   });
 
+  it("defines graceful demo intro and failure transition surfaces", () => {
+    const boundary = read("app/_components/artifact-boundary.tsx");
+    const cameraPanel = read("app/_components/camera-access-panel.tsx");
+    const css = read("app/globals.css");
+    const graphScene = read("app/_components/graph-scene.tsx");
+
+    expect(graphScene).toContain("SCENE_INTRO_DURATION_MS = 3000");
+    expect(graphScene).toContain("--scene-intro-duration");
+    expect(css).toContain("@keyframes scene-canvas-reveal");
+    expect(css).toContain("@keyframes scene-ui-reveal");
+    expect(css).toContain(".scene-performance-note");
+    expect(css).toContain("prefers-reduced-motion");
+
+    expect(boundary).toContain("Preparing graph field");
+    expect(boundary).toContain("No notes to draw");
+    expect(boundary).toContain("Graph artifacts could not load");
+    expect(boundary).toContain("mouse and keyboard are ready first");
+    expect(boundary).not.toMatch(/todo|placeholder|lorem/i);
+
+    expect(cameraPanel).toContain("Hand model could not load");
+    expect(cameraPanel).toContain("Mouse and keyboard remain available");
+  });
+
   it("documents mouse-route performance measurements", () => {
     const performanceReport = readRoot("docs/performance-report.md");
 

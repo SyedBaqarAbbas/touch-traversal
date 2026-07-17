@@ -85,9 +85,12 @@ describe("artifact runtime boundary", () => {
       },
     } satisfies GraphModel;
 
-    expect(resolveArtifactViewState({ status: "loading" }).kind).toBe(
-      "loading",
-    );
+    const loading = resolveArtifactViewState({ status: "loading" });
+    expect(loading).toMatchObject({
+      kind: "loading",
+      recovery: expect.stringContaining("mouse and keyboard"),
+      title: "Preparing graph field",
+    });
     expect(
       resolveArtifactViewState({ status: "error", message: "bad schema" }).kind,
     ).toBe("error");
@@ -105,5 +108,31 @@ describe("artifact runtime boundary", () => {
         }) as Extract<ArtifactViewState, { kind: "ready" }>
       ).model.graph.order,
     ).toBe(graph.nodes.length);
+  });
+
+  it("keeps non-ready transition copy calm and production-ready", () => {
+    const model = buildGraphModel(parseArtifactBundle(validBundle));
+    const emptyModel = {
+      ...model,
+      graph: { order: 0 },
+    } as GraphModel;
+    const states = [
+      resolveArtifactViewState({ status: "loading" }),
+      resolveArtifactViewState({
+        status: "error",
+        message: "Graph payload is missing graph.nodes.0.id.",
+      }),
+      resolveArtifactViewState({ status: "ready", model: emptyModel }),
+    ];
+
+    for (const state of states) {
+      expect(state.kind).not.toBe("ready");
+      if (state.kind === "ready") {
+        continue;
+      }
+      expect(
+        `${state.title} ${state.description} ${state.recovery}`,
+      ).not.toMatch(/todo|placeholder|lorem|unknown/i);
+    }
   });
 });

@@ -15,10 +15,30 @@ type ArtifactLoadState =
   | { status: "ready"; model: GraphModel };
 
 export type ArtifactViewState =
-  | { kind: "loading"; title: string; description: string }
-  | { kind: "error"; title: string; description: string }
-  | { kind: "empty"; title: string; description: string }
-  | { kind: "insufficient-temporal"; title: string; description: string }
+  | {
+      description: string;
+      kind: "loading";
+      recovery: string;
+      title: string;
+    }
+  | {
+      description: string;
+      kind: "error";
+      recovery: string;
+      title: string;
+    }
+  | {
+      description: string;
+      kind: "empty";
+      recovery: string;
+      title: string;
+    }
+  | {
+      description: string;
+      kind: "insufficient-temporal";
+      recovery: string;
+      title: string;
+    }
   | { kind: "ready"; model: GraphModel };
 
 const artifactPaths = {
@@ -48,32 +68,41 @@ export function resolveArtifactViewState(
   if (state.status === "loading") {
     return {
       kind: "loading",
-      title: "Loading graph artifacts",
-      description: "Reading the static pipeline bundle from /data.",
+      title: "Preparing graph field",
+      description:
+        "Loading the static graph bundle into a quiet scene before the constellation appears.",
+      recovery:
+        "Hand tracking stays optional; mouse and keyboard are ready first.",
     };
   }
   if (state.status === "error") {
     return {
       kind: "error",
-      title: "Graph artifacts failed validation",
+      title: "Graph artifacts could not load",
       description: state.message,
+      recovery:
+        "Check the exported graph bundle, then reload the demo. Camera access is not required.",
     };
   }
   if (state.model.graph.order === 0) {
     return {
       kind: "empty",
-      title: "No graph data",
+      title: "No notes to draw",
       description:
-        "The artifact bundle is valid, but it does not contain nodes yet.",
+        "The graph bundle loaded, but it does not contain thought nodes yet.",
+      recovery:
+        "Add notes, rebuild the artifacts, and the demo will open here.",
     };
   }
   if (!state.model.temporal.available) {
     return {
       kind: "insufficient-temporal",
-      title: "Temporal data unavailable",
+      title: "Temporal topology unavailable",
       description:
         state.model.temporal.reason ??
         "Temporal topology needs more dated nodes before it can be shown.",
+      recovery:
+        "Add dated notes or use semantic, community, and force layouts after rebuilding.",
     };
   }
   return { kind: "ready", model: state.model };
@@ -146,11 +175,16 @@ function ArtifactStatusScreen({
 }) {
   const role = state.kind === "error" ? "alert" : "status";
   return (
-    <main className="artifact-status-screen" role={role}>
+    <main
+      className={`artifact-status-screen artifact-status-screen--${state.kind}`}
+      data-state={state.kind}
+      role={role}
+    >
       <section aria-labelledby="artifact-status-title">
         <p className="eyebrow">{state.kind}</p>
         <h1 id="artifact-status-title">{state.title}</h1>
         <p className="description">{state.description}</p>
+        <p className="artifact-status-screen__recovery">{state.recovery}</p>
       </section>
     </main>
   );
@@ -174,5 +208,5 @@ function formatArtifactError(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Unknown artifact loading error.";
+  return "Artifact loading stopped before returning a readable error.";
 }

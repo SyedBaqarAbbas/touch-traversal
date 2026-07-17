@@ -695,18 +695,68 @@ a {
 }
 
 .artifact-status-screen {
+  position: relative;
   display: grid;
   min-height: 100svh;
+  overflow: hidden;
   place-items: center;
   padding: clamp(1.25rem, 3vw, 2.75rem);
+  background: var(--background);
+}
+
+.artifact-status-screen::before {
+  position: absolute;
+  inset: auto 8vw 14vh auto;
+  width: min(26rem, 42vw);
+  aspect-ratio: 1.35;
+  border-top: 1px solid var(--subtle-line);
+  border-left: 1px solid var(--subtle-line);
+  content: "";
+  opacity: 0.46;
+  transform: rotate(-7deg);
+}
+
+.artifact-status-screen::after {
+  position: absolute;
+  inset: 23vh auto auto 16vw;
+  width: 0.44rem;
+  height: 0.44rem;
+  border-radius: 999px;
+  background: var(--selected-core);
+  box-shadow:
+    13rem 4rem 0 rgba(242, 240, 234, 0.62),
+    21rem 11rem 0 rgba(242, 240, 234, 0.42);
+  content: "";
+  opacity: 0.72;
 }
 
 .artifact-status-screen section {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.75rem;
   width: min(42rem, 88vw);
+}
+
+.artifact-status-screen h1 {
+  margin-bottom: 0.4rem;
+}
+
+.artifact-status-screen__recovery {
+  max-width: 35rem;
+  margin: 0;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  line-height: 1.55;
+  text-transform: lowercase;
 }
 
 .scene-shell {
   position: relative;
+  --scene-intro-duration: 3000ms;
+  --scene-ui-reveal-duration: 2040ms;
   min-height: 100svh;
   overflow: hidden;
   background: var(--background);
@@ -717,6 +767,10 @@ a {
   inset: 0;
   width: 100% !important;
   height: 100% !important;
+  animation: scene-canvas-reveal var(--scene-intro-duration)
+    cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+  transform: scale(1.012);
 }
 
 .scene-header,
@@ -729,10 +783,40 @@ a {
 .scene-pointer-cue,
 .hand-gesture-cursor,
 .scene-gesture-hint,
+.scene-performance-note,
 .camera-access-panel,
 .scene-nav {
   position: relative;
   z-index: 1;
+}
+
+.scene-header,
+.scene-topology-hud,
+.scene-overlay,
+.scene-node-list,
+.camera-access-panel,
+.scene-nav {
+  animation: scene-ui-reveal var(--scene-ui-reveal-duration)
+    cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+}
+
+.scene-header {
+  animation-delay: 220ms;
+}
+
+.scene-overlay {
+  animation-delay: 520ms;
+}
+
+.scene-topology-hud {
+  animation-delay: 820ms;
+}
+
+.scene-node-list,
+.camera-access-panel,
+.scene-nav {
+  animation-delay: 1480ms;
 }
 
 .scene-header {
@@ -1349,6 +1433,32 @@ a {
   text-transform: lowercase;
 }
 
+.scene-performance-note {
+  position: absolute;
+  right: clamp(19.5rem, 24vw, 23rem);
+  bottom: clamp(8rem, 13vh, 10rem);
+  display: grid;
+  gap: 0.18rem;
+  width: min(18rem, calc(100vw - 22rem));
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--subtle-line);
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+  pointer-events: none;
+  text-transform: lowercase;
+}
+
+.scene-performance-note span {
+  color: var(--primary-text);
+}
+
+.scene-performance-note p {
+  margin: 0;
+}
+
 .scene-preview-card {
   display: none;
 }
@@ -1516,6 +1626,12 @@ a {
     bottom: 9rem;
   }
 
+  .scene-performance-note {
+    right: 1.25rem;
+    bottom: 11rem;
+    width: min(18rem, calc(100vw - 2.5rem));
+  }
+
   .scene-nav {
     right: 1.25rem;
     bottom: 1.25rem;
@@ -1536,5 +1652,44 @@ a {
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .scene-canvas,
+  .scene-header,
+  .scene-topology-hud,
+  .scene-overlay,
+  .scene-node-list,
+  .camera-access-panel,
+  .scene-nav {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+
+@keyframes scene-canvas-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(1.012);
+  }
+
+  34% {
+    opacity: 0.32;
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scene-ui-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(0.38rem);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

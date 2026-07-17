@@ -4,6 +4,7 @@ import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
 import Link from "next/link";
 import {
+  type CSSProperties,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -35,6 +36,7 @@ import {
   chooseSceneQuality,
   limitThoughtLabels,
   limitVisibleItems,
+  sceneQualityNotice,
 } from "@/lib/performance-policy";
 import {
   isEditableKeyboardTarget,
@@ -77,6 +79,7 @@ const routes = [
 ] as const;
 
 const FOCUS_TRANSITION_MS = 1100;
+export const SCENE_INTRO_DURATION_MS = 3000;
 
 type PositionMotion = {
   currentPositions: Float32Array;
@@ -210,6 +213,7 @@ export function GraphScene({
       }),
     [model],
   );
+  const sceneQualityNoticeCopy = sceneQualityNotice(sceneQuality);
   const sceneNodes = useMemo(
     () =>
       selectedNodeId
@@ -553,7 +557,7 @@ export function GraphScene({
   }, [inputMode, nodeSummaries]);
 
   return (
-    <main className="scene-shell">
+    <main className="scene-shell" style={sceneIntroStyle()}>
       <Canvas
         className="scene-canvas"
         dpr={sceneQuality.dpr}
@@ -767,6 +771,13 @@ export function GraphScene({
         </aside>
       ) : null}
 
+      {sceneQualityNoticeCopy ? (
+        <aside className="scene-performance-note" aria-live="polite">
+          <span>{sceneQualityNoticeCopy.title}</span>
+          <p>{sceneQualityNoticeCopy.description}</p>
+        </aside>
+      ) : null}
+
       <CameraAccessPanel />
 
       <nav className="route-shell__nav scene-nav" aria-label="Prototype routes">
@@ -778,6 +789,15 @@ export function GraphScene({
       </nav>
     </main>
   );
+}
+
+function sceneIntroStyle(): CSSProperties {
+  return {
+    "--scene-intro-duration": `${SCENE_INTRO_DURATION_MS}ms`,
+    "--scene-ui-reveal-duration": `${Math.round(
+      SCENE_INTRO_DURATION_MS * 0.68,
+    )}ms`,
+  } as CSSProperties;
 }
 
 function sceneLabelStyle(label: SceneThoughtLabel) {

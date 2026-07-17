@@ -73,6 +73,10 @@ export function reduceCameraAccess(
 }
 
 export function cameraAccessCopy(state: CameraAccessState): CameraAccessCopy {
+  const handModelUnavailable = state.errorMessage
+    ?.toLowerCase()
+    .includes("hand model");
+
   switch (state.status) {
     case "requesting":
       return {
@@ -105,8 +109,12 @@ export function cameraAccessCopy(state: CameraAccessState): CameraAccessCopy {
         description:
           state.errorMessage ??
           "The camera could not start. Mouse and keyboard remain active.",
-        statusLabel: "camera error",
-        title: "Camera failed to start",
+        statusLabel: handModelUnavailable
+          ? "hand model unavailable"
+          : "camera error",
+        title: handModelUnavailable
+          ? "Hand tracking unavailable"
+          : "Camera failed to start",
       };
     case "unsupported":
       return {
@@ -152,7 +160,7 @@ export function classifyCameraAccessError(error: unknown): CameraAccessEvent {
   }
   if (error instanceof Error) {
     return {
-      message: `${error.message} Mouse and keyboard remain available.`,
+      message: `Camera startup failed: ${error.message}. Mouse and keyboard remain available.`,
       type: "ERROR",
     };
   }

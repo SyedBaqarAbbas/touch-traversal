@@ -12,6 +12,11 @@ export type SceneQuality = {
   maxThoughtLabels: number;
 };
 
+export type SceneQualityNotice = {
+  description: string;
+  title: string;
+};
+
 export const scenePerformanceScenarios: ScenePerformanceScenario[] = [
   { id: "overview-100-400", mode: "overview", nodeCount: 100, edgeCount: 400 },
   { id: "focus-100-400", mode: "focus", nodeCount: 100, edgeCount: 400 },
@@ -60,6 +65,22 @@ export function chooseSceneQuality(input: {
     dpr: [1, 1.75],
     maxThoughtLabels: 5,
     maxVisibleEdges: Number.POSITIVE_INFINITY,
+  };
+}
+
+export function sceneQualityNotice(
+  quality: SceneQuality,
+): SceneQualityNotice | null {
+  if (quality.name === "high") {
+    return null;
+  }
+
+  return {
+    description:
+      quality.name === "low"
+        ? "Low-performance guard is active: edge density, label count, and pixel ratio are reduced while traversal remains available."
+        : "Medium-performance guard is active: decorative density is trimmed while traversal remains available.",
+    title: `${quality.name} quality`,
   };
 }
 
