@@ -125,6 +125,12 @@ function vec3Scale(value: Vec3, scalar: number): Vec3 {
 }
 
 function vec3Lerp(left: Vec3, right: Vec3, progress: number): Vec3 {
+  if (progress <= 0) {
+    return [left[0], left[1], left[2]];
+  }
+  if (progress >= 1) {
+    return [right[0], right[1], right[2]];
+  }
   return [
     left[0] + (right[0] - left[0]) * progress,
     left[1] + (right[1] - left[1]) * progress,

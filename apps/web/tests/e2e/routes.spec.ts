@@ -86,6 +86,10 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
   await expect(page.locator(".scene-traversal-status")).toContainText(
     "Distributed note topology → Gesture traversal",
   );
+  await page.keyboard.press("2");
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "semantic topology",
+  );
   await expect(page.getByText("focused / focus")).toBeVisible({
     timeout: 2200,
   });
@@ -99,6 +103,22 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
   await expect(page.locator(".scene-selected-card")).toContainText(
     "Thoughts become navigable when notes are connected by typed edges.",
   );
+
+  await page
+    .getByRole("button", {
+      name: /Gesture traversal/,
+    })
+    .click();
+  await expect(page.getByText("traversing / focus")).toBeVisible();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 2200,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Gestures turn the graph into a spatial traversal surface.",
+  );
+
+  await page.getByRole("button", { name: "return" }).click();
+  await expect(page.getByText("idle / overview")).toBeVisible();
 });
 
 test("/debug exposes only the compact traversal history breadcrumb", async ({
