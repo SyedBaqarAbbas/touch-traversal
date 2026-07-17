@@ -15,6 +15,7 @@ from touch_traversal.artifacts import (
     load_artifact,
     validate_artifact_bundle,
 )
+from touch_traversal.chunking import chunk_corpus
 from touch_traversal.config import ConfigurationError, PipelineConfig, load_config
 from touch_traversal.documents import SourceDocument
 from touch_traversal.ingestion import (
@@ -116,10 +117,11 @@ def _run_build(args: argparse.Namespace) -> int:
     config_path: Path = args.config
     if output_path.exists() and not output_path.is_dir():
         raise CommandInputError(f"output path must be a directory: {output_path}")
-    _, documents = _load_source_request(input_path, config_path)
+    config, documents = _load_source_request(input_path, config_path)
+    chunks = chunk_corpus(documents, config.chunking)
     print(
-        f"error: parsed {len(documents)} source documents, but graph construction requires "
-        "thought chunking from THO-21.",
+        f"error: generated {len(chunks)} thought chunks from {len(documents)} source documents, "
+        "but relationship generation requires THO-22.",
         file=sys.stderr,
     )
     return _NOT_IMPLEMENTED_EXIT_CODE

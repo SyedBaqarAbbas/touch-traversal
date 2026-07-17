@@ -86,7 +86,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(__version__, metadata["project"]["version"])
         self.assertEqual(result.stdout.strip(), f"touch-traversal {__version__}")
 
-    def test_build_parses_documents_before_chunking_is_available(self) -> None:
+    def test_build_chunks_documents_before_relationship_generation_is_available(self) -> None:
         stderr = io.StringIO()
 
         with contextlib.redirect_stderr(stderr):
@@ -101,8 +101,8 @@ class CliTests(unittest.TestCase):
             )
 
         self.assertEqual(exit_code, 3)
-        self.assertIn("parsed 8 source documents", stderr.getvalue())
-        self.assertIn("THO-21", stderr.getvalue())
+        self.assertIn("generated 16 thought chunks from 8 source documents", stderr.getvalue())
+        self.assertIn("THO-22", stderr.getvalue())
 
     def test_inspect_reports_the_sample_corpus_without_note_text(self) -> None:
         stdout = io.StringIO()

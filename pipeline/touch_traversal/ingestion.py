@@ -351,6 +351,7 @@ def parse_document(path: Path, root: Path) -> SourceDocument:
         title=title,
         source_text=source,
         display_text=display_text,
+        body_start_line=body_start_line,
         normalized_text=normalized_text,
         front_matter=json_metadata,
         headings=headings,

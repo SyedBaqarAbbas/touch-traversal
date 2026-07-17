@@ -6,7 +6,7 @@ from enum import StrEnum
 
 from pydantic import AwareDatetime, Field, JsonValue
 
-from touch_traversal.models import ArtifactModel, NonEmptyString
+from touch_traversal.models import ArtifactModel, NonEmptyString, SourceProvenance
 
 
 class DocumentFormat(StrEnum):
@@ -44,6 +44,7 @@ class SourceDocument(ArtifactModel):
     title: NonEmptyString
     source_text: str
     display_text: str
+    body_start_line: int = Field(ge=1)
     normalized_text: str
     front_matter: dict[str, JsonValue]
     headings: tuple[DocumentHeading, ...]
@@ -54,6 +55,19 @@ class SourceDocument(ArtifactModel):
     modified_at: AwareDatetime
     date_source: DateSource
     word_count: int = Field(ge=0)
+
+
+class ThoughtChunk(ArtifactModel):
+    id: NonEmptyString
+    title: NonEmptyString
+    text: NonEmptyString
+    summary: NonEmptyString
+    normalized_text: NonEmptyString
+    source: SourceProvenance
+    created_at: AwareDatetime
+    modified_at: AwareDatetime
+    tags: tuple[str, ...]
+    word_count: int = Field(ge=1)
 
 
 class DocumentSummary(ArtifactModel):
