@@ -3,9 +3,14 @@
   --surface-black: #0a0a0b;
   --primary-text: #f2f0ea;
   --secondary-text: #a6a39b;
-  --subtle-line: rgba(242, 240, 234, 0.12);
-  --strong-line: rgba(242, 240, 234, 0.62);
+  --muted-text: rgba(166, 163, 155, 0.58);
+  --subtle-line: rgba(242, 240, 234, 0.1);
+  --strong-line: rgba(242, 240, 234, 0.56);
   --selected-core: #fffdf6;
+  --matte-panel: rgba(5, 5, 5, 0.72);
+  --quiet-fill: rgba(242, 240, 234, 0.055);
+  --quiet-fill-strong: rgba(242, 240, 234, 0.085);
+  --desaturated-warning: #bdb6a0;
   color-scheme: dark;
 }
 
@@ -770,7 +775,7 @@ a {
   padding: 0.22rem 0.42rem;
   border: 1px solid var(--subtle-line);
   color: var(--primary-text);
-  background: rgba(242, 240, 234, 0.04);
+  background: var(--quiet-fill);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
@@ -801,7 +806,7 @@ a {
   max-width: 11ch;
   margin: -0.35rem 0 0;
   color: var(--primary-text);
-  font-size: clamp(2.1rem, 4.5vw, 4rem);
+  font-size: clamp(1.85rem, 3.8vw, 3.35rem);
   font-weight: 400;
   letter-spacing: -0.04em;
   line-height: 1.02;
@@ -870,11 +875,11 @@ a {
 .scene-topology-controls button:hover,
 .scene-topology-controls button:focus-visible {
   color: var(--primary-text);
-  background: rgba(242, 240, 234, 0.08);
+  background: var(--quiet-fill-strong);
 }
 
 .scene-topology-controls button:disabled {
-  color: rgba(166, 163, 155, 0.42);
+  color: var(--muted-text);
   cursor: not-allowed;
 }
 
@@ -900,11 +905,10 @@ a {
   bottom: clamp(1.25rem, 3vw, 2.75rem);
   display: grid;
   gap: 0.36rem;
-  width: min(18.5rem, calc(100vw - 2.5rem));
-  padding: 0.72rem 0.78rem;
-  border: 1px solid rgba(242, 240, 234, 0.12);
-  background: rgba(5, 5, 5, 0.66);
-  backdrop-filter: blur(14px);
+  width: min(17rem, calc(100vw - 2.5rem));
+  padding: 0.62rem 0.68rem;
+  border: 1px solid var(--subtle-line);
+  background: var(--matte-panel);
   pointer-events: none;
 }
 
@@ -935,9 +939,9 @@ a {
   min-height: 2rem;
   margin-top: 0.18rem;
   padding: 0 0.72rem;
-  border: 1px solid rgba(242, 240, 234, 0.16);
+  border: 1px solid var(--subtle-line);
   color: var(--primary-text);
-  background: rgba(5, 5, 5, 0.72);
+  background: var(--matte-panel);
   cursor: pointer;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.62rem;
@@ -948,11 +952,11 @@ a {
 
 .camera-access-panel button:hover,
 .camera-access-panel button:focus-visible {
-  background: rgba(242, 240, 234, 0.08);
+  background: var(--quiet-fill-strong);
 }
 
 .camera-access-panel[data-camera-status="active"] {
-  border-color: rgba(242, 240, 234, 0.28);
+  border-color: rgba(242, 240, 234, 0.22);
 }
 
 .camera-access-panel__video {
@@ -989,7 +993,7 @@ a {
 }
 
 .camera-access-panel__hand[data-hand-tone="warning"] {
-  color: #d9c88f;
+  color: var(--desaturated-warning);
 }
 
 .camera-access-panel__hand[data-hand-tone="lost"] {
@@ -1005,7 +1009,7 @@ a {
   transform: translate(-50%, -50%)
     scale(calc(0.88 + var(--hand-cursor-confidence) * 0.16));
   opacity: calc(0.24 + var(--hand-cursor-confidence) * 0.76);
-  filter: drop-shadow(0 0 0.85rem rgba(255, 253, 246, 0.16));
+  filter: drop-shadow(0 0 0.65rem rgba(255, 253, 246, 0.14));
 }
 
 .hand-gesture-cursor__ring,
@@ -1017,8 +1021,8 @@ a {
 .hand-gesture-cursor__ring {
   inset: 0;
   background: conic-gradient(
-    rgba(255, 253, 246, 0.72) calc(var(--hand-cursor-progress) * 1turn),
-    rgba(242, 240, 234, 0.16) 0
+    rgba(255, 253, 246, 0.66) calc(var(--hand-cursor-progress) * 1turn),
+    rgba(242, 240, 234, 0.13) 0
   );
   mask: radial-gradient(circle, transparent 54%, black 57%);
   opacity: 0.86;
@@ -1030,7 +1034,7 @@ a {
   width: 0.28rem;
   height: 0.28rem;
   background: var(--selected-core);
-  box-shadow: 0 0 0.55rem rgba(255, 253, 246, 0.5);
+  box-shadow: 0 0 0.48rem rgba(255, 253, 246, 0.38);
   transform: translate(-50%, -50%);
 }
 
@@ -1041,8 +1045,8 @@ a {
 .hand-gesture-cursor[data-hand-status="low-confidence"]
   .hand-gesture-cursor__ring {
   background: repeating-conic-gradient(
-    rgba(217, 200, 143, 0.5) 0 12deg,
-    rgba(242, 240, 234, 0.12) 12deg 24deg
+    rgba(189, 182, 160, 0.42) 0 12deg,
+    rgba(242, 240, 234, 0.11) 12deg 24deg
   );
 }
 
@@ -1068,7 +1072,7 @@ a {
   height: 0.34rem;
   border-radius: 999px;
   background: var(--selected-core);
-  box-shadow: 0 0 0.8rem rgba(255, 253, 246, 0.32);
+  box-shadow: 0 0 0.65rem rgba(255, 253, 246, 0.24);
 }
 
 .scene-topology-glyph span:nth-child(1) {
@@ -1148,13 +1152,13 @@ a {
 .scene-node-list button:hover,
 .scene-node-list button:focus-visible {
   color: var(--primary-text);
-  background: rgba(242, 240, 234, 0.08);
+  background: var(--quiet-fill-strong);
 }
 
 .scene-node-list {
   position: absolute;
-  right: clamp(1.25rem, 3vw, 2.75rem);
-  bottom: clamp(4.9rem, 10vh, 7rem);
+  right: clamp(19.5rem, 24vw, 23rem);
+  bottom: clamp(1.25rem, 3vw, 2.75rem);
   display: flex;
   gap: 0.62rem;
   align-items: center;
@@ -1167,7 +1171,7 @@ a {
   min-height: 1.45rem;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(242, 240, 234, 0.18);
+  border: 1px solid rgba(242, 240, 234, 0.16);
   border-radius: 999px;
   background: transparent;
 }
@@ -1204,7 +1208,7 @@ a {
   gap: 0.26rem;
   max-width: min(16rem, 44vw);
   padding-left: 0.6rem;
-  border-left: 1px solid rgba(242, 240, 234, 0.22);
+  border-left: 1px solid rgba(242, 240, 234, 0.2);
   color: var(--primary-text);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.68rem;
@@ -1238,7 +1242,7 @@ a {
 
 .scene-thought-label--selected {
   max-width: min(19rem, 48vw);
-  border-color: rgba(242, 240, 234, 0.48);
+  border-color: rgba(242, 240, 234, 0.42);
   transform: translate(0.9rem, -50%);
 }
 
@@ -1246,8 +1250,8 @@ a {
   padding-top: 0.18rem;
   padding-right: 0.28rem;
   padding-bottom: 0.18rem;
-  border-color: rgba(242, 240, 234, 0.5);
-  background: rgba(5, 5, 5, 0.34);
+  border-color: rgba(242, 240, 234, 0.38);
+  background: rgba(5, 5, 5, 0.42);
   text-shadow: 0 0 0.75rem #050505;
 }
 
@@ -1260,9 +1264,9 @@ a {
   z-index: 2;
   width: 1.15rem;
   height: 1.15rem;
-  border: 1px solid rgba(242, 240, 234, 0.7);
+  border: 1px solid rgba(242, 240, 234, 0.58);
   border-radius: 999px;
-  box-shadow: 0 0 1rem rgba(255, 253, 246, 0.16);
+  box-shadow: 0 0 0.72rem rgba(255, 253, 246, 0.12);
   pointer-events: none;
   transform: translate(-50%, -50%);
 }
@@ -1281,7 +1285,7 @@ a {
 .scene-selected-card {
   position: absolute;
   right: clamp(1.25rem, 3vw, 2.75rem);
-  bottom: clamp(7.2rem, 16vh, 11rem);
+  bottom: clamp(12.2rem, 22vh, 15rem);
   display: grid;
   gap: 0.45rem;
   width: min(21rem, calc(100vw - 2.5rem));
@@ -1310,11 +1314,11 @@ a {
 
 .scene-traversal-status {
   position: absolute;
-  right: clamp(1.25rem, 3vw, 2.75rem);
-  bottom: clamp(3.8rem, 9vh, 6rem);
+  right: clamp(19.5rem, 24vw, 23rem);
+  bottom: clamp(4.2rem, 8vh, 6rem);
   display: grid;
   gap: 0.28rem;
-  width: min(21rem, calc(100vw - 2.5rem));
+  width: min(18rem, calc(100vw - 22rem));
   padding: 0.7rem 0 0;
   border-top: 1px solid rgba(242, 240, 234, 0.13);
   color: var(--primary-text);
@@ -1330,14 +1334,13 @@ a {
 .scene-gesture-hint {
   position: absolute;
   right: clamp(1.25rem, 3vw, 2.75rem);
-  bottom: clamp(8.9rem, 18vh, 12rem);
+  bottom: clamp(16rem, 27vh, 18rem);
   width: fit-content;
   max-width: min(20rem, calc(100vw - 2.5rem));
   padding: 0.42rem 0.58rem;
-  border: 1px solid rgba(242, 240, 234, 0.18);
+  border: 1px solid var(--subtle-line);
   color: var(--primary-text);
-  background: rgba(5, 5, 5, 0.62);
-  backdrop-filter: blur(12px);
+  background: var(--matte-panel);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
@@ -1363,6 +1366,11 @@ a {
   bottom: clamp(1.25rem, 3vw, 2.75rem);
   left: clamp(1.25rem, 3vw, 2.75rem);
   right: clamp(1.25rem, 3vw, 2.75rem);
+  pointer-events: none;
+}
+
+.scene-nav a {
+  pointer-events: auto;
 }
 
 .constellation {
@@ -1495,6 +1503,17 @@ a {
 
   .scene-selected-card {
     display: none;
+  }
+
+  .scene-traversal-status {
+    right: 1.25rem;
+    bottom: 7.25rem;
+    width: min(18rem, calc(100vw - 2.5rem));
+  }
+
+  .scene-gesture-hint {
+    right: 1.25rem;
+    bottom: 9rem;
   }
 
   .scene-nav {

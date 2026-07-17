@@ -1010,7 +1010,7 @@ function TraversalEdgePulse({ traversal }: { traversal: ActiveTraversal }) {
     );
     mesh.position.set(...sample.pulsePosition);
     mesh.scale.setScalar(0.032 + sample.pulseOpacity * 0.03);
-    material.opacity = sample.pulseOpacity * 0.92;
+    material.opacity = sample.pulseOpacity * 0.66;
     mesh.visible = material.opacity > 0.01;
   });
 
@@ -1019,8 +1019,7 @@ function TraversalEdgePulse({ traversal }: { traversal: ActiveTraversal }) {
       <sphereGeometry args={[1, 16, 8]} />
       <meshBasicMaterial
         attach="material"
-        blending={THREE.AdditiveBlending}
-        color="#fff1b8"
+        color="#fffdf6"
         depthWrite={false}
         opacity={0}
         ref={materialRef}
@@ -1518,15 +1517,15 @@ varying vec3 vColor;
 
 void main() {
   vec3 base = vec3(0.82, 0.80, 0.75);
-  vec3 cool = vec3(0.56, 0.64, 0.68);
-  vec3 warm = vec3(0.92, 0.78, 0.56);
-  vec3 dim = vec3(0.48, 0.48, 0.45);
+  vec3 context = vec3(0.50, 0.49, 0.46);
+  vec3 bridge = vec3(0.64, 0.63, 0.58);
+  vec3 distant = vec3(0.38, 0.38, 0.36);
 
   vColor = base;
-  vColor = mix(vColor, dim, step(0.5, edgeTypeBand));
-  vColor = mix(vColor, cool, step(1.5, edgeTypeBand));
-  vColor = mix(vColor, warm, step(2.5, edgeTypeBand) * 0.45);
-  vColor = mix(vColor, vec3(0.96, 0.94, 0.88), edgeSelected * 0.35);
+  vColor = mix(vColor, context, step(0.5, edgeTypeBand) * 0.55);
+  vColor = mix(vColor, bridge, step(1.5, edgeTypeBand) * 0.34);
+  vColor = mix(vColor, distant, step(2.5, edgeTypeBand) * 0.24);
+  vColor = mix(vColor, vec3(0.96, 0.94, 0.88), edgeSelected * 0.32);
   vOpacity = edgeOpacity * edgeVisibility;
 
   vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
@@ -1561,11 +1560,12 @@ void main() {
   vOpacity = clamp(instanceOpacity * instanceVisibility * haloScale * (1.0 + emphasis), 0.0, 1.0);
 
   vec3 base = vec3(0.96, 0.94, 0.88);
-  vec3 cool = vec3(0.72, 0.78, 0.82);
-  vec3 warm = vec3(1.0, 0.88, 0.68);
+  vec3 clusterA = vec3(0.76, 0.75, 0.70);
+  vec3 clusterB = vec3(0.66, 0.65, 0.61);
   float clusterBand = mod(instanceCluster, 3.0);
-  vColor = mix(base, cool, step(0.5, clusterBand));
-  vColor = mix(vColor, warm, step(1.5, clusterBand));
+  vColor = mix(base, clusterA, step(0.5, clusterBand) * 0.18);
+  vColor = mix(vColor, clusterB, step(1.5, clusterBand) * 0.14);
+  vColor = mix(vColor, vec3(1.0, 0.99, 0.96), instanceSelected * 0.48);
 
   vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mvPosition;

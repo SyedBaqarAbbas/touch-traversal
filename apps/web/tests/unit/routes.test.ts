@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -6,6 +6,8 @@ const read = (path: string) =>
   readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 const readRoot = (path: string) =>
   readFileSync(new URL(`../../../../${path}`, import.meta.url), "utf8");
+const statRoot = (path: string) =>
+  statSync(new URL(`../../../../${path}`, import.meta.url));
 
 describe("web application contract", () => {
   it("keeps TypeScript strict and uses the App Router plugin", () => {
@@ -43,10 +45,39 @@ describe("web application contract", () => {
   it("documents the reference-driven visual language", () => {
     const visualLanguage = readRoot("docs/visual-language.md");
 
+    expect(visualLanguage).toContain("Line density");
     expect(visualLanguage).toContain("Hover labels are title-only");
     expect(visualLanguage).toContain("Background: `#050505`");
     expect(visualLanguage).toContain("dot rail");
     expect(visualLanguage).toContain("does not recreate the camera pane");
+    expect(visualLanguage).toContain("No neon cyberpunk palette");
+    expect(visualLanguage).toContain("visual-language-overview.png");
+    expect(
+      statRoot("docs/assets/visual-language-overview.png").size,
+    ).toBeGreaterThan(10_000);
+    expect(
+      statRoot("docs/assets/visual-language-focus.png").size,
+    ).toBeGreaterThan(10_000);
+  });
+
+  it("locks the demo scene to the nocturnal camera-reference palette", () => {
+    const css = read("app/globals.css");
+    const graphScene = read("app/_components/graph-scene.tsx");
+
+    expect(css).toContain("--background: #050505");
+    expect(css).toContain("--primary-text: #f2f0ea");
+    expect(css).toContain("--selected-core: #fffdf6");
+    expect(css).toContain("--subtle-line: rgba(242, 240, 234, 0.1)");
+    expect(css).toContain("--strong-line: rgba(242, 240, 234, 0.56)");
+    expect(css).toContain("--matte-panel: rgba(5, 5, 5, 0.72)");
+    expect(css).toContain("--desaturated-warning: #bdb6a0");
+    expect(css).not.toContain("backdrop-filter");
+
+    expect(graphScene).toContain('color="#fffdf6"');
+    expect(graphScene).not.toContain("AdditiveBlending");
+    expect(graphScene).not.toContain("#fff1b8");
+    expect(graphScene).toContain("vec3 clusterA = vec3(0.76, 0.75, 0.70)");
+    expect(graphScene).toContain("vec3 clusterB = vec3(0.66, 0.65, 0.61)");
   });
 
   it("documents mouse-route performance measurements", () => {
