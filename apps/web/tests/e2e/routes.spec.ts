@@ -38,6 +38,66 @@ test("/demo reveals a title-only hover label after stable hover", async ({
   await expect(hoverLabel).not.toContainText("Thoughts become navigable");
 });
 
+test("/demo camera denial preserves mouse and keyboard access", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () =>
+          Promise.reject(new DOMException("denied", "NotAllowedError")),
+      },
+    });
+  });
+  await page.goto("/demo");
+
+  await expect(
+    page.getByText("Frames remain local and are not uploaded"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await expect(page.getByText("camera unavailable")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Retry camera" }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", {
+      name: /Distributed note topology/,
+    })
+    .click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 1600,
+  });
+});
+
+test("/demo shows camera-active indicator and disable action", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.resolve(new MediaStream()),
+      },
+    });
+  });
+  await page.goto("/demo");
+
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await expect(page.getByText("camera active / local only")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Disable camera" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Disable camera" }).click();
+  await expect(page.locator(".camera-access-panel__status")).toContainText(
+    "camera disabled",
+  );
+  await expect(
+    page.getByRole("button", { name: "Enable hand camera" }),
+  ).toBeVisible();
+});
+
 test("/demo focuses a node and returns by mouse or keyboard", async ({
   page,
 }) => {

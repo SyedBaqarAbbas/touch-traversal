@@ -13,6 +13,7 @@ import {
 } from "react";
 import * as THREE from "three";
 
+import { CameraAccessPanel } from "@/app/_components/camera-access-panel";
 import type { LayoutName, Vec3 } from "@/lib/artifacts/schema";
 import {
   cameraModeForInteraction,
@@ -662,6 +663,8 @@ export function GraphScene({
           </small>
         </aside>
       ) : null}
+
+      <CameraAccessPanel />
 
       <nav className="route-shell__nav scene-nav" aria-label="Prototype routes">
         {routes.map((route) => (
