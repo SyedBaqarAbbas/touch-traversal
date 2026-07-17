@@ -1,0 +1,60 @@
+corpus:
+  include:
+    - "**/*.md"
+    - "**/*.markdown"
+    - "**/*.txt"
+  exclude:
+    - "**/.git/**"
+    - "**/node_modules/**"
+    - "**/attachments/**"
+    - "**/generated/**"
+
+chunking:
+  min_words: 30
+  preferred_max_words: 180
+  hard_max_words: 300
+
+embeddings:
+  provider: sentence_transformers
+  model: all-MiniLM-L6-v2
+  batch_size: 32
+  normalize: true
+  cache_dir: .cache/embeddings
+
+semantic:
+  top_k: 8
+  minimum_similarity: 0.48
+  mutual_neighbor_bonus: 0.10
+
+scoring:
+  explicit: 1.00
+  structural: 0.42
+  semantic: 0.72
+  temporal: 0.28
+  entity: 0.48
+
+pruning:
+  maximum_degree: 12
+  minimum_score: 0.32
+  maximum_edges: 5000
+  repair_isolated_nodes: true
+
+clustering:
+  method: louvain
+  resolution: 1.0
+  random_seed: 42
+
+layouts:
+  random_seed: 42
+  semantic:
+    n_neighbors: 12
+    min_dist: 0.18
+    metric: cosine
+  clusters:
+    radius: 8.0
+  temporal:
+    uncertain_date_opacity: 0.35
+    depth_jitter: 0.20
+  force:
+    iterations: 300
+    scale: 10.0

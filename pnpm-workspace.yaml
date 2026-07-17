@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+
+onlyBuiltDependencies:
+  - "@mediapipe/tasks-vision"
+  - "sharp"
+  - "unrs-resolver"

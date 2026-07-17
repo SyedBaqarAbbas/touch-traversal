@@ -1,0 +1,239 @@
+:root {
+  --background: #050505;
+  --surface-black: #0a0a0b;
+  --primary-text: #f2f0ea;
+  --secondary-text: #a6a39b;
+  --subtle-line: rgba(242, 240, 234, 0.12);
+  --strong-line: rgba(242, 240, 234, 0.62);
+  --selected-core: #fffdf6;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(
+      circle at 72% 38%,
+      rgba(255, 253, 246, 0.035),
+      transparent 24rem
+    ),
+    var(--background);
+  color: var(--primary-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--primary-text);
+  color: var(--background);
+}
+
+.route-shell {
+  position: relative;
+  display: grid;
+  min-height: 100svh;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+}
+
+.route-shell::before {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(var(--subtle-line) 1px, transparent 1px);
+  background-size: 100% 4rem;
+  content: "";
+  mask-image: linear-gradient(to right, transparent 50%, black 100%);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.route-shell__header,
+.route-shell__nav {
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.wordmark {
+  color: var(--primary-text);
+}
+
+.mode-label,
+.eyebrow,
+.status {
+  margin: 0;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.route-shell__content {
+  z-index: 1;
+  align-self: center;
+  width: min(40rem, 88vw);
+  margin-left: clamp(0rem, 6vw, 7rem);
+}
+
+.route-shell__content h1 {
+  max-width: 13ch;
+  margin: 1rem 0 1.2rem;
+  font-size: clamp(2.4rem, 6vw, 5.75rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.96;
+}
+
+.description {
+  max-width: 36rem;
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: clamp(0.95rem, 1.5vw, 1.12rem);
+  line-height: 1.65;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 2rem;
+}
+
+.status__dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--selected-core);
+  box-shadow: 0 0 0.8rem rgba(255, 253, 246, 0.4);
+}
+
+.route-shell__nav {
+  justify-content: flex-start;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  color: var(--secondary-text);
+}
+
+.route-shell__nav a {
+  transition: color 160ms ease;
+}
+
+.route-shell__nav a:hover,
+.route-shell__nav a:focus-visible {
+  color: var(--primary-text);
+}
+
+.constellation {
+  position: absolute;
+  top: 18%;
+  right: 8%;
+  width: min(32rem, 42vw);
+  aspect-ratio: 1;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.constellation__node,
+.constellation__line {
+  position: absolute;
+  display: block;
+}
+
+.constellation__node {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--selected-core);
+  box-shadow: 0 0 1rem rgba(255, 253, 246, 0.35);
+}
+
+.constellation__node--one {
+  top: 12%;
+  left: 20%;
+}
+
+.constellation__node--two {
+  top: 52%;
+  left: 78%;
+}
+
+.constellation__node--three {
+  top: 82%;
+  left: 35%;
+}
+
+.constellation__line {
+  top: 13%;
+  left: 21%;
+  height: 1px;
+  background: var(--strong-line);
+  opacity: 0.48;
+  transform-origin: left center;
+}
+
+.constellation__line--one {
+  width: 70%;
+  transform: rotate(35deg);
+}
+
+.constellation__line--two {
+  width: 74%;
+  transform: rotate(72deg);
+}
+
+@media (max-width: 720px) {
+  .mode-label {
+    display: none;
+  }
+
+  .route-shell__content {
+    margin-left: 0;
+  }
+
+  .constellation {
+    top: 8%;
+    right: -18%;
+    width: 80vw;
+    opacity: 0.38;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "touch-traversal",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Explore the topologies of your thoughts.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=22.0.0 <25",
+    "pnpm": ">=10.0.0 <11"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @touch-traversal/web dev",
+    "build": "pnpm --filter @touch-traversal/web build",
+    "test": "pnpm run test:root && pnpm --recursive --if-present test",
+    "test:root": "node scripts/verify-root-tooling.mjs",
+    "test:e2e": "pnpm --filter @touch-traversal/web test:e2e",
+    "lint": "pnpm --recursive --if-present lint",
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "format": "pnpm --recursive --if-present format",
+    "format:check": "pnpm --recursive --if-present format:check"
+  }
+}

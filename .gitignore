@@ -216,3 +216,35 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node.js and pnpm
+node_modules/
+.pnpm-store/
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js and frontend tooling
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Local environment overrides
+.env.*
+!.env.example
+
+# Touch Traversal private data and generated caches
+private-notes/
+pipeline/.cache/
+apps/web/public/data/private-*
+
+# Local operating-system and editor files
+.DS_Store
+.idea/
+.vscode/
