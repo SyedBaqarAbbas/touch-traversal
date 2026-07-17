@@ -20,3 +20,15 @@ for (const [path, heading] of routes) {
     ).toBeVisible();
   });
 }
+
+test("/demo reveals dwell preview after stable hover", async ({ page }) => {
+  await page.goto("/demo");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Graph artifact boundary" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Distributed note topology/ }).hover();
+
+  await expect(page.getByText("preview")).toBeVisible({ timeout: 1200 });
+  await expect(page.getByText("Thoughts become navigable")).toBeVisible();
+});

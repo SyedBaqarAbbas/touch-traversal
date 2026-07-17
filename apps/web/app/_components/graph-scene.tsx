@@ -1,11 +1,19 @@
 "use client";
 
 import { PerspectiveCamera } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
+import {
+  advanceHoverState,
+  createIdleHoverState,
+  createUnifiedPointer,
+  defaultHoverConfig,
+  immediateHoverState,
+  updateHoverCandidate,
+} from "@/lib/pointer-model";
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
   buildSceneEdges,
@@ -27,10 +35,15 @@ const routes = [
 export function GraphScene({ model }: { model: GraphModel }) {
   const nodeSummaries = useMemo(() => selectNodeSummaries(model), [model]);
   const [cameraMode, setCameraMode] = useState<CameraMode>("overview");
-  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
+  const [hoverState, setHoverState] = useState(() => createIdleHoverState());
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(
     () => nodeSummaries[0]?.id ?? null,
   );
+  const hoverNodeId = hoverState.hoveredNodeId;
+  const previewNodeId = hoverState.previewNodeId;
+  const previewThought = previewNodeId
+    ? model.graph.getNodeAttributes(previewNodeId).thought
+    : null;
   const sceneNodes = useMemo(
     () =>
       buildSceneNodes(model, "semantic", {
@@ -48,6 +61,46 @@ export function GraphScene({ model }: { model: GraphModel }) {
     [hoverNodeId, model, selectedNodeId],
   );
 
+  useEffect(() => {
+    const timestampMs = performance.now();
+    const candidateDeadline =
+      hoverState.candidateEnteredAtMs == null
+        ? null
+        : hoverState.candidateEnteredAtMs + defaultHoverConfig.entryDelayMs;
+    const dwellDeadline =
+      hoverState.candidateEnteredAtMs == null
+        ? null
+        : hoverState.candidateEnteredAtMs + defaultHoverConfig.dwellPreviewMs;
+    const nextDeadline =
+      hoverState.hoveredNodeId !== hoverState.candidateNodeId
+        ? candidateDeadline
+        : hoverState.previewNodeId == null
+          ? dwellDeadline
+          : null;
+
+    if (nextDeadline == null) {
+      return;
+    }
+
+    const delay = Math.max(0, nextDeadline - timestampMs);
+    const timeout = window.setTimeout(() => {
+      setHoverState((state) => advanceHoverState(state, performance.now()));
+    }, delay);
+    return () => window.clearTimeout(timeout);
+  }, [hoverState]);
+
+  const handlePointerCandidate = (
+    nodeId: string | null,
+    pointer: ReturnType<typeof pointerFromThreeEvent>,
+  ) => {
+    setHoverState((state) =>
+      updateHoverCandidate(state, {
+        nodeId,
+        pointer,
+      }),
+    );
+  };
+
   return (
     <main className="scene-shell">
       <Canvas
@@ -64,6 +117,10 @@ export function GraphScene({ model }: { model: GraphModel }) {
         <RelationshipEdgeInstances edges={sceneEdges} />
         <ThoughtNodeInstances halo nodes={sceneNodes} />
         <ThoughtNodeInstances nodes={sceneNodes} />
+        <ThoughtNodeHitTargets
+          nodes={sceneNodes}
+          onPointerCandidate={handlePointerCandidate}
+        />
       </Canvas>
 
       <header className="scene-header">
@@ -101,8 +158,12 @@ export function GraphScene({ model }: { model: GraphModel }) {
             aria-pressed={selectedNodeId === node.id}
             key={node.id}
             onClick={() => setSelectedNodeId(node.id)}
-            onPointerEnter={() => setHoverNodeId(node.id)}
-            onPointerLeave={() => setHoverNodeId(null)}
+            onPointerEnter={() =>
+              setHoverState(immediateHoverState(node.id, performance.now()))
+            }
+            onPointerLeave={() =>
+              setHoverState(immediateHoverState(null, performance.now()))
+            }
             type="button"
           >
             <span>{node.title}</span>
@@ -110,6 +171,14 @@ export function GraphScene({ model }: { model: GraphModel }) {
           </button>
         ))}
       </aside>
+
+      {previewThought ? (
+        <aside className="scene-preview-card" aria-live="polite">
+          <span>preview</span>
+          <strong>{previewThought.title}</strong>
+          <p>{previewThought.summary}</p>
+        </aside>
+      ) : null}
 
       <nav className="route-shell__nav scene-nav" aria-label="Prototype routes">
         {routes.map((route) => (
@@ -149,6 +218,78 @@ function CameraRig({ mode }: { mode: CameraMode }) {
       position={overview.position}
       ref={cameraRef}
     />
+  );
+}
+
+function ThoughtNodeHitTargets({
+  nodes,
+  onPointerCandidate,
+}: {
+  nodes: SceneNode[];
+  onPointerCandidate: (
+    nodeId: string | null,
+    pointer: ReturnType<typeof pointerFromThreeEvent>,
+  ) => void;
+}) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const scratch = useMemo(() => new THREE.Object3D(), []);
+  const material = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: "#ffffff",
+        depthWrite: false,
+        opacity: 0,
+        transparent: true,
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
+
+  useLayoutEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) {
+      return;
+    }
+
+    nodes.forEach((node, index) => {
+      scratch.position.set(...node.position);
+      scratch.scale.setScalar(Math.max(0.11, node.scale * 3.4));
+      scratch.updateMatrix();
+      mesh.setMatrixAt(index, scratch.matrix);
+    });
+    mesh.count = nodes.length;
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [nodes, scratch]);
+
+  return (
+    <instancedMesh
+      args={[
+        undefined as unknown as THREE.BufferGeometry,
+        undefined as unknown as THREE.Material,
+        Math.max(nodes.length, 1),
+      ]}
+      frustumCulled={false}
+      onPointerMove={(event) => {
+        event.stopPropagation();
+        const nodeId =
+          typeof event.instanceId === "number"
+            ? nodes[event.instanceId]?.id
+            : null;
+        onPointerCandidate(nodeId ?? null, pointerFromThreeEvent(event));
+      }}
+      onPointerOut={(event) => {
+        onPointerCandidate(null, pointerFromThreeEvent(event));
+      }}
+      ref={meshRef}
+    >
+      <sphereGeometry args={[1, 12, 8]} />
+      <primitive attach="material" object={material} />
+    </instancedMesh>
   );
 }
 
@@ -230,6 +371,31 @@ function RelationshipEdgeInstances({ edges }: { edges: SceneEdge[] }) {
       <primitive attach="material" object={material} />
     </instancedMesh>
   );
+}
+
+function pointerFromThreeEvent(event: ThreeEvent<PointerEvent>) {
+  const target = event.nativeEvent.target;
+  const rect =
+    target instanceof HTMLElement
+      ? target.getBoundingClientRect()
+      : {
+          left: 0,
+          top: 0,
+          width: window.innerWidth,
+          height: window.innerHeight,
+        };
+  return createUnifiedPointer({
+    clientX: event.nativeEvent.clientX,
+    clientY: event.nativeEvent.clientY,
+    rect,
+    source:
+      event.nativeEvent.pointerType === "touch"
+        ? "touch"
+        : event.nativeEvent.pointerType === "pen"
+          ? "hand"
+          : "mouse",
+    timestampMs: performance.now(),
+  });
 }
 
 function ThoughtNodeInstances({
