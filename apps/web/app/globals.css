@@ -393,6 +393,138 @@ a {
   width: min(42rem, 88vw);
 }
 
+.scene-shell {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.scene-canvas {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.scene-header,
+.scene-overlay,
+.scene-node-list,
+.scene-nav {
+  position: relative;
+  z-index: 1;
+}
+
+.scene-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  pointer-events: none;
+}
+
+.scene-header a {
+  pointer-events: auto;
+}
+
+.scene-overlay {
+  width: min(28rem, calc(100vw - 2.5rem));
+  margin: clamp(1rem, 7vh, 4rem) 0 0 clamp(1.25rem, 5vw, 5rem);
+  pointer-events: none;
+}
+
+.scene-overlay h1 {
+  max-width: 11ch;
+  margin: 0.7rem 0 1rem;
+  font-size: clamp(2.15rem, 5vw, 4.8rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.96;
+}
+
+.scene-controls {
+  display: inline-flex;
+  gap: 1px;
+  margin-top: 1.35rem;
+  border: 1px solid var(--subtle-line);
+  background: var(--subtle-line);
+  pointer-events: auto;
+}
+
+.scene-controls button,
+.scene-node-list button {
+  min-height: 2.35rem;
+  border: 0;
+  color: var(--secondary-text);
+  background: rgba(5, 5, 5, 0.72);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.scene-controls button {
+  padding: 0 0.85rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.scene-controls button[aria-pressed="true"],
+.scene-controls button:hover,
+.scene-controls button:focus-visible,
+.scene-node-list button[aria-pressed="true"],
+.scene-node-list button:hover,
+.scene-node-list button:focus-visible {
+  color: var(--primary-text);
+  background: rgba(242, 240, 234, 0.08);
+}
+
+.scene-node-list {
+  position: absolute;
+  right: clamp(1.25rem, 3vw, 2.75rem);
+  bottom: clamp(4.5rem, 10vh, 7rem);
+  display: grid;
+  width: min(21rem, calc(100vw - 2.5rem));
+  border-top: 1px solid var(--subtle-line);
+}
+
+.scene-node-list button {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.72rem 0;
+  border-bottom: 1px solid var(--subtle-line);
+  background: transparent;
+}
+
+.scene-node-list span {
+  color: var(--primary-text);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.scene-node-list small {
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+.scene-nav {
+  position: absolute;
+  bottom: clamp(1.25rem, 3vw, 2.75rem);
+  left: clamp(1.25rem, 3vw, 2.75rem);
+  right: clamp(1.25rem, 3vw, 2.75rem);
+}
+
 .constellation {
   position: absolute;
   top: 18%;
@@ -465,6 +597,31 @@ a {
   .artifact-grid,
   .artifact-panels {
     grid-template-columns: 1fr;
+  }
+
+  .scene-header {
+    padding: 1.25rem;
+  }
+
+  .scene-overlay {
+    margin: 4.25rem 1.25rem 0;
+  }
+
+  .scene-node-list {
+    right: 1.25rem;
+    bottom: 5.1rem;
+    left: 1.25rem;
+    width: auto;
+  }
+
+  .scene-node-list button:nth-child(n + 4) {
+    display: none;
+  }
+
+  .scene-nav {
+    right: 1.25rem;
+    bottom: 1.25rem;
+    left: 1.25rem;
   }
 
   .constellation {

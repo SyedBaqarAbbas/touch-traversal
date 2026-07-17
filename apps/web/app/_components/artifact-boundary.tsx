@@ -1,20 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
+import { GraphScene } from "@/app/_components/graph-scene";
 import {
   ArtifactValidationError,
   parseArtifactBundle,
 } from "@/lib/artifacts/schema";
-import {
-  buildGraphModel,
-  getAvailableLayoutNames,
-  selectEdgeSummaries,
-  selectLayoutPositions,
-  selectNodeSummaries,
-  type GraphModel,
-} from "@/lib/graph-model";
+import { buildGraphModel, type GraphModel } from "@/lib/graph-model";
 
 type ArtifactLoadState =
   | { status: "loading" }
@@ -34,13 +27,6 @@ const artifactPaths = {
   manifest: "/data/manifest.json",
   report: "/data/pipeline-report.json",
 } as const;
-
-const routes = [
-  { href: "/", label: "home" },
-  { href: "/demo", label: "demo" },
-  { href: "/calibration", label: "calibration" },
-  { href: "/debug", label: "debug" },
-] as const;
 
 export async function loadArtifactModel(
   fetcher: typeof fetch = fetch,
@@ -120,108 +106,7 @@ export function ArtifactBoundary() {
   if (viewState.kind !== "ready") {
     return <ArtifactStatusScreen state={viewState} />;
   }
-  return <ArtifactSummary model={viewState.model} />;
-}
-
-function ArtifactSummary({ model }: { model: GraphModel }) {
-  const nodeSummaries = useMemo(() => selectNodeSummaries(model), [model]);
-  const edgeSummaries = useMemo(() => selectEdgeSummaries(model), [model]);
-  const semanticPositions = useMemo(
-    () => selectLayoutPositions(model, "semantic"),
-    [model],
-  );
-  const availableLayouts = getAvailableLayoutNames(model);
-
-  return (
-    <main className="artifact-shell">
-      <header className="artifact-header">
-        <Link className="wordmark" href="/">
-          touch traversal
-        </Link>
-        <p className="mode-label">artifact boundary / validated</p>
-      </header>
-
-      <section className="artifact-hero" aria-labelledby="artifact-title">
-        <p className="eyebrow">demo</p>
-        <h1 id="artifact-title">Graph artifact boundary</h1>
-        <p className="description">
-          {model.manifest.corpusName} loaded through Zod and Graphology with{" "}
-          {availableLayouts.length} validated layouts.
-        </p>
-      </section>
-
-      <section className="artifact-grid" aria-label="Graph summary">
-        <article>
-          <span>nodes</span>
-          <strong>{model.graph.order}</strong>
-        </article>
-        <article>
-          <span>edges</span>
-          <strong>{model.graph.size}</strong>
-        </article>
-        <article>
-          <span>average degree</span>
-          <strong>{model.report.averageDegree.toFixed(2)}</strong>
-        </article>
-        <article>
-          <span>dated nodes</span>
-          <strong>{model.temporal.datedNodeCount}</strong>
-        </article>
-      </section>
-
-      <section className="artifact-panels" aria-label="Graph model details">
-        <article className="artifact-panel">
-          <h2>Node selectors</h2>
-          <ol className="artifact-list">
-            {nodeSummaries.slice(0, 5).map((node) => (
-              <li key={node.id}>
-                <span>{node.title}</span>
-                <small>
-                  {node.clusterId} / degree {node.degree}
-                </small>
-              </li>
-            ))}
-          </ol>
-        </article>
-
-        <article className="artifact-panel">
-          <h2>Edge selectors</h2>
-          <ol className="artifact-list">
-            {edgeSummaries.slice(0, 5).map((edge) => (
-              <li key={edge.id}>
-                <span>{edge.type}</span>
-                <small>
-                  {edge.source} {"->"} {edge.target}
-                </small>
-              </li>
-            ))}
-          </ol>
-        </article>
-
-        <article className="artifact-panel artifact-panel--wide">
-          <h2>Semantic positions</h2>
-          <pre>
-            {JSON.stringify(
-              semanticPositions.map((node) => ({
-                id: node.id,
-                position: node.position,
-              })),
-              null,
-              2,
-            )}
-          </pre>
-        </article>
-      </section>
-
-      <nav className="route-shell__nav" aria-label="Prototype routes">
-        {routes.map((route) => (
-          <Link href={route.href} key={route.href}>
-            {route.label}
-          </Link>
-        ))}
-      </nav>
-    </main>
-  );
+  return <GraphScene model={viewState.model} />;
 }
 
 function ArtifactStatusScreen({
