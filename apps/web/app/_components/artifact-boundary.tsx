@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { GraphScene } from "@/app/_components/graph-scene";
+import { GraphScene, type GraphInputMode } from "@/app/_components/graph-scene";
 import {
   ArtifactValidationError,
   parseArtifactBundle,
@@ -81,6 +81,7 @@ export function resolveArtifactViewState(
 
 export function ArtifactBoundary() {
   const [state, setState] = useState<ArtifactLoadState>({ status: "loading" });
+  const inputMode = useInputMode();
 
   useEffect(() => {
     let active = true;
@@ -106,7 +107,31 @@ export function ArtifactBoundary() {
   if (viewState.kind !== "ready") {
     return <ArtifactStatusScreen state={viewState} />;
   }
-  return <GraphScene model={viewState.model} />;
+  return <GraphScene inputMode={inputMode} model={viewState.model} />;
+}
+
+function useInputMode(): GraphInputMode {
+  const search = useSyncExternalStore(
+    subscribeToLocationSearch,
+    getLocationSearch,
+    getServerLocationSearch,
+  );
+  return new URLSearchParams(search).get("input") === "mouse"
+    ? "mouse"
+    : "default";
+}
+
+function subscribeToLocationSearch(onChange: () => void) {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+}
+
+function getLocationSearch() {
+  return window.location.search;
+}
+
+function getServerLocationSearch() {
+  return "";
 }
 
 function ArtifactStatusScreen({

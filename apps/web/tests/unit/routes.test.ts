@@ -49,6 +49,15 @@ describe("web application contract", () => {
     expect(visualLanguage).toContain("does not recreate the camera pane");
   });
 
+  it("documents mouse-route performance measurements", () => {
+    const performanceReport = readRoot("docs/performance-report.md");
+
+    expect(performanceReport).toContain("/demo?input=mouse");
+    expect(performanceReport).toContain("overview-300-1500");
+    expect(performanceReport).toContain("Minimum acceptable threshold: 45 FPS");
+    expect(performanceReport).toContain("cap visible edges at 900");
+  });
+
   it("exposes development and verification scripts", () => {
     const packageJson = JSON.parse(read("package.json"));
 

@@ -22,6 +22,11 @@ import {
   type UnifiedPointer,
   updateHoverCandidate,
 } from "@/lib/pointer-model";
+import {
+  chooseSceneQuality,
+  limitThoughtLabels,
+  limitVisibleItems,
+} from "@/lib/performance-policy";
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
   buildSceneEdges,
@@ -78,7 +83,15 @@ type GraphSceneAction =
   | { type: "FOCUS_COMPLETE"; timestampMs: number }
   | { type: "RETURN_OVERVIEW"; timestampMs: number };
 
-export function GraphScene({ model }: { model: GraphModel }) {
+export type GraphInputMode = "default" | "mouse";
+
+export function GraphScene({
+  inputMode = "default",
+  model,
+}: {
+  inputMode?: GraphInputMode;
+  model: GraphModel;
+}) {
   const nodeSummaries = useMemo(() => selectNodeSummaries(model), [model]);
   const [{ hoverState, interaction }, dispatch] = useReducer(
     reduceGraphSceneState,
@@ -100,6 +113,14 @@ export function GraphScene({ model }: { model: GraphModel }) {
     selectedNodeId && model.graph.hasNode(selectedNodeId)
       ? model.graph.degree(selectedNodeId)
       : null;
+  const sceneQuality = useMemo(
+    () =>
+      chooseSceneQuality({
+        edgeCount: model.graph.size,
+        nodeCount: model.graph.order,
+      }),
+    [model],
+  );
   const sceneNodes = useMemo(
     () =>
       selectedNodeId
@@ -117,24 +138,42 @@ export function GraphScene({ model }: { model: GraphModel }) {
   );
   const sceneEdges = useMemo(
     () =>
-      buildSceneEdges(
-        model,
-        "semantic",
-        {
-          hoverNodeId,
-          selectedNodeId,
-        },
-        positionsByNodeId,
+      limitVisibleItems(
+        buildSceneEdges(
+          model,
+          "semantic",
+          {
+            hoverNodeId,
+            selectedNodeId,
+          },
+          positionsByNodeId,
+        ).sort(edgeRenderPriority),
+        sceneQuality.maxVisibleEdges,
       ),
-    [hoverNodeId, model, positionsByNodeId, selectedNodeId],
+    [
+      hoverNodeId,
+      model,
+      positionsByNodeId,
+      sceneQuality.maxVisibleEdges,
+      selectedNodeId,
+    ],
   );
   const sceneLabels = useMemo(
     () =>
-      buildSceneThoughtLabels(model, sceneNodes, {
-        hoverNodeId: labelHoverNodeId,
-        selectedNodeId,
-      }),
-    [labelHoverNodeId, model, sceneNodes, selectedNodeId],
+      limitThoughtLabels(
+        buildSceneThoughtLabels(model, sceneNodes, {
+          hoverNodeId: labelHoverNodeId,
+          selectedNodeId,
+        }),
+        sceneQuality.maxThoughtLabels,
+      ),
+    [
+      labelHoverNodeId,
+      model,
+      sceneNodes,
+      sceneQuality.maxThoughtLabels,
+      selectedNodeId,
+    ],
   );
 
   useEffect(() => {
@@ -225,7 +264,7 @@ export function GraphScene({ model }: { model: GraphModel }) {
     <main className="scene-shell">
       <Canvas
         className="scene-canvas"
-        dpr={[1, 1.75]}
+        dpr={sceneQuality.dpr}
         gl={{
           alpha: false,
           antialias: true,
@@ -283,9 +322,13 @@ export function GraphScene({ model }: { model: GraphModel }) {
       <section className="scene-overlay" aria-labelledby="scene-title">
         <p className="eyebrow">demo</p>
         <h1 id="scene-title">Graph artifact boundary</h1>
+        {inputMode === "mouse" ? (
+          <p className="scene-input-mode">input / mouse</p>
+        ) : null}
         <p className="description">
           {model.graph.order} thoughts and {model.graph.size} relationships
-          rendered as shared-buffer geometry from the semantic layout.
+          rendered as shared-buffer geometry from the semantic layout at{" "}
+          {sceneQuality.name} quality.
         </p>
 
         <div className="scene-controls" aria-label="Camera modes">
@@ -402,6 +445,14 @@ function pointerCueStyle(pointer: UnifiedPointer) {
 
 function clampNumber(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
+}
+
+function edgeRenderPriority(left: SceneEdge, right: SceneEdge): number {
+  return (
+    right.selected - left.selected ||
+    right.opacity - left.opacity ||
+    left.id.localeCompare(right.id)
+  );
 }
 
 function createGraphSceneState(): GraphSceneState {

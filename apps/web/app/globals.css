@@ -453,6 +453,20 @@ a {
   line-height: 1.2;
 }
 
+.scene-input-mode {
+  display: inline-flex;
+  margin: 0 0 0.75rem;
+  padding: 0.22rem 0.42rem;
+  border: 1px solid var(--subtle-line);
+  color: var(--primary-text);
+  background: rgba(242, 240, 234, 0.04);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: lowercase;
+}
+
 .scene-controls {
   display: inline-flex;
   gap: 1px;

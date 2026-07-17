@@ -64,3 +64,35 @@ test("/demo focuses a node and returns by mouse or keyboard", async ({
   await page.keyboard.press("Escape");
   await expect(page.getByText("idle / overview")).toBeVisible();
 });
+
+test("/demo?input=mouse covers the repeatable mouse flow and label density", async ({
+  page,
+}) => {
+  await page.goto("/demo?input=mouse");
+
+  await expect(page.getByText("input / mouse")).toBeVisible();
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "semantic topology",
+  );
+
+  const nodeButton = page.getByRole("button", {
+    name: /Distributed note topology/,
+  });
+  await nodeButton.hover();
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Distributed note topology",
+  );
+
+  await nodeButton.click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: 1600,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Thoughts become navigable",
+  );
+  await expect(page.locator(".scene-thought-label")).toHaveCount(3);
+
+  await page.getByRole("button", { name: "return" }).click();
+  await expect(page.getByText("idle / overview")).toBeVisible();
+  await expect(page.locator(".scene-thought-label")).toHaveCount(0);
+});
