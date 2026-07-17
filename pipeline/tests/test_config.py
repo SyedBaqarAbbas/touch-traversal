@@ -13,6 +13,7 @@ class PipelineConfigTests(unittest.TestCase):
     def test_default_configuration_loads_every_pipeline_section(self) -> None:
         config = load_config(DEFAULT_CONFIG)
 
+        self.assertIn("**/AGENTS.md", config.corpus.exclude)
         self.assertEqual(config.chunking.min_words, 30)
         self.assertEqual(config.embeddings.model, "all-MiniLM-L6-v2")
         self.assertEqual(config.scoring.explicit, 1.0)

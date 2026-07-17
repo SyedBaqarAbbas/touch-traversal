@@ -4,6 +4,7 @@ corpus:
     - "**/*.markdown"
     - "**/*.txt"
   exclude:
+    - "**/AGENTS.md"
     - "**/.git/**"
     - "**/node_modules/**"
     - "**/attachments/**"

@@ -22,8 +22,10 @@ class DocumentDiscoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             fixtures = {
+                "AGENTS.md": "# Corpus instructions\n",
                 "keep.md": "# Keep\n",
                 "notes/also-keep.markdown": "# Also keep\n",
+                "notes/AGENTS.md": "# Nested corpus instructions\n",
                 "plain.TXT": "Plain text\n",
                 ".hidden.md": "# Hidden\n",
                 ".hidden/note.md": "# Hidden directory\n",
