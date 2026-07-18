@@ -61,6 +61,12 @@ Open `http://localhost:3000/demo`. Other implemented routes are:
 - `/calibration`: explicit camera setup, mirrored preview, landmarks, and pinch-threshold controls.
 - `/debug`: artifact statistics, raw sample payload, traversal history, and hand diagnostics.
 
+The release build is also published as a static GitHub Pages project site at
+[`https://syedbaqarabbas.github.io/touch-traversal/`](https://syedbaqarabbas.github.io/touch-traversal/).
+The Pages workflow builds with `NEXT_PUBLIC_BASE_PATH=/touch-traversal`; data, model, WASM, route,
+and Next.js asset URLs retain that prefix. The hosted site is still the same backend-free static
+application, and HTTPS permits the browser to offer the optional camera prompt.
+
 The first graph build may download `all-MiniLM-L6-v2`, the configured Sentence Transformers model.
 Inference then runs in the local Python process. Exact-text embedding results are cached under
 `pipeline/.cache/embeddings/`; the model manager also keeps its own model cache.

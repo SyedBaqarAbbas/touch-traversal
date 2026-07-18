@@ -9,6 +9,9 @@ mouse and keyboard navigation plus optional on-device hand tracking.
 The MVP has no application backend. Note processing is a local Python batch job; the browser reads
 four generated JSON files and performs rendering and hand inference on the device.
 
+[Open the public demo](https://syedbaqarabbas.github.io/touch-traversal/) or follow the local setup
+below. Camera access remains optional in both environments.
+
 ## Quick start
 
 Requirements: Node.js 22–24, pnpm 10.14.0 through Corepack, Python 3.11+, and

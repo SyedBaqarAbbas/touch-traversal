@@ -229,6 +229,9 @@ describe("web application contract", () => {
     expect(readme).toContain(
       "performance-measurements/2026-07-18-m2-pro-chromium.json",
     );
+    expect(readme).toContain(
+      "https://syedbaqarabbas.github.io/touch-traversal/",
+    );
     expect(guide).not.toContain("live landmark frames are not yet connected");
     expect(guide).not.toContain("live classified gestures do not yet dispatch");
   });
