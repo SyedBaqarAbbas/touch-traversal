@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -20,6 +21,15 @@ import {
   type StudioIntakeSource,
 } from "@/lib/studio-intake";
 import type { StudioBuildRequest } from "@/lib/personal-ingestion-contract";
+import type { ArtifactBundle } from "@/lib/artifacts/schema";
+import {
+  LocalStudioProvider,
+  LocalStudioProviderError,
+  localStudioRecoveryCommand,
+  type LocalStudioCapabilityDetection,
+} from "@/lib/local-studio-provider";
+import { personalGraphSessions } from "@/lib/personal-graph-session";
+import type { StudioProgress } from "@/lib/personal-ingestion-contract";
 
 type DirectoryHandle = {
   kind: "directory";
@@ -61,7 +71,29 @@ type StudioWindow = Window & {
 
 const accept = ".md,.markdown,.txt,text/markdown,text/plain";
 
+type GenerationState =
+  | { status: "idle" }
+  | { status: "checking" }
+  | {
+      status: "unavailable";
+      detection: Exclude<LocalStudioCapabilityDetection, { available: true }>;
+    }
+  | {
+      status: "ready";
+      detection: Extract<LocalStudioCapabilityDetection, { available: true }>;
+    }
+  | { status: "building"; progress: StudioProgress | null }
+  | { status: "cancelled"; message: string; elapsedMs: number }
+  | { status: "error"; message: string; retryable: boolean; elapsedMs: number }
+  | {
+      status: "succeeded";
+      bundle: ArtifactBundle;
+      elapsedMs: number;
+      sessionId: string;
+    };
+
 export function StudioIntake() {
+  const router = useRouter();
   const [candidates, setCandidates] = useState<StudioFileCandidate[]>([]);
   const [preview, setPreview] = useState<StudioCorpusPreview | null>(null);
   const [status, setStatus] = useState(
@@ -69,6 +101,10 @@ export function StudioIntake() {
   );
   const [processing, setProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [generation, setGeneration] = useState<GenerationState>({
+    status: "idle",
+  });
+  const [elapsedMs, setElapsedMs] = useState(0);
   const chooseFilesButtonRef = useRef<HTMLButtonElement>(null);
   const standardInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -76,14 +112,33 @@ export function StudioIntake() {
   const fileSequenceRef = useRef(0);
   const previewSequenceRef = useRef(0);
   const confirmedRequestRef = useRef<StudioBuildRequest | null>(null);
+  const providerRef = useRef<LocalStudioProvider | null>(null);
+  const buildAbortRef = useRef<AbortController | null>(null);
+  const buildStartedAtRef = useRef<number | null>(null);
+  if (providerRef.current == null) {
+    providerRef.current = new LocalStudioProvider();
+  }
 
   useEffect(() => {
     folderInputRef.current?.setAttribute("webkitdirectory", "");
     return () => {
       previewSequenceRef.current += 1;
+      buildAbortRef.current?.abort();
       confirmedRequestRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (generation.status !== "building") return;
+    const update = () => {
+      if (buildStartedAtRef.current !== null) {
+        setElapsedMs(performance.now() - buildStartedAtRef.current);
+      }
+    };
+    update();
+    const interval = window.setInterval(update, 250);
+    return () => window.clearInterval(interval);
+  }, [generation.status]);
 
   const assignCandidates = useCallback(
     (
@@ -107,6 +162,7 @@ export function StudioIntake() {
     async (nextCandidates: StudioFileCandidate[]) => {
       const sequence = ++previewSequenceRef.current;
       confirmedRequestRef.current = null;
+      setGeneration({ status: "idle" });
       setCandidates(nextCandidates);
       if (nextCandidates.length === 0) {
         setPreview(null);
@@ -225,6 +281,8 @@ export function StudioIntake() {
   const clearSelection = useCallback(() => {
     previewSequenceRef.current += 1;
     confirmedRequestRef.current = null;
+    buildAbortRef.current?.abort();
+    setGeneration({ status: "idle" });
     setCandidates([]);
     setPreview(null);
     setProcessing(false);
@@ -234,16 +292,101 @@ export function StudioIntake() {
     requestAnimationFrame(() => chooseFilesButtonRef.current?.focus());
   }, []);
 
-  const continueToGeneration = useCallback(() => {
+  const continueToGeneration = useCallback(async () => {
     if (!preview?.canContinue) return;
     confirmedRequestRef.current = createStudioBuildRequest(
       preview,
       `studio-${Date.now().toString(36)}`,
     );
+    setGeneration({ status: "checking" });
     setStatus(
-      `${confirmedRequestRef.current.notes.length} notes confirmed in memory. Local graph generation is ready for the next Studio stage.`,
+      `${confirmedRequestRef.current.notes.length} notes confirmed in memory. Checking the loopback companion before any note is sent.`,
     );
+    const detection = await providerRef.current!.detectCapability();
+    if (detection.available) {
+      setGeneration({ status: "ready", detection });
+      setStatus(
+        `Local studio ${detection.capabilities.pipelineVersion} is ready. Review the local-only disclosure, then start generation.`,
+      );
+    } else {
+      setGeneration({ status: "unavailable", detection });
+      setStatus(`${detection.message} No note contents were sent.`);
+    }
   }, [preview]);
+
+  const startGeneration = useCallback(async () => {
+    const request = confirmedRequestRef.current;
+    if (!request || generation.status === "building") return;
+    const controller = new AbortController();
+    buildAbortRef.current = controller;
+    buildStartedAtRef.current = performance.now();
+    setElapsedMs(0);
+    setGeneration({ status: "building", progress: null });
+    setStatus(`Starting a local build for ${request.notes.length} notes.`);
+    try {
+      const bundle = await providerRef.current!.build(request, {
+        signal: controller.signal,
+        onProgress: (progress) => {
+          setGeneration({ status: "building", progress });
+          setStatus(
+            `${progress.message} — stage ${progress.stageIndex + 1} of ${progress.totalStages}.`,
+          );
+        },
+      });
+      const duration =
+        performance.now() - (buildStartedAtRef.current ?? performance.now());
+      const session = personalGraphSessions.activate(
+        request.requestId,
+        bundle,
+        {
+          noteCount: request.notes.length,
+          origin: "generated",
+        },
+      );
+      setElapsedMs(duration);
+      setGeneration({
+        status: "succeeded",
+        bundle,
+        elapsedMs: duration,
+        sessionId: session.id,
+      });
+      setStatus(
+        `Personal graph ready: ${session.metadata.nodeCount} nodes and ${session.metadata.edgeCount} edges.`,
+      );
+    } catch (error) {
+      const duration =
+        performance.now() - (buildStartedAtRef.current ?? performance.now());
+      if (
+        controller.signal.aborted ||
+        (error instanceof LocalStudioProviderError &&
+          error.code === "cancelled")
+      ) {
+        setGeneration({
+          status: "cancelled",
+          message: "Build cancelled. The previously displayed graph was kept.",
+          elapsedMs: duration,
+        });
+        setStatus("Build cancelled. The previously displayed graph was kept.");
+      } else {
+        const message = generationErrorMessage(error);
+        setGeneration({
+          status: "error",
+          message,
+          retryable:
+            error instanceof LocalStudioProviderError ? error.retryable : false,
+          elapsedMs: duration,
+        });
+        setStatus(`${message} The previously displayed graph was kept.`);
+      }
+    } finally {
+      if (buildAbortRef.current === controller) buildAbortRef.current = null;
+      buildStartedAtRef.current = null;
+    }
+  }, [generation.status]);
+
+  const cancelGeneration = useCallback(() => {
+    buildAbortRef.current?.abort();
+  }, []);
 
   return (
     <main className="studio-shell">
@@ -469,6 +612,18 @@ export function StudioIntake() {
               Continue to graph generation
             </button>
           </div>
+
+          <StudioGenerationPanel
+            state={generation}
+            elapsedMs={elapsedMs}
+            onCancel={cancelGeneration}
+            onOpen={() => {
+              personalGraphSessions.selectSource("personal");
+              router.push("/demo");
+            }}
+            onRetry={() => void continueToGeneration()}
+            onStart={() => void startGeneration()}
+          />
         </section>
       ) : null}
 
@@ -489,6 +644,189 @@ export function StudioIntake() {
       </nav>
     </main>
   );
+}
+
+function StudioGenerationPanel({
+  state,
+  elapsedMs,
+  onCancel,
+  onOpen,
+  onRetry,
+  onStart,
+}: {
+  state: GenerationState;
+  elapsedMs: number;
+  onCancel: () => void;
+  onOpen: () => void;
+  onRetry: () => void;
+  onStart: () => void;
+}) {
+  if (state.status === "idle") return null;
+  return (
+    <section
+      className="studio-generation"
+      aria-labelledby="studio-generation-title"
+      aria-busy={state.status === "checking" || state.status === "building"}
+    >
+      <p className="eyebrow">local generation</p>
+      <h3 id="studio-generation-title">
+        {state.status === "checking"
+          ? "Checking the local companion"
+          : state.status === "ready"
+            ? "Ready to send notes over loopback"
+            : state.status === "unavailable"
+              ? "Local studio needs to be started"
+              : state.status === "building"
+                ? "Building your personal graph"
+                : state.status === "succeeded"
+                  ? "Personal graph ready"
+                  : state.status === "cancelled"
+                    ? "Build cancelled"
+                    : "Build stopped safely"}
+      </h3>
+
+      {state.status === "checking" ? (
+        <p>No note names or contents are included in the capability probe.</p>
+      ) : null}
+
+      {state.status === "unavailable" ? (
+        <>
+          <p>{state.detection.message}</p>
+          <p>
+            Start the local Python companion in another terminal, then retry:
+          </p>
+          <code>{state.detection.recovery}</code>
+          <button
+            className="studio-button studio-button--quiet"
+            type="button"
+            onClick={onRetry}
+          >
+            Check again
+          </button>
+        </>
+      ) : null}
+
+      {state.status === "ready" ? (
+        <>
+          <p>
+            This sends accepted note contents only to {state.detection.endpoint}
+            . Pipeline version {state.detection.capabilities.pipelineVersion}{" "}
+            reports no content logging, no public-data writes, and no persistent
+            personal cache.
+          </p>
+          <p>
+            The first build may download local model weights; that download
+            contains no note data.
+          </p>
+          <button className="studio-button" type="button" onClick={onStart}>
+            Start local graph build
+          </button>
+        </>
+      ) : null}
+
+      {state.status === "building" ? (
+        <>
+          <p>
+            {state.progress?.message ??
+              "Waiting for the local studio to accept the request."}
+          </p>
+          <progress
+            max={state.progress?.totalStages ?? 9}
+            value={state.progress ? state.progress.stageIndex + 1 : 0}
+          >
+            {state.progress ? state.progress.stageIndex + 1 : 0} of{" "}
+            {state.progress?.totalStages ?? 9}
+          </progress>
+          <p className="studio-generation__elapsed">
+            Elapsed {formatElapsed(elapsedMs)}
+          </p>
+          <button
+            className="studio-button studio-button--quiet"
+            type="button"
+            onClick={onCancel}
+          >
+            Cancel build
+          </button>
+        </>
+      ) : null}
+
+      {state.status === "error" || state.status === "cancelled" ? (
+        <>
+          <p role={state.status === "error" ? "alert" : "status"}>
+            {state.message}
+          </p>
+          <p>
+            Elapsed {formatElapsed(state.elapsedMs)}. Your selected source files
+            were not changed.
+          </p>
+          <button
+            className="studio-button studio-button--quiet"
+            type="button"
+            onClick={onRetry}
+          >
+            Retry local build
+          </button>
+        </>
+      ) : null}
+
+      {state.status === "succeeded" ? (
+        <>
+          <dl
+            className="studio-build-summary"
+            aria-label="Personal graph build summary"
+          >
+            <div>
+              <dt>notes</dt>
+              <dd>{state.bundle.report.fileCount}</dd>
+            </div>
+            <div>
+              <dt>nodes</dt>
+              <dd>{state.bundle.graph.nodes.length}</dd>
+            </div>
+            <div>
+              <dt>edges</dt>
+              <dd>{state.bundle.graph.edges.length}</dd>
+            </div>
+            <div>
+              <dt>elapsed</dt>
+              <dd>{formatElapsed(state.elapsedMs)}</dd>
+            </div>
+          </dl>
+          {state.bundle.report.warnings.length > 0 ? (
+            <p>
+              {state.bundle.report.warnings.length} pipeline warnings are
+              included in the private export.
+            </p>
+          ) : null}
+          <button className="studio-button" type="button" onClick={onOpen}>
+            Open personal graph
+          </button>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+function formatElapsed(milliseconds: number): string {
+  if (milliseconds < 1000) return `${Math.max(0, Math.round(milliseconds))} ms`;
+  return `${(milliseconds / 1000).toFixed(1)} s`;
+}
+
+function generationErrorMessage(error: unknown): string {
+  if (error instanceof LocalStudioProviderError) {
+    if (error.code === "unreachable") {
+      return `The loopback companion disconnected. Restart it with: ${localStudioRecoveryCommand}`;
+    }
+    if (error.code === "incompatible" || error.code === "protocol_mismatch") {
+      return "The local companion uses an incompatible protocol. Update and restart the companion.";
+    }
+    if (error.code === "pipeline_unavailable") {
+      return `The local graph model or pipeline is unavailable. Run: ${localStudioRecoveryCommand}`;
+    }
+    return error.message;
+  }
+  if (error instanceof Error) return error.message;
+  return "The local build stopped before returning a readable error.";
 }
 
 async function collectDirectoryHandle(

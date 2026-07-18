@@ -256,11 +256,18 @@ export class LocalStudioProvider implements PersonalGraphGenerationProvider {
           "Personal graph build was cancelled.",
         );
       }
+      if (jobId && !cleanupTerminalJob) {
+        await this.cancelJob(jobId, capabilities.sessionToken);
+      }
       throw error;
     } finally {
       this.jobByRequest.delete(request.requestId);
       if (jobId && cleanupTerminalJob) {
-        await this.cleanupJob(jobId, capabilities.sessionToken);
+        try {
+          await this.cleanupJob(jobId, capabilities.sessionToken);
+        } catch {
+          // Result/error delivery wins over best-effort terminal metadata cleanup.
+        }
       }
     }
   }

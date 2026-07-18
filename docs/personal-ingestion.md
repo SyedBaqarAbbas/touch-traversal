@@ -31,8 +31,30 @@ Intake budgets intentionally fit within the companion's request envelope:
 | Accepted corpus |        8 MiB |                16 MiB |
 
 The companion retains its 20 MiB HTTP request limit for JSON framing and metadata overhead. The
-Continue action is an explicit consent boundary that prepares a versioned request in memory; the
-generation stage consumes that request separately.
+Continue action is an explicit consent boundary that prepares a versioned request in memory and
+performs a content-free capability probe. A second **Start local graph build** action sends the
+accepted notes to the authenticated loopback companion after showing the endpoint and privacy
+contract.
+
+## Generate and open a personal graph
+
+The Studio reports the companion's real nine-stage progress sequence and elapsed wall time. Cancel
+requests abort browser polling and ask the companion to clean its temporary job. Disconnects,
+protocol mismatches, model/pipeline failures, invalid bundles, and zero-node results remain on the
+Studio route with a recovery action; they never replace the currently active graph. Retry performs
+a fresh capability probe so a restarted companion can issue a new process token.
+
+A successful response is parsed and cross-file validated, then converted to the same Graphology
+model used by the sample. Only after all validation succeeds is the in-memory personal session
+published atomically. **Open personal graph** navigates to `/demo` and passes that model directly to
+the existing scene—personal artifacts are never loaded from fixed public URLs.
+
+The graph-source controls switch between sample and personal models without reloading the page.
+They can explicitly export a versioned private-session JSON file, import a compatible file back
+into memory, or remove the personal graph. Import validates before replacing the active session.
+Remove/reset clears only browser memory and returns to the sample; it never deletes or modifies the
+original source files. Sessions intentionally disappear on full page reload and are not written to
+localStorage, IndexedDB, public data, or a hosted service.
 
 ## Start local studio mode
 

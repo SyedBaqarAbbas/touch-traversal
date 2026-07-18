@@ -13,6 +13,7 @@ import {
 } from "../../lib/local-studio-provider";
 import {
   createMemoryPersonalGraphSessionStore,
+  personalGraphSessionVersion,
   PersonalGraphSessionError,
 } from "../../lib/personal-graph-session";
 import {
@@ -299,6 +300,34 @@ describe("local personal-ingestion provider", () => {
     ).rejects.toMatchObject({ code: "cancelled" });
     expect(methods.some((method) => method.startsWith("DELETE "))).toBe(true);
   });
+
+  it("requests cleanup when the companion disconnects during a build", async () => {
+    const methods: string[] = [];
+    const fetchImplementation = vi.fn(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = String(input);
+        methods.push(`${init?.method ?? "GET"} ${url}`);
+        if (url.endsWith("/v1/capabilities")) return jsonResponse(capabilities);
+        if (url.endsWith("/v1/jobs") && init?.method === "POST") {
+          return jsonResponse(snapshot("running", "ingesting", 2), 202);
+        }
+        if (init?.method === "DELETE")
+          return new Response(null, { status: 204 });
+        throw new TypeError("fixture disconnect");
+      },
+    );
+    const provider = new LocalStudioProvider({
+      fetchImplementation: fetchImplementation as typeof fetch,
+      pollIntervalMs: 0,
+      sleep: async () => undefined,
+    });
+
+    await expect(provider.build(request)).rejects.toMatchObject({
+      code: "unreachable",
+      retryable: true,
+    });
+    expect(methods.at(-1)).toMatch(/^DELETE .*\/v1\/jobs\/job-fixture$/);
+  });
 });
 
 describe("personal graph contracts and memory lifecycle", () => {
@@ -328,7 +357,80 @@ describe("personal graph contracts and memory lifecycle", () => {
 
     store.activate("two-note", bundle);
     expect(store.current()?.model.graph.order).toBe(2);
+    expect(store.snapshot().source).toBe("personal");
+    expect(() => store.activate("invalid-after-valid", invalid)).toThrow(
+      "layout node ids must match graph node ids",
+    );
+    expect(store.current()?.id).toBe("two-note");
+    store.selectSource("sample");
+    expect(store.snapshot().source).toBe("sample");
     store.reset();
     expect(store.current()).toBeNull();
+  });
+
+  it("exports and imports a versioned private session entirely in memory", () => {
+    const source = createMemoryPersonalGraphSessionStore();
+    const target = createMemoryPersonalGraphSessionStore();
+    const observed: number[] = [];
+    const unsubscribe = target.subscribe(() =>
+      observed.push(target.snapshot().revision),
+    );
+    source.activate("private-export", twoNoteBundle(), {
+      createdAt: "2026-07-18T12:00:00.000Z",
+      noteCount: 2,
+    });
+
+    const serialized = source.exportActiveSession();
+    expect(JSON.parse(serialized)).toMatchObject({
+      sessionVersion: personalGraphSessionVersion,
+      metadata: {
+        id: "private-export",
+        origin: "generated",
+        nodeCount: 2,
+      },
+    });
+    const imported = target.importSession(serialized);
+
+    expect(imported.metadata).toMatchObject({
+      sessionVersion: personalGraphSessionVersion,
+      id: "private-export",
+      origin: "imported",
+      noteCount: 2,
+    });
+    expect(imported.model.graph.order).toBe(2);
+    expect(target.snapshot().source).toBe("personal");
+    expect(observed).toEqual([1]);
+    unsubscribe();
+    expect(() => target.importSession('{"sessionVersion":2}')).toThrow(
+      "compatible version 1",
+    );
+  });
+
+  it("rejects zero-node activation while preserving the current personal graph", () => {
+    const store = createMemoryPersonalGraphSessionStore();
+    const bundle = twoNoteBundle();
+    store.activate("current", bundle);
+    const empty = structuredClone(bundle);
+    empty.graph.nodes = [];
+    empty.graph.edges = [];
+    for (const layout of Object.values(empty.layouts.layouts)) {
+      for (const nodeId of Object.keys(layout))
+        Reflect.deleteProperty(layout, nodeId);
+    }
+    empty.manifest.nodeCount = 0;
+    empty.manifest.edgeCount = 0;
+    empty.report.fileCount = 1;
+    empty.report.chunkCount = 0;
+    empty.report.nodeCount = 0;
+    empty.report.edgeCount = 0;
+    empty.report.edgeCounts = Object.fromEntries(
+      Object.keys(empty.report.edgeCounts).map((edgeType) => [edgeType, 0]),
+    );
+    empty.report.isolatedNodeCount = 0;
+    empty.report.averageDegree = 0;
+    empty.report.clusterCount = 0;
+
+    expect(() => store.activate("empty", empty)).toThrow("no graph nodes");
+    expect(store.current()?.id).toBe("current");
   });
 });

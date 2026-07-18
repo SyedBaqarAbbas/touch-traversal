@@ -2427,3 +2427,132 @@ a {
     width: 100%;
   }
 }
+
+.studio-generation {
+  display: grid;
+  justify-items: start;
+  gap: 0.9rem;
+  padding: 1.25rem;
+  border: 1px solid var(--subtle-line);
+  background: var(--quiet-fill);
+}
+
+.studio-generation h3,
+.studio-generation p {
+  margin: 0;
+}
+
+.studio-generation p {
+  max-width: 54rem;
+  color: var(--secondary-text);
+  line-height: 1.55;
+}
+
+.studio-generation code {
+  max-width: 100%;
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--subtle-line);
+  color: var(--primary-text);
+}
+
+.studio-generation progress {
+  width: min(30rem, 100%);
+  height: 0.45rem;
+  accent-color: var(--selected-core);
+}
+
+.studio-build-summary {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--subtle-line);
+  border-left: 1px solid var(--subtle-line);
+}
+
+.studio-build-summary div {
+  padding: 0.75rem;
+  border-right: 1px solid var(--subtle-line);
+  border-bottom: 1px solid var(--subtle-line);
+}
+
+.studio-build-summary dt {
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+}
+
+.studio-build-summary dd {
+  margin: 0.35rem 0 0;
+  font-size: 1.2rem;
+}
+
+.artifact-source-controls {
+  position: fixed;
+  z-index: 30;
+  top: 1rem;
+  left: 50%;
+  display: flex;
+  max-width: calc(100vw - 2rem);
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem;
+  border: 1px solid var(--subtle-line);
+  background: rgba(5, 5, 5, 0.94);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  transform: translateX(-50%);
+}
+
+.artifact-source-controls button {
+  padding: 0.38rem 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--secondary-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.62rem;
+}
+
+.artifact-source-controls button[aria-pressed="true"] {
+  border-color: var(--strong-line);
+  color: var(--primary-text);
+}
+
+.artifact-source-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.artifact-source-controls button:focus-visible {
+  outline: 2px solid var(--selected-core);
+  outline-offset: 2px;
+}
+
+.artifact-source-controls__switch {
+  display: flex;
+}
+
+.artifact-source-controls > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+@media (max-width: 760px) {
+  .studio-build-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .artifact-source-controls {
+    top: auto;
+    right: 0.75rem;
+    bottom: 3.5rem;
+    left: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    transform: none;
+  }
+}

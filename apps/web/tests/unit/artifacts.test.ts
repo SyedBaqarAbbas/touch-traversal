@@ -13,6 +13,7 @@ import {
   type GraphModel,
 } from "../../lib/graph-model";
 import {
+  loadArtifactModelFromSource,
   resolveArtifactViewState,
   type ArtifactViewState,
 } from "../../app/_components/artifact-boundary";
@@ -51,6 +52,18 @@ describe("artifact runtime boundary", () => {
     expect(selectLayoutPositions(model, "semantic")[0]?.position).toEqual(
       firstSemanticPosition,
     );
+  });
+
+  it("loads an in-memory bundle without requesting fixed public URLs", async () => {
+    const fetcher = async () => {
+      throw new Error("bundle sources must not fetch");
+    };
+    const model = await loadArtifactModelFromSource(
+      { kind: "bundle", bundle: validBundle },
+      fetcher as typeof fetch,
+    );
+
+    expect(model.graph.order).toBe(graph.nodes.length);
   });
 
   it("rejects malformed artifact payloads with useful paths", () => {

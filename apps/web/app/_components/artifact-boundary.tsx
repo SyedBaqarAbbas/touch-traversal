@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { GraphScene, type GraphInputMode } from "@/app/_components/graph-scene";
 import {
@@ -10,6 +10,10 @@ import {
 import { buildGraphModel, type GraphModel } from "@/lib/graph-model";
 import { publicAssetUrl } from "@/lib/public-url";
 import { recordingModeEnabled } from "@/lib/recording-mode";
+import {
+  personalGraphSessions,
+  type PersonalGraphSessionSnapshot,
+} from "@/lib/personal-graph-session";
 
 type ArtifactLoadState =
   | { status: "loading" }
@@ -53,6 +57,16 @@ const artifactPaths = {
 export async function loadArtifactModel(
   fetcher: typeof fetch = fetch,
 ): Promise<GraphModel> {
+  return loadArtifactModelFromSource({ kind: "sample" }, fetcher);
+}
+
+export async function loadArtifactModelFromSource(
+  source: { kind: "sample" } | { kind: "bundle"; bundle: unknown },
+  fetcher: typeof fetch = fetch,
+): Promise<GraphModel> {
+  if (source.kind === "bundle") {
+    return buildGraphModel(parseArtifactBundle(source.bundle));
+  }
   const [graph, layouts, manifest, report] = await Promise.all([
     fetchJson(fetcher, artifactPaths.graph),
     fetchJson(fetcher, artifactPaths.layouts),
@@ -117,6 +131,11 @@ export function ArtifactBoundary({
 } = {}) {
   const [state, setState] = useState<ArtifactLoadState>({ status: "loading" });
   const { inputMode, performanceFixture, recordingMode } = useDemoOptions();
+  const personalSnapshot = useSyncExternalStore(
+    personalGraphSessions.subscribe,
+    personalGraphSessions.snapshot,
+    getServerPersonalSnapshot,
+  );
 
   useEffect(() => {
     let active = true;
@@ -138,18 +157,143 @@ export function ArtifactBoundary({
     };
   }, []);
 
-  const viewState = resolveArtifactViewState(state);
+  const selectedState: ArtifactLoadState =
+    personalSnapshot.source === "personal" && personalSnapshot.personal
+      ? { status: "ready", model: personalSnapshot.personal.model }
+      : state;
+  const viewState = resolveArtifactViewState(selectedState);
   if (viewState.kind !== "ready") {
-    return <ArtifactStatusScreen state={viewState} />;
+    return (
+      <>
+        <ArtifactSourceControls snapshot={personalSnapshot} />
+        <ArtifactStatusScreen state={viewState} />
+      </>
+    );
   }
   return (
-    <GraphScene
-      inputMode={inputMode}
-      model={viewState.model}
-      performanceFixture={performanceMode && performanceFixture}
-      performanceMode={performanceMode}
-      recordingMode={recordingMode}
-    />
+    <>
+      {!performanceMode && !recordingMode ? (
+        <ArtifactSourceControls snapshot={personalSnapshot} />
+      ) : null}
+      <GraphScene
+        key={`${personalSnapshot.source}-${personalSnapshot.personal?.id ?? "sample"}`}
+        inputMode={inputMode}
+        model={viewState.model}
+        performanceFixture={performanceMode && performanceFixture}
+        performanceMode={performanceMode}
+        recordingMode={recordingMode}
+      />
+    </>
+  );
+}
+
+const serverPersonalSnapshot: PersonalGraphSessionSnapshot = {
+  revision: 0,
+  source: "sample",
+  personal: null,
+};
+
+function getServerPersonalSnapshot(): PersonalGraphSessionSnapshot {
+  return serverPersonalSnapshot;
+}
+
+function ArtifactSourceControls({
+  snapshot,
+}: {
+  snapshot: PersonalGraphSessionSnapshot;
+}) {
+  const [message, setMessage] = useState("");
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const exportPersonal = () => {
+    try {
+      const contents = personalGraphSessions.exportActiveSession();
+      const url = URL.createObjectURL(
+        new Blob([contents], { type: "application/json" }),
+      );
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "touch-traversal-personal-session.json";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setMessage("Private session export prepared on this device.");
+    } catch (error) {
+      setMessage(formatArtifactError(error));
+    }
+  };
+
+  const importPersonal = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const session = personalGraphSessions.importSession(await file.text());
+      setMessage(
+        `Imported ${session.metadata.nodeCount} nodes into memory. Source files were not changed.`,
+      );
+    } catch (error) {
+      setMessage(formatArtifactError(error));
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <aside className="artifact-source-controls" aria-label="Graph source">
+      <div
+        className="artifact-source-controls__switch"
+        role="group"
+        aria-label="Displayed graph"
+      >
+        <button
+          type="button"
+          aria-pressed={snapshot.source === "sample"}
+          onClick={() => personalGraphSessions.selectSource("sample")}
+        >
+          sample
+        </button>
+        <button
+          type="button"
+          aria-pressed={snapshot.source === "personal"}
+          disabled={!snapshot.personal}
+          onClick={() => personalGraphSessions.selectSource("personal")}
+        >
+          personal
+        </button>
+      </div>
+      <button type="button" onClick={() => importInputRef.current?.click()}>
+        import private JSON
+      </button>
+      <input
+        ref={importInputRef}
+        className="studio-visually-hidden"
+        type="file"
+        accept="application/json,.json"
+        aria-label="Import private graph JSON"
+        onChange={(event) =>
+          void importPersonal(event.currentTarget.files?.[0])
+        }
+      />
+      {snapshot.personal ? (
+        <>
+          <button type="button" onClick={exportPersonal}>
+            export private JSON
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              personalGraphSessions.reset();
+              setMessage(
+                "Personal graph removed from memory. Original source files were not changed.",
+              );
+            }}
+          >
+            remove personal graph
+          </button>
+        </>
+      ) : null}
+      <span role="status" aria-live="polite">
+        {message}
+      </span>
+    </aside>
   );
 }
 
