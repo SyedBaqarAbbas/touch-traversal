@@ -37,6 +37,7 @@ _WIKI_LINK_PATTERN = re.compile(
 _HASHTAG_PATTERN = re.compile(r"(?<![\w/])#(?P<tag>[\w][\w/-]*)", flags=re.UNICODE)
 _CREATED_KEYS = ("created_at", "createdAt", "created", "date")
 _MODIFIED_KEYS = ("modified_at", "modifiedAt", "modified", "updated_at", "updatedAt", "updated")
+_UNKNOWN_DATE = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 class DocumentIngestionError(ValueError):
@@ -326,20 +327,20 @@ def parse_document(path: Path, root: Path) -> SourceDocument:
         or fallback_title
     )
 
-    stat = path.stat()
-    filesystem_modified = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
     created_value = _first_metadata_value(metadata, _CREATED_KEYS)
     modified_value = _first_metadata_value(metadata, _MODIFIED_KEYS)
     if created_value is None:
-        created_at = filesystem_modified
-        date_source = DateSource.FILESYSTEM
+        # Filesystem mtimes vary between otherwise identical checkouts. Keep undated
+        # documents explicitly uncertain while preserving byte-stable artifacts.
+        created_at = _UNKNOWN_DATE
+        date_source = DateSource.FALLBACK
     else:
         created_at = _normalized_datetime(created_value[1], path, created_value[0])
         date_source = DateSource.FRONT_MATTER
     modified_at = (
         _normalized_datetime(modified_value[1], path, modified_value[0])
         if modified_value is not None
-        else filesystem_modified
+        else created_at
     )
 
     json_metadata = {key: _as_json_value(value, path, key) for key, value in metadata.items()}

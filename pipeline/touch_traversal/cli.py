@@ -149,6 +149,7 @@ def _run_build(args: argparse.Namespace) -> int:
         graph,
         config.layouts,
     )
+    elapsed_ms = (perf_counter() - started_at) * 1000
     bundle = build_artifact_bundle(
         corpus_name=input_path.name,
         documents=documents,
@@ -158,12 +159,15 @@ def _run_build(args: argparse.Namespace) -> int:
         relation_graph=graph,
         layouts=layouts,
         config=config,
-        build_duration_ms=(perf_counter() - started_at) * 1000,
+        # Wall-clock measurements make exported JSON vary between equivalent builds.
+        # Report the measured duration to the operator, but not inside the artifact.
+        build_duration_ms=0.0,
     )
     exported = export_artifacts(output_path, bundle)
     print(
         f"exported {len(bundle.graph.nodes)} nodes, {len(bundle.graph.edges)} edges, and four "
-        f"layouts to {output_path}: {', '.join(path.name for path in exported)}"
+        f"layouts to {output_path} in {elapsed_ms:.1f} ms: "
+        f"{', '.join(path.name for path in exported)}"
     )
     return 0
 

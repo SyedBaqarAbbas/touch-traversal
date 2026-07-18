@@ -16,7 +16,7 @@ class DocumentFormat(StrEnum):
 
 class DateSource(StrEnum):
     FRONT_MATTER = "front_matter"
-    FILESYSTEM = "filesystem"
+    FALLBACK = "fallback"
 
 
 class DocumentHeading(ArtifactModel):

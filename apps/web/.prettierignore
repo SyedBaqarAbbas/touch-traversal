@@ -1,6 +1,8 @@
 .next
+out
 node_modules
 coverage
 playwright-report
 test-results
+public/data
 public/vendor

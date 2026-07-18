@@ -110,7 +110,7 @@ Punctuation stays: calm, legible, and deliberate.
         self.assertEqual(document.markdown_links[0].title, "Reference")
         self.assertEqual(document.front_matter["date"], "2026-04-08")
 
-    def test_filesystem_time_is_used_when_front_matter_has_no_date(self) -> None:
+    def test_undated_documents_use_a_stable_fallback_instead_of_filesystem_time(self) -> None:
         timestamp = 1_700_000_000
 
         with tempfile.TemporaryDirectory() as directory:
@@ -123,9 +123,25 @@ Punctuation stays: calm, legible, and deliberate.
 
         self.assertEqual(document.format, DocumentFormat.TEXT)
         self.assertEqual(document.title, "plain note")
-        self.assertEqual(document.date_source, DateSource.FILESYSTEM)
-        self.assertEqual(document.created_at, datetime.fromtimestamp(timestamp, tz=UTC))
-        self.assertEqual(document.modified_at, datetime.fromtimestamp(timestamp, tz=UTC))
+        self.assertEqual(document.date_source, DateSource.FALLBACK)
+        self.assertEqual(document.created_at, datetime(1970, 1, 1, tzinfo=UTC))
+        self.assertEqual(document.modified_at, document.created_at)
+
+    def test_created_date_is_the_stable_modified_fallback(self) -> None:
+        timestamp = 1_700_000_000
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "dated.md"
+            path.write_text("---\ndate: 2026-04-08\n---\n# Dated\n", encoding="utf-8")
+            os.utime(path, (timestamp, timestamp))
+
+            first = parse_document(path, root)
+            os.utime(path, (timestamp + 10_000, timestamp + 10_000))
+            second = parse_document(path, root)
+
+        self.assertEqual(first.modified_at, datetime(2026, 4, 8, tzinfo=UTC))
+        self.assertEqual(first, second)
 
     def test_missing_front_matter_delimiter_is_actionable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

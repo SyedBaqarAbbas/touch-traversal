@@ -111,7 +111,7 @@ class CliTests(unittest.TestCase):
             patch(
                 "touch_traversal.cli.build_artifact_bundle",
                 return_value=exported_bundle,
-            ),
+            ) as build_bundle_mock,
             patch(
                 "touch_traversal.cli.export_artifacts",
                 return_value=tuple(
@@ -124,6 +124,7 @@ class CliTests(unittest.TestCase):
                     )
                 ),
             ),
+            patch("touch_traversal.cli.perf_counter", side_effect=(10.0, 42.5)),
             contextlib.redirect_stdout(stdout),
             contextlib.redirect_stderr(stderr),
         ):
@@ -142,6 +143,8 @@ class CliTests(unittest.TestCase):
         self.assertIn(
             "graph.json, layouts.json, manifest.json, pipeline-report.json", stdout.getvalue()
         )
+        self.assertEqual(build_bundle_mock.call_args.kwargs["build_duration_ms"], 0.0)
+        self.assertIn("in 32500.0 ms", stdout.getvalue())
 
     def test_inspect_reports_the_sample_corpus_without_note_text(self) -> None:
         stdout = io.StringIO()
