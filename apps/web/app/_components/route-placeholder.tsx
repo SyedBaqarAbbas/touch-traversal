@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HelpTutorialLinks } from "@/app/_components/tutorial-links";
 
 type RoutePlaceholderProps = {
   eyebrow: string;
@@ -24,6 +25,7 @@ export function RoutePlaceholder({
 }: RoutePlaceholderProps) {
   return (
     <main className="route-shell">
+      <HelpTutorialLinks />
       <div className="constellation" aria-hidden="true">
         <span className="constellation__line constellation__line--one" />
         <span className="constellation__line constellation__line--two" />

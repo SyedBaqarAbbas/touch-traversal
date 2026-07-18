@@ -53,6 +53,199 @@ a {
   text-decoration: none;
 }
 
+.tutorial-links {
+  position: fixed;
+  z-index: 20;
+  top: 0.9rem;
+  right: clamp(1.25rem, 3vw, 2.75rem);
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.42rem 0.58rem;
+  border: 1px solid var(--subtle-line);
+  background: rgba(5, 5, 5, 0.88);
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.07em;
+  text-transform: lowercase;
+}
+
+.tutorial-links a:hover,
+.tutorial-links a:focus-visible {
+  color: var(--primary-text);
+}
+
+.home-tutorial-invitation {
+  position: fixed;
+  z-index: 12;
+  right: clamp(1.25rem, 4vw, 4rem);
+  bottom: clamp(4rem, 9vw, 7rem);
+  width: min(25rem, calc(100vw - 2.5rem));
+  padding: 1rem;
+  border: 1px solid var(--subtle-line);
+  background: rgba(5, 5, 5, 0.92);
+}
+
+.home-tutorial-invitation h2 {
+  margin: 0.45rem 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+.home-tutorial-invitation > p:not(.eyebrow) {
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.tutorial-shell {
+  display: grid;
+  min-height: 100svh;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: clamp(1rem, 3vw, 2.2rem);
+  padding: clamp(1.25rem, 3vw, 2.75rem);
+}
+
+.tutorial-shell--invitation {
+  grid-template-rows: auto 1fr auto;
+}
+.tutorial-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--secondary-text);
+  font:
+    0.65rem/1.4 "SFMono-Regular",
+    Consolas,
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+.tutorial-progress {
+  display: flex;
+  gap: 0.5rem;
+}
+.tutorial-progress button {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--subtle-line);
+  border-radius: 999px;
+  color: var(--secondary-text);
+  background: transparent;
+  cursor: pointer;
+}
+.tutorial-progress button[aria-current="step"] {
+  border-color: var(--strong-line);
+  color: var(--primary-text);
+  background: var(--quiet-fill-strong);
+}
+.tutorial-card,
+.tutorial-invitation {
+  align-self: center;
+  width: min(43rem, 92vw);
+  margin-left: clamp(0rem, 7vw, 8rem);
+}
+.tutorial-card h1,
+.tutorial-invitation h1 {
+  max-width: 15ch;
+  margin: 0.8rem 0 1.1rem;
+  font-size: clamp(2.2rem, 5.5vw, 4.7rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+}
+.tutorial-card h1:focus,
+.tutorial-invitation h1:focus {
+  outline: none;
+}
+.tutorial-card ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1.25rem 0;
+  padding-left: 1.1rem;
+  color: var(--secondary-text);
+  line-height: 1.5;
+}
+.tutorial-practice {
+  display: inline-flex;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--strong-line);
+  font:
+    0.66rem/1 "SFMono-Regular",
+    Consolas,
+    monospace;
+  letter-spacing: 0.07em;
+  text-transform: lowercase;
+}
+.tutorial-actions,
+.tutorial-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+.tutorial-actions button,
+.tutorial-actions a,
+.tutorial-navigation button {
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--subtle-line);
+  color: var(--primary-text);
+  background: var(--quiet-fill);
+  cursor: pointer;
+  font:
+    0.65rem/1 "SFMono-Regular",
+    Consolas,
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+.tutorial-actions a {
+  display: inline-flex;
+  align-items: center;
+}
+.tutorial-navigation {
+  justify-content: space-between;
+}
+.tutorial-navigation button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.tutorial-live {
+  min-height: 1rem;
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 0.7rem;
+}
+.tutorial-coach {
+  position: fixed;
+  z-index: 19;
+  right: clamp(1.25rem, 3vw, 2.75rem);
+  top: 4rem;
+  width: min(20rem, calc(100vw - 2.5rem));
+  padding: 0.65rem;
+  border: 1px solid var(--subtle-line);
+  background: rgba(5, 5, 5, 0.9);
+  transition: opacity 180ms ease;
+}
+.tutorial-coach[data-visible="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+.tutorial-coach p {
+  margin: 0 0 0.4rem;
+  color: var(--secondary-text);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.tutorial-coach a {
+  font:
+    0.6rem/1 "SFMono-Regular",
+    Consolas,
+    monospace;
+  text-transform: lowercase;
+}
+
 ::selection {
   background: var(--primary-text);
   color: var(--background);
@@ -765,6 +958,7 @@ a {
 
 .scene-canvas {
   position: absolute !important;
+  z-index: 1;
   inset: 0;
   width: 100% !important;
   height: 100% !important;
@@ -790,7 +984,7 @@ a {
 .camera-access-panel,
 .scene-nav {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .scene-header,
@@ -1924,6 +2118,18 @@ a {
 }
 
 @media (max-width: 720px) {
+  .tutorial-links {
+    top: auto;
+    right: 1.25rem;
+    bottom: 1rem;
+  }
+  .tutorial-card,
+  .tutorial-invitation {
+    margin-left: 0;
+  }
+  .tutorial-progress {
+    overflow-x: auto;
+  }
   .mode-label {
     display: none;
   }

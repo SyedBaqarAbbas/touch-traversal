@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { HandCalibrationPanel } from "@/app/_components/hand-calibration-panel";
+import { HelpTutorialLinks } from "@/app/_components/tutorial-links";
+import { TutorialCoach } from "@/app/_components/tutorial-coach";
 
 export const metadata: Metadata = {
   title: "Calibration",
@@ -19,6 +21,7 @@ const routes = [
 export default function CalibrationPage() {
   return (
     <main className="calibration-shell">
+      <HelpTutorialLinks />
       <header className="debug-header">
         <Link className="wordmark" href="/">
           touch traversal
@@ -36,6 +39,7 @@ export default function CalibrationPage() {
       </section>
 
       <HandCalibrationPanel mode="calibration" />
+      <TutorialCoach context="calibration" />
 
       <nav className="route-shell__nav" aria-label="Prototype routes">
         {routes.map((route) => (

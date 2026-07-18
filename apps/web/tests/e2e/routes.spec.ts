@@ -141,6 +141,106 @@ for (const [path, heading] of routes) {
   });
 }
 
+test("first-run tutorial supports mouse-only practice, resume, and replay", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Take a calm, private first pass." }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Mouse and keyboard only" }).click();
+  await expect(page).toHaveURL(/\/tutorial/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Thoughts become nodes. Relationships become edges.",
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", {
+      name: "Practice with fiction before choosing personal notes.",
+    }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("touch-traversal:tutorial:v2") ?? "null"),
+    ),
+  ).toMatchObject({ inputPath: "mouse-keyboard", status: "active" });
+
+  await page.goto("/demo");
+  await page.getByRole("link", { name: "controls" }).click();
+  await expect(page).toHaveURL(/\/tutorial\/?#controls$/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Focus, traverse, return, reshape, reset.",
+    }),
+  ).toBeVisible();
+
+  for (let remaining = 6; remaining > 0; remaining -= 1) {
+    await page
+      .getByRole("button", {
+        name: /^(?:Next|Next \/ skip optional|Finish)$/,
+      })
+      .click();
+  }
+  await expect(
+    page.getByRole("heading", { name: "The graph is yours to explore." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Replay tutorial" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Learn the graph at your pace." }),
+  ).toBeVisible();
+});
+
+test("tutorial requests no permissions, supports skip, and remains available from help", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () => {
+          sessionStorage.setItem("unexpected-camera-request", "true");
+          return Promise.reject(
+            new Error("tutorial must not request a device"),
+          );
+        },
+      },
+    });
+  });
+  await page.goto("/tutorial");
+  await expect(
+    page.getByRole("heading", { name: "Learn the graph at your pace." }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      sessionStorage.getItem("unexpected-camera-request"),
+    ),
+  ).toBeNull();
+
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("touch-traversal:tutorial:v2") ?? "null"),
+    ),
+  ).toMatchObject({ status: "skipped" });
+
+  await page.goto("/demo");
+  await page.getByRole("link", { name: "help" }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Thoughts become nodes. Relationships become edges.",
+    }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      sessionStorage.getItem("unexpected-camera-request"),
+    ),
+  ).toBeNull();
+});
+
 test("/demo reveals a title-only hover label after stable hover", async ({
   page,
 }) => {
@@ -712,7 +812,20 @@ test("/calibration captures its visual state", async ({ page }, testInfo) => {
 test("/demo?input=gesture-fixture manipulates and resets the camera view", async ({
   page,
 }) => {
-  await page.goto("/demo?input=gesture-fixture");
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "touch-traversal:tutorial:v2",
+      JSON.stringify({
+        completedActions: [],
+        completedSteps: ["model", "sources", "mouse-keyboard", "hand"],
+        currentStep: "manipulation",
+        inputPath: "full",
+        status: "active",
+        version: 2,
+      }),
+    );
+  });
+  await page.goto("/demo?input=gesture-fixture&tutorial=manipulation");
   await expect(page.getByText("input / gesture fixture")).toBeVisible();
 
   const orbit = findGestureFixture(gestureFixtures, "orbit").frames;
@@ -727,6 +840,21 @@ test("/demo?input=gesture-fixture manipulates and resets the camera view", async
     "gesture / orbit · pan · depth zoom",
     { timeout: gestureHintTimeoutMs },
   );
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "grab-release").frames.slice(-2),
+  );
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("touch-traversal:tutorial:v2") ?? "null"),
+    ),
+  ).toMatchObject({
+    completedActions: [
+      "manipulation-start",
+      "manipulation-update",
+      "manipulation-end",
+    ],
+  });
 
   const controls = page.getByRole("complementary", {
     name: "View manipulation",

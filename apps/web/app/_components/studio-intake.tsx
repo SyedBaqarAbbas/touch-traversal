@@ -29,6 +29,8 @@ import {
   type LocalStudioCapabilityDetection,
 } from "@/lib/local-studio-provider";
 import { personalGraphSessions } from "@/lib/personal-graph-session";
+import { HelpTutorialLinks } from "@/app/_components/tutorial-links";
+import { TutorialCoach } from "@/app/_components/tutorial-coach";
 import type { StudioProgress } from "@/lib/personal-ingestion-contract";
 
 type DirectoryHandle = {
@@ -140,6 +142,14 @@ export function StudioIntake() {
     return () => window.clearInterval(interval);
   }, [generation.status]);
 
+  useEffect(() => {
+    if (!preview) return;
+    const frame = window.requestAnimationFrame(() =>
+      previewHeadingRef.current?.focus(),
+    );
+    return () => window.cancelAnimationFrame(frame);
+  }, [preview]);
+
   const assignCandidates = useCallback(
     (
       files: readonly File[],
@@ -183,7 +193,6 @@ export function StudioIntake() {
       setStatus(
         `${nextPreview.acceptedCount} accepted, ${nextPreview.excludedCount} excluded, ${formatBytes(nextPreview.acceptedBytes)} ready locally.`,
       );
-      requestAnimationFrame(() => previewHeadingRef.current?.focus());
     },
     [],
   );
@@ -390,6 +399,8 @@ export function StudioIntake() {
 
   return (
     <main className="studio-shell">
+      <HelpTutorialLinks />
+      <TutorialCoach context="studio" />
       <header className="studio-header">
         <Link className="wordmark" href="/">
           touch traversal

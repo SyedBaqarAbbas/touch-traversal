@@ -19,6 +19,8 @@ import * as THREE from "three";
 
 import { CameraAccessPanel } from "@/app/_components/camera-access-panel";
 import { SceneViewControls } from "@/app/_components/scene-view-controls";
+import { HelpTutorialLinks } from "@/app/_components/tutorial-links";
+import { TutorialCoach } from "@/app/_components/tutorial-coach";
 import type { LayoutName, Vec3 } from "@/lib/artifacts/schema";
 import {
   applyHandManipulationDelta,
@@ -112,6 +114,7 @@ import {
   type SceneNode,
   type SceneThoughtLabel,
 } from "@/lib/scene-model";
+import { announceTutorialAction } from "@/lib/tutorial-events";
 
 const routes = [
   { href: "/", label: "home" },
@@ -684,6 +687,7 @@ export function GraphScene({
       nodeId: targetNodeId,
       timestampMs,
     });
+    announceTutorialAction("traverse");
     return true;
   };
 
@@ -706,6 +710,7 @@ export function GraphScene({
       nodeId,
       timestampMs,
     });
+    announceTutorialAction("focus");
   };
 
   const returnOverview = (timestampMs: number) => {
@@ -722,6 +727,7 @@ export function GraphScene({
       type: "RETURN_OVERVIEW",
       timestampMs,
     });
+    announceTutorialAction("return");
   };
 
   const switchTopology = (nextLayoutName: LayoutName) => {
@@ -738,6 +744,7 @@ export function GraphScene({
     );
     setSceneTransitionMs(durationMs);
     setLayoutName(nextLayoutName);
+    announceTutorialAction("topology");
   };
 
   const showGestureHint = (label: string, timestampMs = performance.now()) => {
@@ -856,6 +863,13 @@ export function GraphScene({
             break;
           }
           case "manipulation":
+            announceTutorialAction(
+              action.event.phase === "begin"
+                ? "manipulation-start"
+                : action.event.phase === "end"
+                  ? "manipulation-end"
+                  : "manipulation-update",
+            );
             if (action.event.phase === "update") {
               cameraManipulationRef.current = applyHandManipulationDelta(
                 cameraManipulationRef.current,
@@ -897,6 +911,7 @@ export function GraphScene({
         cameraResetRevisionRef.current += 1;
         gestureActionsRef.current?.showGestureHint("view / reset");
       }
+      announceTutorialAction(control === "reset" ? "view-reset" : "view");
     },
     [noteHudActivity],
   );
@@ -1015,6 +1030,8 @@ export function GraphScene({
       ref={sceneShellRef}
       style={sceneIntroStyle()}
     >
+      <HelpTutorialLinks />
+      <TutorialCoach context={performanceMode ? "performance" : "graph"} />
       <Canvas
         className="scene-canvas"
         dpr={sceneQuality.dpr}
