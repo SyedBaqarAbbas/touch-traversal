@@ -26,7 +26,17 @@ export type TutorialActionName =
   | "view-reset"
   | "manipulation-start"
   | "manipulation-update"
-  | "manipulation-end";
+  | "manipulation-end"
+  | "hand-point"
+  | "hand-select"
+  | "hand-traverse"
+  | "hand-return"
+  | "hand-topology"
+  | "hand-grab"
+  | "hand-orbit"
+  | "hand-pan"
+  | "hand-zoom"
+  | "hand-release";
 
 export type TutorialState = {
   version: typeof tutorialVersion;
@@ -238,4 +248,14 @@ const tutorialActions = new Set<TutorialActionName>([
   "manipulation-start",
   "manipulation-update",
   "manipulation-end",
+  "hand-point",
+  "hand-select",
+  "hand-traverse",
+  "hand-return",
+  "hand-topology",
+  "hand-grab",
+  "hand-orbit",
+  "hand-pan",
+  "hand-zoom",
+  "hand-release",
 ]);

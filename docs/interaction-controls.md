@@ -63,6 +63,18 @@ Node pinches keep selection/traversal priority. Hand loss and conflicting scene 
 an empty-space grab safely. The injected-fixture browser flow uses the same cursor and landmark
 handlers as live input.
 
+The optional hand step in `/tutorial` includes a visual movement guide for point, pinch,
+open-palm return, and topology swipe. Its **Start interactive hand practice** action opens the
+sample graph with a persistent ordered checklist that confirms those movements only when the live
+hand runtime produces the corresponding graph outcome. The direct-manipulation step similarly
+confirms empty-space grab, horizontal orbit, vertical pan, depth zoom, and release. The camera still
+starts only after **Enable hand camera** is pressed; denial leaves the written guide and the complete
+mouse/keyboard path available.
+
+There is intentionally no hand gesture for a direct `1`–`4` topology choice, horizontal pan, or
+view reset. A hand swipe cycles one available topology, empty-space hand movement pans vertically,
+and **Reset view** / `0` restores the authored camera pose.
+
 ## Performance presentation
 
 `/perform` keeps the graph scene mounted while a single optional camera stream supplies both the

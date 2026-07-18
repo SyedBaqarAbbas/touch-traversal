@@ -241,6 +241,153 @@ test("tutorial requests no permissions, supports skip, and remains available fro
   ).toBeNull();
 });
 
+test("tutorial visually teaches the complete hand movement mapping without requesting a camera", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () => {
+          sessionStorage.setItem("unexpected-guide-camera-request", "true");
+          return Promise.reject(new Error("guide must stay camera-free"));
+        },
+      },
+    });
+  });
+  await page.goto("/tutorial?path=full");
+  await page.getByRole("button", { name: /Go to step 4:/ }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Traverse a thought with one hand." }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Point" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Pinch, release, pinch again" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/hold the pose for about half a second/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/there is no direct 1–4 hand pose/i),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Start interactive hand practice" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: /Go to step 5:/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Grab the graph, then move the view." }),
+  ).toBeVisible();
+  await expect(page.getByText(/orbit the knowledge graph/i)).toBeVisible();
+  await expect(
+    page.getByText(/Pan vertically\. Use named controls for horizontal pan\./),
+  ).toBeVisible();
+  await expect(page.getByText(/toward the camera to zoom in/i)).toBeVisible();
+  await expect(
+    page.getByText(/Reset has no hand gesture; use Reset view or 0\./),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      sessionStorage.getItem("unexpected-guide-camera-request"),
+    ),
+  ).toBeNull();
+});
+
+test("interactive hand tutorial confirms the ordered production gesture flow", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "touch-traversal:tutorial:v2",
+      JSON.stringify({
+        completedActions: [],
+        completedSteps: ["model", "sources", "mouse-keyboard"],
+        currentStep: "hand",
+        inputPath: "full",
+        status: "active",
+        version: 2,
+      }),
+    );
+  });
+  await page.goto("/demo?input=gesture-fixture&tutorial=hand");
+
+  const coach = page.getByRole("complementary", {
+    name: "Traverse with your hand.",
+  });
+  await expect(coach).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Enable hand camera" }),
+  ).toBeVisible();
+  await expect(coach.getByText("1 of 5 · Point at a thought")).toBeVisible();
+
+  await pointHandCursorAtNode(page, /Constellations before filing/);
+  await expect(coach.getByText("2 of 5 · Pinch to select")).toBeVisible();
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Constellations before filing",
+  );
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "stable-pinch").frames,
+  );
+  await expect(coach.getByText("3 of 5 · Pinch to traverse")).toBeVisible();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+
+  await releaseHandInput(page);
+  await pointHandCursorAtNode(page, /Orientation before action/);
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Orientation before action",
+  );
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "stable-pinch").frames,
+  );
+  await expect(coach.getByText("4 of 5 · Open palm to return")).toBeVisible();
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "The first view should invite orientation before action.",
+    { timeout: focusSettleTimeoutMs },
+  );
+
+  await releaseHandInput(page);
+  const openPalm = findGestureFixture(gestureFixtures, "open-palm").frames[0]!;
+  await injectLandmarkFrames(
+    page,
+    [0, 240, 480].map((timestampMs) => ({ ...openPalm, timestampMs })),
+  );
+  await expect(
+    coach.getByText("5 of 5 · Swipe to change topology"),
+  ).toBeVisible();
+  await expect(page.getByText("idle / overview")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+
+  await releaseHandInput(page);
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "right-swipe").frames,
+  );
+  await expect(coach).toHaveAttribute("data-complete", "true");
+  await expect(coach.getByText("5 of 5 movements recognized")).toBeVisible();
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "community topology",
+  );
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("touch-traversal:tutorial:v2") ?? "null"),
+    ),
+  ).toMatchObject({
+    completedActions: [
+      "hand-point",
+      "hand-select",
+      "hand-traverse",
+      "hand-return",
+      "hand-topology",
+    ],
+  });
+});
+
 test("tutorial remains usable when browser storage writes fail", async ({
   page,
 }) => {
@@ -1075,6 +1222,10 @@ test("/demo?input=gesture-fixture manipulates and resets the camera view", async
   });
   await page.goto("/demo?input=gesture-fixture&tutorial=manipulation");
   await expect(page.getByText("input / gesture fixture")).toBeVisible();
+  const practice = page.getByRole("complementary", {
+    name: "Move the graph with one grab.",
+  });
+  await expect(practice.getByText("1 of 5 · Grab empty space")).toBeVisible();
 
   const orbit = findGestureFixture(gestureFixtures, "orbit").frames;
   await injectLandmarkFrames(page, orbit.slice(0, 3));
@@ -1088,22 +1239,37 @@ test("/demo?input=gesture-fixture manipulates and resets the camera view", async
     "gesture / orbit · pan · depth zoom",
     { timeout: gestureHintTimeoutMs },
   );
+  await expect(practice.getByText("3 of 5 · Pan vertically")).toBeVisible();
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "pan").frames,
+  );
+  await expect(practice.getByText("4 of 5 · Zoom in depth")).toBeVisible();
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "zoom-in").frames,
+  );
+  await expect(practice.getByText("5 of 5 · Release the grab")).toBeVisible();
   await injectLandmarkFrames(
     page,
     findGestureFixture(gestureFixtures, "grab-release").frames.slice(-2),
   );
+  await expect(practice).toHaveAttribute("data-complete", "true");
   expect(
     await page.evaluate(() =>
       JSON.parse(localStorage.getItem("touch-traversal:tutorial:v2") ?? "null"),
     ),
   ).toMatchObject({
     completedActions: [
-      "manipulation-start",
-      "manipulation-update",
-      "manipulation-end",
+      "hand-grab",
+      "hand-orbit",
+      "hand-pan",
+      "hand-zoom",
+      "hand-release",
     ],
   });
 
+  await restoreSceneHud(page);
   const controls = page.getByRole("complementary", {
     name: "View manipulation",
   });

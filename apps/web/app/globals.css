@@ -145,6 +145,9 @@ a {
   width: min(43rem, 92vw);
   margin-left: clamp(0rem, 7vw, 8rem);
 }
+.tutorial-card--with-guide {
+  width: min(70rem, 92vw);
+}
 .tutorial-card h1,
 .tutorial-invitation h1 {
   max-width: 15ch;
@@ -176,6 +179,129 @@ a {
     monospace;
   letter-spacing: 0.07em;
   text-transform: lowercase;
+}
+.tutorial-practice-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+.hand-gesture-guide {
+  display: grid;
+  gap: 1rem;
+  margin: 1.6rem 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--subtle-line);
+}
+.hand-gesture-guide > header {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.65fr) minmax(16rem, 1fr);
+  gap: 0.4rem 1.5rem;
+  align-items: end;
+}
+.hand-gesture-guide > header .eyebrow {
+  grid-column: 1 / -1;
+}
+.hand-gesture-guide h2 {
+  margin: 0;
+  color: var(--primary-text);
+  font-size: clamp(1.35rem, 2.8vw, 2.25rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.hand-gesture-guide > header > p:not(.eyebrow) {
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.hand-gesture-guide ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--subtle-line);
+  border-left: 1px solid var(--subtle-line);
+  list-style: none;
+}
+.hand-gesture-guide li {
+  display: grid;
+  grid-template-rows: 5.5rem 1fr;
+  min-width: 0;
+  padding: 0.85rem;
+  border-right: 1px solid var(--subtle-line);
+  border-bottom: 1px solid var(--subtle-line);
+  background: rgba(255, 255, 255, 0.012);
+}
+.hand-gesture-guide li > div {
+  display: grid;
+  align-content: start;
+}
+.hand-gesture-guide li span {
+  color: var(--muted-text);
+  font:
+    0.58rem/1 "SFMono-Regular",
+    Consolas,
+    monospace;
+  letter-spacing: 0.08em;
+}
+.hand-gesture-guide h3 {
+  margin: 0.45rem 0 0.5rem;
+  color: var(--primary-text);
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.hand-gesture-guide li p,
+.hand-gesture-guide li small {
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+.hand-gesture-guide li small {
+  display: block;
+  margin-top: 0.55rem;
+  color: var(--primary-text);
+}
+.hand-gesture-glyph {
+  width: 5rem;
+  height: 5rem;
+  overflow: visible;
+}
+.hand-gesture-glyph__hand,
+.hand-gesture-glyph__cue {
+  fill: none;
+  stroke: var(--secondary-text);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+}
+.hand-gesture-glyph__cue {
+  stroke: var(--primary-text);
+}
+.hand-gesture-glyph__tip,
+.hand-gesture-glyph__thumb {
+  fill: var(--surface-black);
+}
+.hand-gesture-glyph__cue circle {
+  fill: none;
+}
+.hand-gesture-glyph[data-gesture="point"] .hand-gesture-glyph__tip,
+.hand-gesture-glyph[data-gesture="point"] .hand-gesture-glyph__cue circle,
+.hand-gesture-glyph[data-gesture="pinch"] .hand-gesture-glyph__cue circle,
+.hand-gesture-glyph[data-gesture="grab"] .hand-gesture-glyph__cue circle {
+  fill: var(--selected-core);
+}
+.hand-gesture-guide__note {
+  max-width: 60rem;
+  margin: 0;
+  color: var(--secondary-text);
+  font:
+    0.63rem/1.55 "SFMono-Regular",
+    Consolas,
+    monospace;
+  letter-spacing: 0.03em;
 }
 .tutorial-actions,
 .tutorial-navigation {
@@ -244,6 +370,98 @@ a {
     Consolas,
     monospace;
   text-transform: lowercase;
+}
+.tutorial-coach--interactive {
+  top: 5rem;
+  right: auto;
+  left: clamp(1.25rem, 3vw, 2.75rem);
+  display: grid;
+  gap: 0.65rem;
+  width: min(22rem, calc(100vw - 2.5rem));
+  max-height: calc(100svh - 9.5rem);
+  overflow-y: auto;
+  padding: 0.8rem;
+  background: rgba(5, 5, 5, 0.94);
+  pointer-events: none;
+}
+.tutorial-coach--interactive h2 {
+  margin: 0;
+  color: var(--primary-text);
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.tutorial-coach--interactive .tutorial-coach__progress {
+  margin: 0;
+  color: var(--primary-text);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.61rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+.tutorial-coach--interactive ol {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 1px;
+  background: var(--subtle-line);
+  list-style: none;
+}
+.tutorial-coach--interactive li {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  gap: 0.55rem;
+  padding: 0.55rem;
+  background: var(--surface-black);
+}
+.tutorial-coach--interactive li > span {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--subtle-line);
+  border-radius: 999px;
+  color: var(--muted-text);
+  font:
+    0.55rem/1 "SFMono-Regular",
+    Consolas,
+    monospace;
+  place-items: center;
+}
+.tutorial-coach--interactive li strong {
+  color: var(--secondary-text);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+.tutorial-coach--interactive li p {
+  margin: 0.2rem 0 0;
+  color: var(--muted-text);
+  font-size: 0.62rem;
+}
+.tutorial-coach--interactive li[data-step-state="current"] {
+  background: var(--quiet-fill-strong);
+}
+.tutorial-coach--interactive li[data-step-state="current"] > span,
+.tutorial-coach--interactive li[data-step-state="current"] strong {
+  border-color: var(--strong-line);
+  color: var(--primary-text);
+}
+.tutorial-coach--interactive li[data-step-state="complete"] {
+  opacity: 0.62;
+}
+.tutorial-coach--interactive li[data-step-state="complete"] > span {
+  color: var(--surface-black);
+  background: var(--primary-text);
+}
+.tutorial-coach--interactive .tutorial-coach__message {
+  min-height: 2.1rem;
+  margin: 0;
+  color: var(--primary-text);
+}
+.tutorial-coach--interactive nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  pointer-events: auto;
 }
 
 ::selection {
@@ -2129,6 +2347,23 @@ a {
   }
   .tutorial-progress {
     overflow-x: auto;
+  }
+  .hand-gesture-guide > header {
+    grid-template-columns: 1fr;
+  }
+  .hand-gesture-guide ol {
+    grid-template-columns: 1fr;
+  }
+  .hand-gesture-guide li {
+    grid-template-columns: 5.5rem 1fr;
+    grid-template-rows: auto;
+  }
+  .tutorial-coach--interactive {
+    top: 4.5rem;
+    right: 1.25rem;
+    left: 1.25rem;
+    width: auto;
+    max-height: calc(100svh - 16rem);
   }
   .mode-label {
     display: none;

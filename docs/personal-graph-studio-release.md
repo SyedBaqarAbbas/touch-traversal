@@ -222,6 +222,14 @@ sources, universal controls, optional hand input, direct manipulation, performan
 and privacy. Choose the full path, **Mouse and keyboard only**, or **Skip for now**. Optional steps
 never activate a camera or file picker themselves.
 
+The hand and manipulation steps include visual movement cards and links to interactive practice on
+the real sample graph. The persistent coach recognizes the ordered point, select pinch, connected
+pinch, open-palm return, and topology swipe flow, plus empty-space grab, orbit, vertical pan, depth
+zoom, and release. It uses the same guarded runtime as the graph rather than a tutorial-only
+simulator. Camera permission remains explicit, and the written guide remains available after
+denial. The guide also states the intentional gaps: swipes cycle instead of selecting topology
+`1`–`4`, hand pan is vertical, and reset uses **Reset view** or `0`.
+
 Tutorial progress is resumable and stores only version 2 status, step IDs, input-path choice, and
 completed action names in browser `localStorage`; it stores no note or camera data. **Tutorial**,
 **Help**, and **Controls** links reopen it from production routes. After completion, **Replay

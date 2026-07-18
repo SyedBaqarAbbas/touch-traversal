@@ -65,7 +65,8 @@ Open `http://localhost:3000/demo`. Other implemented routes are:
 - `/studio`: explicit personal file/folder preview and loopback graph generation.
 - `/perform`: opt-in mirrored webcam composition with the same graph and hand worker.
 - `/calibration`: explicit camera setup, mirrored preview, landmarks, and pinch-threshold controls.
-- `/tutorial`: resumable eight-step orientation with a camera-free path.
+- `/tutorial`: resumable eight-step orientation with a camera-free path, visual hand-movement
+  cards, and links to ordered practice on the real graph runtime.
 - `/debug`: artifact statistics, raw sample payload, traversal history, and hand diagnostics.
 
 The release build is also published as a static GitHub Pages project site at

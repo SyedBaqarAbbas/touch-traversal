@@ -161,7 +161,8 @@ covers the visible webcam + graph + hand worker + native recorder composition; t
 includes Studio preview and local-generation capacity profiles. Licensing and asset provenance are
 recorded in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-For Studio setup, file limits, session controls, webcam/hand traversal, recording, tutorial replay,
-browser fallbacks, privacy inventory, and recovery steps, read the
+For Studio setup, file limits, session controls, webcam/hand traversal, the visual and interactive
+gesture tutorial, recording, tutorial replay, browser fallbacks, privacy inventory, and recovery
+steps, read the
 [`Personal Graph Studio release guide`](docs/personal-graph-studio-release.md). The broader MVP
 architecture remains in [`docs/project-guide.md`](docs/project-guide.md).

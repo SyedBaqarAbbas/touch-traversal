@@ -33,7 +33,9 @@ actions also have direct keys:
 | Reset view | `0`                  | reset view button     |
 
 Reset is immediate and is always available outside an editable field. Camera denial, camera
-disable, hand loss, and worker failure do not affect these controls.
+disable, hand loss, and worker failure do not affect these controls. Reset has no hand gesture;
+horizontal hand movement is reserved for orbit, while the named buttons and `Shift` + left/right
+provide horizontal pan.
 
 ## Conflict matrix
 
@@ -49,4 +51,7 @@ disable, hand loss, and worker failure do not affect these controls.
 | Reduced motion                                      | Retain direct controls with no inertial or decorative continuation |
 
 The acquisition hint appears when empty-space grab begins. A second auto-hiding hint appears on the
-first meaningful orbit, pan, or zoom delta; it is not emitted continuously.
+first meaningful orbit, pan, or zoom delta; it is not emitted continuously. The optional
+`/demo?tutorial=manipulation` flow adds a persistent ordered checklist and confirms only the dominant
+intentional axis for each practice movement, preventing small multi-axis landmark jitter from
+completing multiple steps.

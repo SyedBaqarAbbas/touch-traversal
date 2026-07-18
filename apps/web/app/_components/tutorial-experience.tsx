@@ -5,6 +5,10 @@ import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  HandGestureGuide,
+  type HandGestureGuideContent,
+} from "@/app/_components/hand-gesture-guide";
 import { personalGraphSessions } from "@/lib/personal-graph-session";
 import {
   initialTutorialState,
@@ -24,7 +28,8 @@ type TutorialStep = {
   title: string;
   body: string;
   details: readonly string[];
-  practice?: { href: Route; label: string };
+  guide?: HandGestureGuideContent;
+  practice?: readonly { href: Route; label: string }[];
   optional?: boolean;
 };
 
@@ -50,10 +55,12 @@ const steps: readonly TutorialStep[] = [
       "The source switch tells you which graph is visible.",
       "Leaving the tutorial restores your previous source.",
     ],
-    practice: {
-      href: "/studio?tutorial=sources",
-      label: "Open source practice",
-    },
+    practice: [
+      {
+        href: "/studio?tutorial=sources",
+        label: "Open source practice",
+      },
+    ],
   },
   {
     id: "mouse-keyboard",
@@ -65,42 +72,128 @@ const steps: readonly TutorialStep[] = [
       "Backspace restores the previous focused thought.",
       "Mouse and keyboard remain complete without camera access.",
     ],
-    practice: {
-      href: "/demo?input=mouse&tutorial=mouse",
-      label: "Practice on the sample graph",
-    },
+    practice: [
+      {
+        href: "/demo?input=mouse&tutorial=mouse",
+        label: "Practice on the sample graph",
+      },
+    ],
   },
   {
     id: "hand",
     eyebrow: "04 / optional hand input",
     title: "Camera input is local, optional, and explicit.",
-    body: "Only the Enable hand camera button requests access. Point moves the cursor, pinch selects, open palm returns, and a lateral swipe changes topology.",
+    body: "Only the Enable hand camera button requests access. Learn each movement below, then practice the complete select, traverse, return, and topology flow on the sample graph.",
     details: [
       "Calibration shows a mirrored local preview.",
       "Denied or unavailable camera access leaves mouse and keyboard active.",
       "You can skip this entire step.",
     ],
     optional: true,
-    practice: {
-      href: "/calibration?tutorial=hand",
-      label: "Open optional calibration",
+    guide: {
+      title: "Traverse a thought with one hand.",
+      intro:
+        "Keep your hand inside the camera frame and release each gesture before starting the next one.",
+      items: [
+        {
+          gesture: "Point",
+          glyph: "point",
+          movement: "Extend your index finger; fold the other three fingers.",
+          result: "Move the cursor and hover a thought.",
+        },
+        {
+          gesture: "Pinch, release, pinch again",
+          glyph: "pinch",
+          movement:
+            "Briefly touch thumb to index to select. Release, point at a highlighted connected thought, then pinch again.",
+          result: "First pinch focuses; the second traverses the edge.",
+        },
+        {
+          gesture: "Hold an open palm",
+          glyph: "open-palm",
+          movement:
+            "Spread all fingers and hold the pose for about half a second.",
+          result: "Return from the focused thought to overview.",
+        },
+        {
+          gesture: "Swipe sideways",
+          glyph: "swipe",
+          movement:
+            "With your hand open and unpinched, make one quick horizontal sweep.",
+          result:
+            "Cycle one topology left or right; there is no direct 1–4 hand pose.",
+        },
+      ],
+      note: "Recent mouse movement pauses hand input for about 0.7 seconds. Hold still briefly before trying a hand gesture.",
     },
+    practice: [
+      {
+        href: "/demo?tutorial=hand",
+        label: "Start interactive hand practice",
+      },
+      {
+        href: "/calibration?tutorial=hand",
+        label: "Calibrate camera and pinch",
+      },
+    ],
   },
   {
     id: "manipulation",
     eyebrow: "05 / direct manipulation",
     title: "Grab empty space to move the view.",
-    body: "With hand input active, pinch empty space and move to orbit or pan. Depth movement zooms. Release ends the grab; Reset view returns to the production default.",
+    body: "With hand input active, pinch empty space and keep holding while you move. The direction of your hand controls orbit, vertical pan, or depth zoom.",
     details: [
       "Node pinches still select or traverse.",
       "Mouse wheel and named view buttons teach the same camera model.",
       "Reduced motion shortens transitions.",
     ],
     optional: true,
-    practice: {
-      href: "/demo?tutorial=manipulation",
-      label: "Practice view manipulation",
+    guide: {
+      title: "Grab the graph, then move the view.",
+      intro:
+        "Begin every view gesture by pinching empty graph space. Keep the pinch closed while you move.",
+      items: [
+        {
+          gesture: "Grab empty space",
+          glyph: "grab",
+          movement: "Point away from every node, pinch, and keep holding.",
+          result: "Start direct view manipulation without selecting a thought.",
+        },
+        {
+          gesture: "Move left or right",
+          glyph: "orbit",
+          movement: "While grabbed, slide your hand horizontally.",
+          result: "Orbit the knowledge graph around its center.",
+        },
+        {
+          gesture: "Move up or down",
+          glyph: "pan",
+          movement: "While grabbed, slide your hand vertically.",
+          result: "Pan vertically. Use named controls for horizontal pan.",
+        },
+        {
+          gesture: "Move in depth",
+          glyph: "zoom",
+          movement:
+            "While grabbed, move toward the camera to zoom in or away to zoom out.",
+          result: "Change distance without leaving the current graph state.",
+        },
+        {
+          gesture: "Release",
+          glyph: "release",
+          movement: "Separate thumb and index finger to end the grab.",
+          result:
+            "The view stays put. Reset has no hand gesture; use Reset view or 0.",
+        },
+      ],
+      note: "A node pinch always wins over an empty-space grab, so move the cursor clear of nodes before manipulating the view.",
     },
+    practice: [
+      {
+        href: "/demo?tutorial=manipulation",
+        label: "Start interactive view practice",
+      },
+    ],
   },
   {
     id: "performance",
@@ -113,10 +206,12 @@ const steps: readonly TutorialStep[] = [
       "Graph-only remains usable after denial.",
     ],
     optional: true,
-    practice: {
-      href: "/perform?tutorial=performance",
-      label: "Open performance controls",
-    },
+    practice: [
+      {
+        href: "/perform?tutorial=performance",
+        label: "Open performance controls",
+      },
+    ],
   },
   {
     id: "recording",
@@ -129,10 +224,12 @@ const steps: readonly TutorialStep[] = [
       "Unsupported browsers provide a skippable explanation.",
     ],
     optional: true,
-    practice: {
-      href: "/perform?tutorial=recording",
-      label: "Open recording practice",
-    },
+    practice: [
+      {
+        href: "/perform?tutorial=recording",
+        label: "Open recording practice",
+      },
+    ],
   },
   {
     id: "privacy",
@@ -351,7 +448,7 @@ export function TutorialExperience() {
         ))}
       </nav>
       <article
-        className="tutorial-card"
+        className={`tutorial-card${step.guide ? " tutorial-card--with-guide" : ""}`}
         id={
           step.id === "mouse-keyboard"
             ? "controls"
@@ -373,10 +470,19 @@ export function TutorialExperience() {
             <li key={detail}>{detail}</li>
           ))}
         </ul>
+        {step.guide ? <HandGestureGuide content={step.guide} /> : null}
         {step.practice ? (
-          <Link className="tutorial-practice" href={step.practice.href}>
-            {step.practice.label}
-          </Link>
+          <div className="tutorial-practice-links">
+            {step.practice.map((practice) => (
+              <Link
+                className="tutorial-practice"
+                href={practice.href}
+                key={practice.href}
+              >
+                {practice.label}
+              </Link>
+            ))}
+          </div>
         ) : null}
       </article>
       <div className="tutorial-navigation" aria-label="Tutorial step controls">

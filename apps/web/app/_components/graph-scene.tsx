@@ -115,6 +115,7 @@ import {
   type SceneThoughtLabel,
 } from "@/lib/scene-model";
 import { announceTutorialAction } from "@/lib/tutorial-events";
+import { tutorialActionForManipulationDelta } from "@/lib/tutorial-practice";
 
 const routes = [
   { href: "/", label: "home" },
@@ -188,7 +189,7 @@ type GestureHint = {
 
 type GestureActionRefs = {
   returnOverview: (timestampMs: number) => void;
-  selectNode: (nodeId: string, timestampMs: number) => void;
+  selectNode: (nodeId: string, timestampMs: number) => "focus" | "traverse";
   showGestureHint: (label: string, timestampMs?: number) => void;
   switchTopology: (nextLayoutName: LayoutName) => void;
 };
@@ -691,7 +692,10 @@ export function GraphScene({
     return true;
   };
 
-  const selectNode = (nodeId: string, timestampMs: number) => {
+  const selectNode = (
+    nodeId: string,
+    timestampMs: number,
+  ): "focus" | "traverse" => {
     gestureControllerRef.current = cancelGestureControllerManipulation(
       gestureControllerRef.current,
     );
@@ -700,7 +704,7 @@ export function GraphScene({
       selectedNodeId !== nodeId &&
       startTraversal(selectedNodeId, nodeId, timestampMs)
     ) {
-      return;
+      return "traverse";
     }
 
     setActiveTraversal(null);
@@ -711,6 +715,7 @@ export function GraphScene({
       timestampMs,
     });
     announceTutorialAction("focus");
+    return "focus";
   };
 
   const returnOverview = (timestampMs: number) => {
@@ -782,6 +787,7 @@ export function GraphScene({
       if (nodeId) {
         handPointerActiveRef.current = true;
         dispatch({ type: "POINTER_CANDIDATE", nodeId, pointer });
+        announceTutorialAction("hand-point");
         return;
       }
 
@@ -850,19 +856,22 @@ export function GraphScene({
             break;
           }
           case "select": {
-            const traversing =
-              context.selectedNodeId !== null &&
-              context.selectedNodeId !== action.nodeId;
+            const result = actions.selectNode(
+              action.nodeId,
+              action.timestampMs,
+            );
             actions.showGestureHint(
-              traversing
+              result === "traverse"
                 ? "gesture / pinch traverse"
                 : "gesture / pinch select",
               action.timestampMs,
             );
-            actions.selectNode(action.nodeId, action.timestampMs);
+            announceTutorialAction(
+              result === "traverse" ? "hand-traverse" : "hand-select",
+            );
             break;
           }
-          case "manipulation":
+          case "manipulation": {
             announceTutorialAction(
               action.event.phase === "begin"
                 ? "manipulation-start"
@@ -870,15 +879,30 @@ export function GraphScene({
                   ? "manipulation-end"
                   : "manipulation-update",
             );
+            if (action.event.phase === "begin") {
+              announceTutorialAction("hand-grab");
+            }
             if (action.event.phase === "update") {
               cameraManipulationRef.current = applyHandManipulationDelta(
                 cameraManipulationRef.current,
                 action.event.delta,
               );
+              const tutorialAction = tutorialActionForManipulationDelta(
+                action.event.delta,
+              );
+              if (tutorialAction) announceTutorialAction(tutorialAction);
+            }
+            if (
+              action.event.phase === "end" &&
+              action.event.reason === "release"
+            ) {
+              announceTutorialAction("hand-release");
             }
             break;
+          }
           case "return":
             actions.returnOverview(action.timestampMs);
+            announceTutorialAction("hand-return");
             break;
           case "topology":
             actions.switchTopology(
@@ -888,6 +912,7 @@ export function GraphScene({
                 context.temporalAvailable,
               ),
             );
+            announceTutorialAction("hand-topology");
             break;
           case "hint":
             if (action.label !== "gesture / pinch select") {
