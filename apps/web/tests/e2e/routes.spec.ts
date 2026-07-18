@@ -10,6 +10,12 @@ const routes = [
 const focusSettleTimeoutMs = 3200;
 const gestureHintTimeoutMs = 4400;
 
+async function restoreSceneHud(page: Page): Promise<void> {
+  const scene = page.locator(".scene-shell");
+  await page.mouse.move(32, 32);
+  await expect(scene).toHaveAttribute("data-hud", "visible");
+}
+
 async function attachVisual(
   page: Page,
   testInfo: TestInfo,
@@ -153,6 +159,7 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
     timeout: focusSettleTimeoutMs,
   });
 
+  await restoreSceneHud(page);
   await page
     .getByRole("button", {
       name: /Orientation before action/,
@@ -232,6 +239,7 @@ test("/demo?input=mouse covers the repeatable mouse flow and label density", asy
   const nodeButton = page.getByRole("button", {
     name: /Constellations before filing/,
   });
+  await restoreSceneHud(page);
   await nodeButton.hover();
   await expect(page.locator(".scene-thought-label--hover")).toContainText(
     "Constellations before filing",
@@ -269,6 +277,7 @@ test("/demo visual states cover temporal mode, hover, focus, and HUD idle", asyn
   const nodeButton = page.getByRole("button", {
     name: /Constellations before filing/,
   });
+  await restoreSceneHud(page);
   await nodeButton.hover();
   await expect(page.locator(".scene-thought-label--hover")).toContainText(
     "Constellations before filing",
