@@ -23,6 +23,12 @@ const gestureFixtures = expandGestureFixtures(
 
 async function restoreSceneHud(page: Page): Promise<void> {
   const scene = page.locator(".scene-shell");
+  const nodeRail = page.locator(".scene-node-list");
+  await nodeRail.evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations().map((animation) => animation.finished),
+    );
+  });
   await page.mouse.move(32, 32);
   await expect(scene).toHaveAttribute("data-hud", "visible");
 }

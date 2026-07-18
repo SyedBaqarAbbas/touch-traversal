@@ -486,16 +486,25 @@ export function GraphScene({
   }, [focusTransitionMs, interaction.mode, interaction.selectedNodeId]);
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setActiveTraversal(null);
-        dispatch({
-          type: "RETURN_OVERVIEW",
-          timestampMs: event.timeStamp,
-        });
+    // Keep the universal escape hatch mounted across focus-state transitions. A
+    // state-dependent listener can otherwise leave a brief gap while effects are
+    // replaced immediately after the focused UI becomes visible.
+    const returnOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
         return;
       }
+      setActiveTraversal(null);
+      dispatch({
+        type: "RETURN_OVERVIEW",
+        timestampMs: event.timeStamp,
+      });
+    };
+    window.addEventListener("keydown", returnOnEscape);
+    return () => window.removeEventListener("keydown", returnOnEscape);
+  }, []);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (isEditableKeyboardTarget(event.target)) {
         return;
       }
