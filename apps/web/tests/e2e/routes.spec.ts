@@ -241,6 +241,34 @@ test("tutorial requests no permissions, supports skip, and remains available fro
   ).toBeNull();
 });
 
+test("tutorial remains usable when browser storage writes fail", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const nativeSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key.startsWith("touch-traversal:")) {
+        throw new DOMException("Storage fixture is full", "QuotaExceededError");
+      }
+      nativeSetItem.call(this, key, value);
+    };
+  });
+  await page.goto("/");
+  await page.getByRole("link", { name: "Mouse and keyboard only" }).click();
+  await expect(page).toHaveURL(/\/tutorial/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Thoughts become nodes. Relationships become edges.",
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Practice with fiction before choosing personal notes.",
+    }),
+  ).toBeVisible();
+});
+
 test("/demo reveals a title-only hover label after stable hover", async ({
   page,
 }) => {
@@ -318,6 +346,214 @@ test("/demo shows camera-active indicator and disable action", async ({
   await expect(
     page.getByRole("button", { name: "Enable hand camera" }),
   ).toBeVisible();
+});
+
+test("late camera grants are stopped after graph or calibration route exit", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () =>
+          new Promise<MediaStream>((resolve) => {
+            (
+              window as typeof window & { __resolveLateCamera?: () => void }
+            ).__resolveLateCamera = () => {
+              const track = {
+                stop: () => {
+                  const count = Number(
+                    sessionStorage.getItem("late-camera-stops"),
+                  );
+                  sessionStorage.setItem(
+                    "late-camera-stops",
+                    String(count + 1),
+                  );
+                },
+              };
+              resolve({
+                getTracks: () => [track],
+                getVideoTracks: () => [track],
+              } as unknown as MediaStream);
+            };
+          }),
+      },
+    });
+  });
+
+  for (const route of ["/demo", "/calibration"]) {
+    await page.goto(route);
+    await page.getByRole("button", { name: "Enable hand camera" }).click();
+    await page
+      .getByRole("link", { name: "home", exact: true })
+      .click({ force: true });
+    await expect(page).toHaveURL(/\/$/);
+    await page.evaluate(() =>
+      (
+        window as typeof window & { __resolveLateCamera?: () => void }
+      ).__resolveLateCamera?.(),
+    );
+  }
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => sessionStorage.getItem("late-camera-stops")),
+    )
+    .toBe("2");
+});
+
+test("worker construction failure stops graph and calibration camera resources", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "Worker", {
+      configurable: true,
+      value: class ThrowingWorker {
+        constructor() {
+          throw new DOMException("worker blocked", "SecurityError");
+        }
+      },
+    });
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 640;
+          canvas.height = 480;
+          canvas.getContext("2d")?.fillRect(0, 0, 640, 480);
+          const stream = canvas.captureStream(5);
+          const track = stream.getVideoTracks()[0]!;
+          const nativeStop = track.stop.bind(track);
+          track.stop = () => {
+            const stops = Number(
+              sessionStorage.getItem("worker-construction-camera-stops"),
+            );
+            sessionStorage.setItem(
+              "worker-construction-camera-stops",
+              String(stops + 1),
+            );
+            nativeStop();
+          };
+          return Promise.resolve(stream);
+        },
+      },
+    });
+  });
+
+  for (const route of ["/demo", "/calibration"]) {
+    await page.goto(route);
+    await page.getByRole("button", { name: "Enable hand camera" }).click();
+    await expect(page.getByText("camera error")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Retry camera" }),
+    ).toBeVisible();
+  }
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Number(sessionStorage.getItem("worker-construction-camera-stops")),
+      ),
+    )
+    .toBeGreaterThanOrEqual(2);
+});
+
+test("/calibration stops local resources after track end or frame capture failure", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const runtime = window as typeof window & {
+      __endCalibrationTrack?: () => void;
+      __rejectCalibrationCapture?: boolean;
+      __calibrationCanvases?: HTMLCanvasElement[];
+    };
+    const nativeCreateImageBitmap = window.createImageBitmap.bind(window);
+    Object.defineProperty(window, "createImageBitmap", {
+      configurable: true,
+      value: (source: ImageBitmapSource, options?: ImageBitmapOptions) => {
+        if (runtime.__rejectCalibrationCapture) {
+          const failures = Number(
+            sessionStorage.getItem("calibration-capture-failures"),
+          );
+          sessionStorage.setItem(
+            "calibration-capture-failures",
+            String(failures + 1),
+          );
+          return Promise.reject(
+            new DOMException("capture failed", "InvalidStateError"),
+          );
+        }
+        return nativeCreateImageBitmap(source, options);
+      },
+    });
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 640;
+          canvas.height = 480;
+          canvas.getContext("2d")?.fillRect(0, 0, 640, 480);
+          runtime.__calibrationCanvases = [
+            ...(runtime.__calibrationCanvases ?? []),
+            canvas,
+          ];
+          const stream = canvas.captureStream(5);
+          const track = stream.getVideoTracks()[0]!;
+          const nativeStop = track.stop.bind(track);
+          track.stop = () => {
+            const stops = Number(
+              sessionStorage.getItem("calibration-camera-stops"),
+            );
+            sessionStorage.setItem(
+              "calibration-camera-stops",
+              String(stops + 1),
+            );
+            nativeStop();
+          };
+          runtime.__endCalibrationTrack = () =>
+            track.dispatchEvent(new Event("ended"));
+          return Promise.resolve(stream);
+        },
+      },
+    });
+  });
+  await page.goto("/calibration");
+
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await expect(page.getByText("camera active / local only")).toBeVisible();
+  await page.evaluate(() =>
+    (
+      window as typeof window & { __endCalibrationTrack?: () => void }
+    ).__endCalibrationTrack?.(),
+  );
+  await expect(page.getByText("camera error")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Retry camera" }),
+  ).toBeVisible();
+
+  await page.evaluate(() => {
+    (
+      window as typeof window & { __rejectCalibrationCapture?: boolean }
+    ).__rejectCalibrationCapture = true;
+  });
+  await page.getByRole("button", { name: "Retry camera" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Number(sessionStorage.getItem("calibration-capture-failures")),
+      ),
+    )
+    .toBeGreaterThan(0);
+  await expect(page.getByText("camera error")).toBeVisible();
+  expect(
+    Number(
+      await page.evaluate(() =>
+        sessionStorage.getItem("calibration-camera-stops"),
+      ),
+    ),
+  ).toBeGreaterThanOrEqual(2);
 });
 
 test("/perform camera-free fixture composites the graph and preserves scene state", async ({
@@ -580,6 +816,18 @@ test("/perform records and downloads the deterministic local composition", async
       await page.evaluate(() => sessionStorage.getItem("recording-revokes")),
     ),
   ).toBeGreaterThanOrEqual(1);
+
+  await page.getByRole("button", { name: "Start recording" }).click();
+  await page.getByRole("button", { name: "Stop recording" }).click();
+  await expect(page.getByText("recording ready")).toBeVisible();
+  await page.getByRole("button", { name: "Discard recording" }).click();
+  await expect(page.getByText("not recording")).toBeVisible();
+  await page.getByRole("button", { name: "Disable camera" }).click();
+  await expect(page.locator(".camera-access-panel__status")).toContainText(
+    "camera disabled",
+  );
+  await page.getByRole("button", { name: "exit performance" }).click();
+  await expect(page).toHaveURL(/\/demo\/?$/);
 });
 
 test("/perform keeps live mode when local recording is unsupported", async ({

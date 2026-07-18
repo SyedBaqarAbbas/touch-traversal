@@ -107,4 +107,25 @@ describe("tutorial state", () => {
       initialTutorialState,
     );
   });
+
+  it("keeps tutorial state usable when browser storage is blocked or full", () => {
+    const unavailable = {
+      getItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      removeItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      setItem: () => {
+        throw new DOMException("full", "QuotaExceededError");
+      },
+    };
+    const active = reduceTutorialState(initialTutorialState, {
+      type: "START",
+      inputPath: "mouse-keyboard",
+    });
+
+    expect(loadTutorialState(unavailable)).toEqual(initialTutorialState);
+    expect(() => saveTutorialState(unavailable, active)).not.toThrow();
+  });
 });

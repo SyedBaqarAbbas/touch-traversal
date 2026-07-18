@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   MAX_TRAVERSAL_HISTORY_ENTRIES,
   appendTraversalHistory,
+  clearTraversalHistory,
   formatTraversalBreadcrumb,
   parseTraversalHistory,
   restorePreviousFocus,
@@ -17,6 +18,20 @@ const entry: TraversalHistoryEntry = {
 };
 
 describe("traversal history", () => {
+  it("reports whether personal-derived history was actually removed", () => {
+    const removeItem = vi.fn();
+    expect(clearTraversalHistory({ removeItem })).toBe(true);
+    expect(removeItem).toHaveBeenCalledWith("touch-traversal:history");
+
+    expect(
+      clearTraversalHistory({
+        removeItem: () => {
+          throw new DOMException("blocked", "SecurityError");
+        },
+      }),
+    ).toBe(false);
+  });
+
   it("appends bounded source-target-edge history entries", () => {
     const history = Array.from(
       { length: MAX_TRAVERSAL_HISTORY_ENTRIES + 3 },

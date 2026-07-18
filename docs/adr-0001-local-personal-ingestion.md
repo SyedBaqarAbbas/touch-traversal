@@ -53,8 +53,8 @@ pipeline is intentionally compiled to a browser runtime rather than manually rei
 
 ## Provider boundaries
 
-1. **Note intake** creates validated `{name, mediaType, content}` values in browser memory. Folder
-   selection and preview remain future UI work.
+1. **Note intake** creates validated `{name, relativePath, mediaType, content}` values in browser
+   memory after explicit file/folder selection and metadata-only preview.
 2. **Graph generation** is `LocalStudioProvider`, which accepts only an HTTP loopback endpoint.
 3. **Bundle validation** uses the existing Python cross-artifact validator before response and Zod's
    `artifactBundleSchema` after response.
@@ -66,8 +66,8 @@ pipeline is intentionally compiled to a browser runtime rather than manually rei
 ## Security and transport boundary
 
 - The server rejects non-loopback bind addresses before opening a socket.
-- Browser origins must be loopback or present in the process allowlist. Disallowed origins receive
-  no CORS grant.
+- Browser origins must be present in the explicit process allowlist; an arbitrary loopback port is
+  not trusted automatically. Disallowed origins receive no CORS grant.
 - `GET /v1/capabilities` negotiates contract version 1 and returns a random per-process token.
   Every job, result, cancel, and cleanup request requires that token as a bearer credential.
 - Private Network Access preflight receives `Access-Control-Allow-Private-Network: true` only after
@@ -78,8 +78,9 @@ pipeline is intentionally compiled to a browser runtime rather than manually rei
   cannot redirect a note-bearing request to a remote host.
 
 This protects the intended local workflow; it is not a sandbox against malicious code already
-running on an allowed static origin or against another process with full access to the user's
-machine.
+running on an allowed static origin or as the same operating-system user. A local process can try
+to impersonate the companion on port 8765, and an allowed origin receives the process token from
+the capability response.
 
 ## Versioned job contract
 
@@ -89,22 +90,24 @@ and typed failures carry `contractVersion: 1`, a caller request ID, and a compan
 
 Cancellation uses `DELETE /v1/jobs/{jobId}`. It is cooperative between pipeline stages; the
 temporary workspace is removed on success, typed failure, or cancellation. A second delete after a
-terminal state removes its in-memory result. See [Personal ingestion](personal-ingestion.md) for the
-endpoint and startup contract.
+terminal state removes its in-memory result. Terminal jobs also expire automatically after five
+minutes; the process runs at most two builds and retains at most eight job records. See
+[Personal ingestion](personal-ingestion.md) for the endpoint and startup contract.
 
 ## Personal-data lifecycle
 
-| Location                      | Personal data                                       | Persistence and cleanup                                                              |
-| ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Browser intake memory         | Selected filenames and contents                     | Held only by the caller; release after request or reset.                             |
-| Loopback request              | JSON note contents                                  | Request body is not logged or written as an HTTP payload.                            |
-| Companion temporary directory | Materialized notes and note-derived embedding cache | Unique per job; removed on success, failure, or cancellation.                        |
-| Model cache                   | Downloaded model weights                            | May persist in tool-managed caches; it contains no note text or note-derived vector. |
-| Companion job memory          | Validated bundle, including note text               | Held until result cleanup or process exit. Cancelled jobs retain metadata only.      |
-| Browser session memory        | Validated bundle and Graphology model               | Removed by session reset or page lifecycle.                                          |
-| IndexedDB and localStorage    | Nothing in version 1                                | Personal notes and bundles are never written there.                                  |
-| Explicit export               | Serialized validated bundle                         | Created only when `exportActiveBundle()` is invoked; UI download is future work.     |
-| Tracked public data           | Nothing                                             | Studio builds have no output-path parameter and never write `apps/web/public/data/`. |
+| Location                      | Personal data                                       | Persistence and cleanup                                                                                         |
+| ----------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Browser intake memory         | Selected filenames and contents                     | Retained after success or cancellation while Studio remains mounted; released by clear/reset or page lifecycle. |
+| Loopback request              | JSON note contents                                  | Request body is not logged or written as an HTTP payload.                                                       |
+| Companion temporary directory | Materialized notes and note-derived embedding cache | Unique per job; removed on success, failure, or cancellation.                                                   |
+| Model cache                   | Downloaded model weights                            | May persist in tool-managed caches; it contains no note text or note-derived vector.                            |
+| Companion job memory          | Validated bundle, including full chunk text         | Held until authenticated cleanup, five-minute expiry, queue pruning, or process exit.                           |
+| Browser session memory        | Validated bundle and Graphology model               | Removed by session reset or page lifecycle.                                                                     |
+| Browser `sessionStorage`      | Traversal history identifiers                       | Reset attempts removal; if storage blocks it, close the tab or clear site data.                                 |
+| IndexedDB and localStorage    | Nothing in version 1                                | Personal notes and bundles are never written there.                                                             |
+| Explicit export               | Serialized validated bundle, including chunk text   | Created and downloaded only after **export private JSON** is activated.                                         |
+| Tracked public data           | Nothing                                             | Studio builds have no output-path parameter and never write `apps/web/public/data/`.                            |
 
 ## Consequences
 

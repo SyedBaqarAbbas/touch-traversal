@@ -17,6 +17,7 @@ import {
 import {
   cameraAccessCopy,
   classifyCameraAccessError,
+  type CameraAccessEvent,
   type CameraAccessStatus,
   initialCameraAccessState,
   reduceCameraAccess,
@@ -98,6 +99,8 @@ export function CameraAccessPanel({
   const cursorLoopRef = useRef<number | null>(null);
   const detachTrackEndedRef = useRef<(() => void) | null>(null);
   const recordingRef = useRef<PerformanceRecordingHandle>(null);
+  const cameraRequestRef = useRef(0);
+  const mountedRef = useRef(true);
   const pageVisibleRef = useRef(true);
   const handInputRef = useRef<HandInputBridgeState>(
     createHandInputBridgeState(),
@@ -140,14 +143,20 @@ export function CameraAccessPanel({
   }, []);
 
   useEffect(() => {
-    const recording = recordingRef.current;
+    const recordingHandleRef = recordingRef;
+    const videoElementRef = videoRef;
+    mountedRef.current = true;
     return () => {
-      recording?.discard();
+      mountedRef.current = false;
+      cameraRequestRef.current += 1;
+      recordingHandleRef.current?.discard();
       stopFrameLoop(frameLoopRef.current);
       stopFrameLoop(cursorLoopRef.current);
       workerRef.current?.dispose();
       detachTrackEndedRef.current?.();
       stopCameraStream(streamRef.current);
+      streamRef.current = null;
+      if (videoElementRef.current) videoElementRef.current.srcObject = null;
     };
   }, []);
 
@@ -204,6 +213,7 @@ export function CameraAccessPanel({
       dispatch({ type: "UNSUPPORTED" });
       return;
     }
+    const request = ++cameraRequestRef.current;
 
     resetHandTrackingState({
       displayFrameRef,
@@ -217,6 +227,7 @@ export function CameraAccessPanel({
 
     if (performancePresentation?.fixture) {
       await Promise.resolve();
+      if (!mountedRef.current || request !== cameraRequestRef.current) return;
       setWorkerPhase("ready");
       dispatch({ type: "ACTIVE" });
       return;
@@ -231,6 +242,10 @@ export function CameraAccessPanel({
           width: { ideal: 640 },
         },
       });
+      if (!mountedRef.current || request !== cameraRequestRef.current) {
+        stopCameraStream(stream);
+        return;
+      }
       detachTrackEndedRef.current?.();
       stopCameraStream(streamRef.current);
       streamRef.current = stream;
@@ -244,6 +259,7 @@ export function CameraAccessPanel({
         detachTrackEndedRef.current = null;
         stopCameraStream(streamRef.current);
         streamRef.current = null;
+        if (videoRef.current) videoRef.current.srcObject = null;
         resetHandTrackingState({
           displayFrameRef,
           handInputRef,
@@ -262,6 +278,7 @@ export function CameraAccessPanel({
       startFrameLoop();
       dispatch({ type: "ACTIVE" });
     } catch (error: unknown) {
+      if (!mountedRef.current || request !== cameraRequestRef.current) return;
       recordingRef.current?.discard();
       stopFrameLoop(frameLoopRef.current);
       workerRef.current?.dispose();
@@ -271,11 +288,13 @@ export function CameraAccessPanel({
       detachTrackEndedRef.current = null;
       stopCameraStream(streamRef.current);
       streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
       dispatch(classifyCameraAccessError(error));
     }
   };
 
   const disableCamera = () => {
+    cameraRequestRef.current += 1;
     recordingRef.current?.discard();
     stopFrameLoop(frameLoopRef.current);
     stopFrameLoop(cursorLoopRef.current);
@@ -293,11 +312,34 @@ export function CameraAccessPanel({
     detachTrackEndedRef.current = null;
     stopCameraStream(streamRef.current);
     streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
     dispatch({ type: "DISABLE" });
   };
 
   const startFrameLoop = () => {
     stopFrameLoop(frameLoopRef.current);
+
+    const stopAfterWorkerFailure = (event: CameraAccessEvent) => {
+      cameraRequestRef.current += 1;
+      recordingRef.current?.discard();
+      stopFrameLoop(frameLoopRef.current);
+      detachTrackEndedRef.current?.();
+      detachTrackEndedRef.current = null;
+      stopCameraStream(streamRef.current);
+      streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
+      workerRef.current?.dispose();
+      workerRef.current = null;
+      resetHandTrackingState({
+        displayFrameRef,
+        handInputRef,
+        onCursorFrame: onCursorFrameRef.current,
+        onLandmarkFrame: onLandmarkFrameRef.current,
+        setCursorFrame,
+      });
+      setWorkerPhase("error");
+      dispatch(event);
+    };
 
     const tick = () => {
       const video = videoRef.current;
@@ -308,57 +350,34 @@ export function CameraAccessPanel({
         video.videoWidth > 0 &&
         video.videoHeight > 0
       ) {
-        const controller =
-          workerRef.current ??
-          createHandTrackingWorkerController({
-            onMessage: handleWorkerMessage,
-            onError: () => {
-              recordingRef.current?.discard();
-              stopFrameLoop(frameLoopRef.current);
-              detachTrackEndedRef.current?.();
-              detachTrackEndedRef.current = null;
-              stopCameraStream(streamRef.current);
-              streamRef.current = null;
-              workerRef.current?.dispose();
-              workerRef.current = null;
-              resetHandTrackingState({
-                displayFrameRef,
-                handInputRef,
-                onCursorFrame: onCursorFrameRef.current,
-                onLandmarkFrame: onLandmarkFrameRef.current,
-                setCursorFrame,
-              });
-              setWorkerPhase("error");
-              dispatch({
-                message:
-                  "Hand model could not load. Mouse and keyboard remain available.",
-                type: "ERROR",
-              });
-            },
-            onResult: handleWorkerResult,
-          });
+        let controller = workerRef.current;
+        if (!controller) {
+          try {
+            controller = createHandTrackingWorkerController({
+              onMessage: handleWorkerMessage,
+              onError: () =>
+                stopAfterWorkerFailure({
+                  message:
+                    "Hand model could not load. Mouse and keyboard remain available.",
+                  type: "ERROR",
+                }),
+              onResult: handleWorkerResult,
+            });
+          } catch {
+            stopAfterWorkerFailure({
+              message:
+                "Hand worker could not start. Mouse and keyboard remain available.",
+              type: "ERROR",
+            });
+            return;
+          }
+        }
         controller.setTargetFps(composition?.targetInferenceFps ?? 24);
         workerRef.current = controller;
         void controller
           .submitVideoFrame(video, performance.now())
           .catch((error: unknown) => {
-            recordingRef.current?.discard();
-            stopFrameLoop(frameLoopRef.current);
-            detachTrackEndedRef.current?.();
-            detachTrackEndedRef.current = null;
-            stopCameraStream(streamRef.current);
-            streamRef.current = null;
-            workerRef.current?.dispose();
-            workerRef.current = null;
-            resetHandTrackingState({
-              displayFrameRef,
-              handInputRef,
-              onCursorFrame: onCursorFrameRef.current,
-              onLandmarkFrame: onLandmarkFrameRef.current,
-              setCursorFrame,
-            });
-            setWorkerPhase("error");
-            dispatch(classifyCameraAccessError(error));
+            stopAfterWorkerFailure(classifyCameraAccessError(error));
           });
       }
 

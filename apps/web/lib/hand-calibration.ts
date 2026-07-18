@@ -68,13 +68,17 @@ export const defaultHandCalibrationSettings: HandCalibrationSettings = {
 export function loadHandCalibrationSettings(
   storage: StorageLike,
 ): HandCalibrationSettings {
-  const current = storage.getItem(HAND_CALIBRATION_STORAGE_KEY);
-  if (current) {
-    return parseHandCalibrationSettings(current);
+  try {
+    const current = storage.getItem(HAND_CALIBRATION_STORAGE_KEY);
+    if (current) {
+      return parseHandCalibrationSettings(current);
+    }
+    return migrateLegacyHandCalibrationSettings(
+      storage.getItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY),
+    );
+  } catch {
+    return defaultHandCalibrationSettings;
   }
-  return migrateLegacyHandCalibrationSettings(
-    storage.getItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY),
-  );
 }
 
 export function saveHandCalibrationSettings(
@@ -82,16 +86,24 @@ export function saveHandCalibrationSettings(
   settings: HandCalibrationSettings,
 ): HandCalibrationSettings {
   const sanitized = sanitizeHandCalibrationSettings(settings);
-  storage.setItem(HAND_CALIBRATION_STORAGE_KEY, JSON.stringify(sanitized));
-  storage.removeItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY);
+  try {
+    storage.setItem(HAND_CALIBRATION_STORAGE_KEY, JSON.stringify(sanitized));
+    storage.removeItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY);
+  } catch {
+    // The sanitized settings still apply for this mounted session.
+  }
   return sanitized;
 }
 
 export function resetHandCalibrationSettings(
   storage: StorageLike,
 ): HandCalibrationSettings {
-  storage.removeItem(HAND_CALIBRATION_STORAGE_KEY);
-  storage.removeItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY);
+  try {
+    storage.removeItem(HAND_CALIBRATION_STORAGE_KEY);
+    storage.removeItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY);
+  } catch {
+    // The caller still receives and applies defaults for this mounted session.
+  }
   return defaultHandCalibrationSettings;
 }
 

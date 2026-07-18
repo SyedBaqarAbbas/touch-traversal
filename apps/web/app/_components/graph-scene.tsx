@@ -1541,10 +1541,14 @@ function syncInteractionHover(
 }
 
 function persistTraversalHistory(history: readonly TraversalHistoryEntry[]) {
-  window.sessionStorage.setItem(
-    TRAVERSAL_HISTORY_STORAGE_KEY,
-    JSON.stringify(history),
-  );
+  try {
+    window.sessionStorage.setItem(
+      TRAVERSAL_HISTORY_STORAGE_KEY,
+      JSON.stringify(history),
+    );
+  } catch {
+    // Traversal remains functional when session storage is blocked or full.
+  }
 }
 
 function CameraRig({

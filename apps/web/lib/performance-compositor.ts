@@ -53,6 +53,7 @@ export function createPerformanceCompositor(input: {
   }
   const stream = canvas.captureStream(30);
   let frameId: number | null = null;
+  let released = false;
   let stopped = false;
 
   const drawFrame = () => {
@@ -76,7 +77,8 @@ export function createPerformanceCompositor(input: {
       drawFrame();
     },
     stop: () => {
-      if (stopped) return;
+      if (released) return;
+      released = true;
       stopped = true;
       if (frameId != null) window.cancelAnimationFrame(frameId);
       frameId = null;

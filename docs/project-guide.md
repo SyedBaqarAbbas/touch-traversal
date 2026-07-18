@@ -3,6 +3,10 @@
 This guide describes the implemented MVP. It covers local setup, the runtime boundaries, data and
 camera privacy, supported controls, known limitations, and common recovery paths.
 
+For the newer personal file/folder workflow, local companion, in-memory sessions, direct hand view
+manipulation, tutorial, recording, and browser fallbacks, use the
+[`Personal Graph Studio release guide`](personal-graph-studio-release.md).
+
 ## Run the project
 
 ### Requirements
@@ -58,8 +62,10 @@ complete bundle, and atomically replaces these files together:
 Open `http://localhost:3000/demo`. Other implemented routes are:
 
 - `/`: product entry and route navigation.
+- `/studio`: explicit personal file/folder preview and loopback graph generation.
 - `/perform`: opt-in mirrored webcam composition with the same graph and hand worker.
 - `/calibration`: explicit camera setup, mirrored preview, landmarks, and pinch-threshold controls.
+- `/tutorial`: resumable eight-step orientation with a camera-free path.
 - `/debug`: artifact statistics, raw sample payload, traversal history, and hand diagnostics.
 
 The release build is also published as a static GitHub Pages project site at
@@ -101,9 +107,9 @@ Markdown, .markdown, or .txt files on disk
   -> React Three Fiber / Three.js scene
 ```
 
-The Python pipeline is offline in the application-architecture sense: it is a local batch program,
-not a service that receives notes. It uses seeded algorithms, stable identifiers, explainable edge
-evidence, and a local Sentence Transformers provider. A network connection can still be required
+The Python pipeline uses seeded algorithms, stable identifiers, explainable edge evidence, and a
+local Sentence Transformers provider. It runs either as the sample batch command or behind the
+optional authenticated loopback-only Studio companion. A network connection can still be required
 once to acquire the configured embedding model; no hosted embedding API is used.
 
 The web application fetches `/data/graph.json`, `/data/layouts.json`, `/data/manifest.json`, and
@@ -112,9 +118,10 @@ or internally inconsistent bundle before creating the Graphology model. The grap
 React Three Fiber and Three.js for instanced nodes, relationship lines, labels, focus/traversal
 camera choreography, and layout morphing.
 
-There is no application backend in the MVP: no Next.js API route, database, account, telemetry
-collector, server-side ingestion, or sync process. Rebuilding notes and refreshing the browser is
-the update path.
+There is no hosted application backend in the MVP: no Next.js API route, database, account,
+telemetry collector, cloud ingestion, or sync process. The public path reads only static fictional
+artifacts. Personal Studio sends explicitly confirmed notes to `127.0.0.1:8765`, receives a
+validated bundle into browser memory, and never overwrites the public sample.
 
 Editable Mermaid sources and accessible SVG exports document the
 [system architecture](diagrams/system-architecture.svg),
@@ -135,12 +142,13 @@ Hand input is optional and browser-local:
 5. The camera panel smooths landmarks into a cursor; calibration can store versioned numeric
    threshold/mirroring settings in `localStorage`.
 6. The existing guarded gesture controller classifies pointing, pinch, open-palm hold, and
-   horizontal swipe frames. It routes them through the same select, traverse, return, and topology
-   actions used by mouse and keyboard input.
+   horizontal swipe frames. Node-space gestures route through the same select, traverse, return, and
+   topology actions used by mouse and keyboard input. An empty-space pinch drives guarded orbit,
+   vertical pan, depth zoom, and release through the shared view-control path.
 
-The implementation does not upload camera frames, store recordings, or send landmarks to an
-application server. Disabling the camera, leaving the component, or disposing the worker stops all
-media tracks and terminates the worker.
+The implementation does not upload camera frames or landmarks. Recording is a separate explicit
+local action described below. Disabling the camera, leaving the component, or disposing the worker
+stops all media tracks and terminates the worker.
 
 Performance presentation keeps the scene component mounted when its video layer is hidden, so the
 selected thought, topology, traversal history, camera permission, stream, and worker are preserved.
@@ -155,7 +163,8 @@ indicator is excluded from the exported frame by product decision. Output exists
 in-memory Blob/object URL after explicit stop, and an explicit download uses a UTC app/mode
 filename without graph content. Download, discard, camera shutdown, route exit, track end, error,
 backgrounding, and unmount release the compositor stream and revoke any URL. There is no recorder
-construction on load and no network, upload, remote cache, telemetry, or persistence path.
+construction on load and no network, upload, remote cache, telemetry, or automatic/browser-storage
+persistence path; an explicit download is the only durable output.
 
 Classifier/controller modules use hysteresis, holds, cooldowns, and transition guards rather than
 single-frame activation. Recorded privacy-safe fixtures exercise the same runtime cursor and
@@ -175,6 +184,10 @@ is never required.
 | Press `Backspace`                  | Restore the previous focused node when traversal history exists. |
 | Press `1`, `2`, `3`, or `4`        | Select semantic, community, temporal, or force topology.         |
 | Click a topology button            | Select the same topology without a keyboard shortcut.            |
+| Press `A` or `D`                   | Orbit the graph view left or right.                              |
+| Press `Shift` + an arrow key       | Pan the graph view.                                              |
+| Press `+`, `-`, or use the wheel   | Zoom the graph view.                                             |
+| Press `0` or click **Reset view**  | Restore the authored camera view.                                |
 | Click **Enable hand camera**       | Request optional local camera access and start the hand worker.  |
 | Click **Disable camera**           | Stop the tracks and return to mouse/keyboard-only use.           |
 | Open `/perform`                    | Enter camera-off performance presentation without a prompt.      |
@@ -188,6 +201,8 @@ is never required.
 | Pinch over a target                | Focus it, or traverse to it when it is an active neighbor.       |
 | Hold an open palm                  | Return from a focused thought to the overview.                   |
 | Swipe horizontally                 | Cycle through the available topology modes.                      |
+| Pinch empty space and move         | Orbit horizontally, pan vertically, and zoom with palm depth.    |
+| Release the empty-space pinch      | End direct view manipulation.                                    |
 
 Topology shortcuts are ignored while focus is inside an editable control or while a conflicting
 scene transition is active. Temporal topology is disabled, with a reason in the HUD, if the bundle
@@ -263,24 +278,33 @@ Implemented and directly exercised today:
 - Adaptive high/medium/low scene presets based on graph size and sustained measured FPS.
 - Opt-in full-viewport performance presentation with single-stream video/hand reuse, adaptive
   inference cadence, deterministic camera-free fixtures, and lifecycle cleanup coverage.
+- File/folder Studio intake with deterministic exclusions and budgets, an authenticated loopback
+  build provider, progress/cancel/retry, atomic in-memory activation, source switching, and explicit
+  private JSON import/export/reset.
+- Empty-space hand orbit/pan/depth zoom with keyboard, wheel, named-control, and camera-free
+  fallbacks.
+- Explicit bounded local recording and a replayable first-run tutorial that stores no note data.
 
 Current limits, stated without product claims beyond the code:
 
 - The checked-in graph is a small fictional demonstration, not evidence of quality on a large or
   personal corpus.
-- Import is a developer CLI batch operation. There is no folder picker, file watcher, incremental
-  rebuild, in-app private-bundle switcher, or automatic refresh.
+- Studio has file and folder pickers, but no file watcher, incremental rebuild, durable graph
+  library, automatic refresh, or cross-device sync.
 - The default semantic model must be downloaded before its first local use unless already cached.
   Optional pipeline dependencies are comparatively large and CPU inference/build time varies by
   corpus and hardware.
-- The frontend serves artifact contents as static JSON. It has no authentication, encryption,
-  private hosting, sync, multi-user editing, or conflict resolution.
+- Public artifacts remain static JSON. Personal sessions and exports have no application-level
+  encryption, private hosting, sync, multi-user editing, or conflict resolution.
 - Hand accuracy depends on framing, light, occlusion, device/browser support, and individual
   calibration. Mouse and keyboard remain the reliable fallback.
 - Performance figures are measurements for stated hardware/browser scenarios and synthetic scale
   probes, not universal guarantees. See [`performance-report.md`](performance-report.md).
 
 ## Troubleshooting
+
+Studio companion, intake, session, recording, and tutorial recovery paths are in the
+[`Personal Graph Studio release guide`](personal-graph-studio-release.md#troubleshooting).
 
 ### Graph artifacts fail to load or validate
 

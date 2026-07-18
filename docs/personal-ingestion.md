@@ -52,9 +52,12 @@ the existing scene—personal artifacts are never loaded from fixed public URLs.
 The graph-source controls switch between sample and personal models without reloading the page.
 They can explicitly export a versioned private-session JSON file, import a compatible file back
 into memory, or remove the personal graph. Import validates before replacing the active session.
-Remove/reset clears only browser memory and returns to the sample; it never deletes or modifies the
-original source files. Sessions intentionally disappear on full page reload and are not written to
-localStorage, IndexedDB, public data, or a hosted service.
+Remove/reset always clears the in-memory personal graph and returns to the sample; it never deletes
+or modifies the original source files. It also attempts to remove `sessionStorage` traversal history
+that may contain identifiers derived from the personal graph. If browser storage blocks that
+cleanup, the UI warns that the user must close the tab or clear site data. Sessions intentionally
+disappear on full page reload and are not written to `localStorage`, IndexedDB, public data, or a
+hosted service. Private-session JSON imports are rejected before parsing when they exceed 32 MiB.
 
 ## Start local studio mode
 
@@ -64,15 +67,18 @@ uv sync --extra embeddings --extra layouts --all-groups
 uv run touch-traversal studio
 ```
 
-The default companion listens on `http://127.0.0.1:8765` and allows the local dev origin plus the
-project's GitHub Pages origin. To use another static deployment:
+The default companion listens on `http://127.0.0.1:8765` and allows only the local dev origins plus
+the project's GitHub Pages origin. Other loopback ports are not implicitly trusted. To use another
+static deployment:
 
 ```bash
 uv run touch-traversal studio --allow-origin https://notes.example.test
 ```
 
 `--host` exists for explicit local configuration, but non-loopback values are rejected. Request
-bodies and paths are not logged. Stop the process with `Ctrl+C`; process exit releases all jobs and
+bodies and paths are not logged. At most two builds run concurrently and at most eight job records
+are retained. Every terminal result/error is erased automatically after five minutes if the browser
+does not clean it first. Stop the process with `Ctrl+C`; process exit releases all jobs and
 in-memory results.
 
 The first full build may download local Sentence Transformers model weights after the optional
@@ -98,6 +104,11 @@ cd pipeline && uv sync --extra embeddings --extra layouts --all-groups && uv run
 ```
 
 No remote fallback is attempted.
+
+This is process-local isolation, not protection from malicious software already running as the same
+operating-system user. A local process that can bind the companion port could impersonate it, and an
+allowed browser origin receives the process token from the capability response. Review custom
+`--allow-origin` values and do not run an untrusted replacement on port 8765.
 
 ## HTTP job flow
 
@@ -129,6 +140,10 @@ types are `text/markdown` and `text/plain`. The companion returns a job snapshot
 - `DELETE /v1/jobs/{jobId}` requests cancellation for active work.
 - `DELETE /v1/jobs/{jobId}` after a terminal state removes the in-memory result and job metadata.
 
+Terminal jobs also expire after five minutes, and queue admission prunes older terminal entries
+before accepting new work. The browser's normal success/failure path deletes terminal state
+immediately after it has validated or reported the response.
+
 Failures use stable codes such as `invalid_request`, `payload_too_large`, `pipeline_unavailable`,
 `build_failed`, `cancelled`, and `protocol_mismatch`. Cancellation is checked between deterministic
 stages; a native embedding/model call already in progress must return before temporary cleanup.
@@ -158,5 +173,5 @@ Run the focused contract checks from the repository root:
 cd pipeline && uv run pytest tests/test_studio.py
 pnpm --filter @touch-traversal/web test tests/unit/personal-ingestion.test.ts
 pnpm --filter @touch-traversal/web test tests/unit/studio-intake.test.ts
-npx playwright test tests/e2e/studio-intake.spec.ts --project=chromium
+pnpm --filter @touch-traversal/web exec playwright test tests/e2e/studio-intake.spec.ts --browser=chromium
 ```

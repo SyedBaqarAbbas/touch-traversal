@@ -77,6 +77,34 @@ describe("hand calibration", () => {
     expect(storage.getItem(HAND_CALIBRATION_STORAGE_KEY)).toBeNull();
   });
 
+  it("keeps in-memory defaults and changes usable when storage is unavailable", () => {
+    const unavailable = {
+      getItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      removeItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      setItem: () => {
+        throw new DOMException("full", "QuotaExceededError");
+      },
+    };
+    const adjusted = {
+      ...defaultHandCalibrationSettings,
+      confidenceFloor: 0.7,
+    };
+
+    expect(loadHandCalibrationSettings(unavailable)).toEqual(
+      defaultHandCalibrationSettings,
+    );
+    expect(saveHandCalibrationSettings(unavailable, adjusted)).toMatchObject({
+      confidenceFloor: 0.7,
+    });
+    expect(resetHandCalibrationSettings(unavailable)).toEqual(
+      defaultHandCalibrationSettings,
+    );
+  });
+
   it("migrates v1 settings and persists only the v2 numeric depth calibration", () => {
     const storage = new MemoryStorage();
     storage.setItem(

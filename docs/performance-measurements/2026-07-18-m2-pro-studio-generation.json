@@ -1,0 +1,90 @@
+{
+  "capturedAt": "2026-07-18T10:40:33.851576+00:00",
+  "environment": {
+    "machine": "arm64",
+    "operatingSystem": "macOS-26.5.1-arm64-arm-64bit",
+    "python": "3.11.15"
+  },
+  "limits": {
+    "acceptedCorpusBytes": 16777216,
+    "fileCount": 200,
+    "noteBytes": 2097152
+  },
+  "model": "all-MiniLM-L6-v2",
+  "notes": [
+    "Both profiles are generated fictional Markdown and are deleted with their temporary workspaces.",
+    "The compact upper profile reaches the 200-file limit, not the 16 MiB byte ceiling.",
+    "The model and optional pipeline modules are warmed by the small profile before the 200-file profile."
+  ],
+  "profiles": [
+    {
+      "durationMs": 10096.9,
+      "edgeCount": 1,
+      "noteCount": 2,
+      "nodeCount": 2,
+      "profile": "small-two-note",
+      "sourceBytes": 1000,
+      "stages": [
+        {
+          "stage": "ingesting",
+          "durationMs": 2.1
+        },
+        {
+          "stage": "chunking",
+          "durationMs": 0.9
+        },
+        {
+          "stage": "relating",
+          "durationMs": 0.4
+        },
+        {
+          "stage": "embedding",
+          "durationMs": 10086.8
+        },
+        {
+          "stage": "laying_out",
+          "durationMs": 4.9
+        },
+        {
+          "stage": "validating",
+          "durationMs": 0.4
+        }
+      ]
+    },
+    {
+      "durationMs": 12314.8,
+      "edgeCount": 600,
+      "noteCount": 200,
+      "nodeCount": 200,
+      "profile": "maximum-file-count-compact",
+      "sourceBytes": 100000,
+      "stages": [
+        {
+          "stage": "ingesting",
+          "durationMs": 36.9
+        },
+        {
+          "stage": "chunking",
+          "durationMs": 43.4
+        },
+        {
+          "stage": "relating",
+          "durationMs": 199.2
+        },
+        {
+          "stage": "embedding",
+          "durationMs": 4127.2
+        },
+        {
+          "stage": "laying_out",
+          "durationMs": 7894.5
+        },
+        {
+          "stage": "validating",
+          "durationMs": 12.2
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 1
+}

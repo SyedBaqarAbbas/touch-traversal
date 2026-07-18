@@ -10,7 +10,10 @@ import {
 import { buildGraphModel, type GraphModel } from "@/lib/graph-model";
 import { publicAssetUrl } from "@/lib/public-url";
 import { recordingModeEnabled } from "@/lib/recording-mode";
+import { clearTraversalHistory } from "@/lib/traversal-history";
 import {
+  maximumPersonalGraphImportBytes,
+  PersonalGraphSessionError,
   personalGraphSessions,
   type PersonalGraphSessionSnapshot,
 } from "@/lib/personal-graph-session";
@@ -214,8 +217,10 @@ function ArtifactSourceControls({
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = "touch-traversal-personal-session.json";
+      document.body.append(anchor);
       anchor.click();
-      URL.revokeObjectURL(url);
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
       setMessage("Private session export prepared on this device.");
     } catch (error) {
       setMessage(formatArtifactError(error));
@@ -225,6 +230,11 @@ function ArtifactSourceControls({
   const importPersonal = async (file: File | undefined) => {
     if (!file) return;
     try {
+      if (file.size > maximumPersonalGraphImportBytes) {
+        throw new PersonalGraphSessionError(
+          "The selected personal graph file exceeds the 32 MiB private import limit.",
+        );
+      }
       const session = personalGraphSessions.importSession(await file.text());
       setMessage(
         `Imported ${session.metadata.nodeCount} nodes into memory. Source files were not changed.`,
@@ -280,9 +290,14 @@ function ArtifactSourceControls({
           <button
             type="button"
             onClick={() => {
+              const historyRemoved = clearTraversalHistory(
+                window.sessionStorage,
+              );
               personalGraphSessions.reset();
               setMessage(
-                "Personal graph removed from memory. Original source files were not changed.",
+                historyRemoved
+                  ? "Personal graph and derived traversal history removed from memory. Original source files were not changed."
+                  : "Personal graph removed from memory, but browser storage blocked traversal-history cleanup. Close this tab or clear site data before using personal notes again. Original source files were not changed.",
               );
             }}
           >

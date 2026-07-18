@@ -1,13 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 import {
   cameraAccessCopy,
   classifyCameraAccessError,
   initialCameraAccessState,
   reduceCameraAccess,
+  type CameraAccessEvent,
 } from "@/lib/camera-access";
+import {
+  stopCameraStream,
+  watchCameraStreamEnded,
+} from "@/lib/camera-stream-lifecycle";
 import {
   adjustDepthRange,
   adjustPinchThresholds,
@@ -77,6 +89,9 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const workerRef = useRef<HandTrackingWorkerController | null>(null);
   const frameLoopRef = useRef<number | null>(null);
+  const detachTrackEndedRef = useRef<(() => void) | null>(null);
+  const cameraRequestRef = useRef(0);
+  const mountedRef = useRef(true);
   const signalRef = useRef(latestSignal);
   const injectedHand = useMemo(() => createInjectedCalibrationHand(), []);
   const displayHand = latestHand ?? injectedHand;
@@ -98,6 +113,40 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
   const heading =
     mode === "debug" ? "Hand input debug" : "Calibrate hand traversal.";
 
+  const releaseCameraResources = useCallback(() => {
+    stopFrameLoop(frameLoopRef.current);
+    frameLoopRef.current = null;
+    detachTrackEndedRef.current?.();
+    detachTrackEndedRef.current = null;
+    workerRef.current?.dispose();
+    workerRef.current = null;
+    stopCameraStream(streamRef.current);
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
+
+  const resetLiveHandState = useCallback(() => {
+    const fallbackSignal =
+      summarizeCalibrationHand({
+        hand: injectedHand,
+        nowMs: 1000,
+        settings,
+      })?.signal ?? null;
+    setLatestHand(null);
+    setLatestSignal(fallbackSignal);
+    signalRef.current = fallbackSignal;
+  }, [injectedHand, settings]);
+
+  const stopWithCameraEvent = useCallback(
+    (event: CameraAccessEvent) => {
+      cameraRequestRef.current += 1;
+      releaseCameraResources();
+      resetLiveHandState();
+      dispatchCamera(event);
+    },
+    [releaseCameraResources, resetLiveHandState],
+  );
+
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
       setSettings(loadHandCalibrationSettings(window.localStorage));
@@ -106,12 +155,13 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      stopFrameLoop(frameLoopRef.current);
-      workerRef.current?.dispose();
-      stopStream(streamRef.current);
+      mountedRef.current = false;
+      cameraRequestRef.current += 1;
+      releaseCameraResources();
     };
-  }, []);
+  }, [releaseCameraResources]);
 
   const persistSettings = (nextSettings: HandCalibrationSettings) => {
     const saved = saveHandCalibrationSettings(
@@ -130,6 +180,7 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
       dispatchCamera({ type: "UNSUPPORTED" });
       return;
     }
+    const request = ++cameraRequestRef.current;
 
     dispatchCamera({ type: "REQUEST" });
     try {
@@ -141,30 +192,41 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
           width: { ideal: 640 },
         },
       });
-      stopStream(streamRef.current);
+      if (!mountedRef.current || request !== cameraRequestRef.current) {
+        stopCameraStream(stream);
+        return;
+      }
+      releaseCameraResources();
       streamRef.current = stream;
+      detachTrackEndedRef.current = watchCameraStreamEnded(stream, () => {
+        if (!mountedRef.current) return;
+        stopWithCameraEvent({
+          message:
+            "Camera stream ended. Retry once the device is available; calibration can continue with injected landmarks.",
+          type: "ERROR",
+        });
+      });
       await attachStream(videoRef.current, stream);
+      if (!mountedRef.current || request !== cameraRequestRef.current) {
+        stopCameraStream(stream);
+        if (videoRef.current?.srcObject === stream) {
+          videoRef.current.srcObject = null;
+        }
+        if (streamRef.current === stream) streamRef.current = null;
+        return;
+      }
       startFrameLoop();
       dispatchCamera({ type: "ACTIVE" });
     } catch (error: unknown) {
-      stopFrameLoop(frameLoopRef.current);
-      workerRef.current?.dispose();
-      workerRef.current = null;
-      stopStream(streamRef.current);
-      streamRef.current = null;
-      dispatchCamera(classifyCameraAccessError(error));
+      if (!mountedRef.current || request !== cameraRequestRef.current) return;
+      stopWithCameraEvent(classifyCameraAccessError(error));
     }
   };
 
   const disableCamera = () => {
-    stopFrameLoop(frameLoopRef.current);
-    workerRef.current?.dispose();
-    workerRef.current = null;
-    stopStream(streamRef.current);
-    streamRef.current = null;
-    setLatestHand(null);
-    setLatestSignal(summary?.signal ?? null);
-    signalRef.current = summary?.signal ?? null;
+    cameraRequestRef.current += 1;
+    releaseCameraResources();
+    resetLiveHandState();
     dispatchCamera({ type: "DISABLE" });
   };
 
@@ -179,42 +241,54 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
         video.videoWidth > 0 &&
         video.videoHeight > 0
       ) {
-        const controller =
-          workerRef.current ??
-          createHandTrackingWorkerController({
-            onError: (message) => {
-              dispatchCamera({
-                message: `Hand model failed: ${message.message}. Calibration can continue with injected landmarks.`,
-                type: "ERROR",
-              });
-            },
-            onResult: (message) => {
-              const hand = message.hands[0] ?? null;
-              setLatestHand(hand);
-              if (!hand) {
-                return;
-              }
-              const rawSignal = extractHandSignal(
-                hand,
-                message.timestampMs,
-                signalRef.current,
-              );
-              if (!rawSignal) {
-                return;
-              }
-              const smoothedSignal = smoothHandSignal(
-                signalRef.current,
-                rawSignal,
-              );
-              signalRef.current = smoothedSignal;
-              setLatestSignal(smoothedSignal);
-            },
-          });
+        let controller = workerRef.current;
+        if (!controller) {
+          try {
+            controller = createHandTrackingWorkerController({
+              onError: (message) => {
+                if (!mountedRef.current) return;
+                stopWithCameraEvent({
+                  message: `Hand model failed: ${message.message}. Calibration can continue with injected landmarks.`,
+                  type: "ERROR",
+                });
+              },
+              onResult: (message) => {
+                const hand = message.hands[0] ?? null;
+                setLatestHand(hand);
+                if (!hand) {
+                  return;
+                }
+                const rawSignal = extractHandSignal(
+                  hand,
+                  message.timestampMs,
+                  signalRef.current,
+                );
+                if (!rawSignal) {
+                  return;
+                }
+                const smoothedSignal = smoothHandSignal(
+                  signalRef.current,
+                  rawSignal,
+                );
+                signalRef.current = smoothedSignal;
+                setLatestSignal(smoothedSignal);
+              },
+            });
+          } catch {
+            stopWithCameraEvent({
+              message:
+                "Hand worker could not start. Calibration can continue with injected landmarks.",
+              type: "ERROR",
+            });
+            return;
+          }
+        }
         workerRef.current = controller;
         void controller
           .submitVideoFrame(video, performance.now())
           .catch((error: unknown) => {
-            dispatchCamera(classifyCameraAccessError(error));
+            if (!mountedRef.current) return;
+            stopWithCameraEvent(classifyCameraAccessError(error));
           });
       }
 
@@ -464,11 +538,5 @@ async function attachStream(
 function stopFrameLoop(frameId: number | null) {
   if (frameId != null) {
     window.cancelAnimationFrame(frameId);
-  }
-}
-
-function stopStream(stream: MediaStream | null) {
-  for (const track of stream?.getTracks() ?? []) {
-    track.stop();
   }
 }

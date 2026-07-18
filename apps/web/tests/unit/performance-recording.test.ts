@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { createPerformanceCompositor } from "../../lib/performance-compositor";
 import {
   createLocalRecordingSession,
   detectPerformanceRecordingCapability,
@@ -212,5 +213,66 @@ describe("local MediaRecorder session", () => {
     expect(emptyError).toHaveBeenCalledWith(
       "Recording stopped without producing a playable local file.",
     );
+  });
+});
+
+describe("performance compositor lifecycle", () => {
+  it("releases the capture track after a composition draw failure", () => {
+    const stopTrack = vi.fn();
+    const onError = vi.fn();
+    const canvas = {
+      captureStream: () =>
+        ({ getTracks: () => [{ stop: stopTrack }] }) as unknown as MediaStream,
+      dataset: {} as DOMStringMap,
+      getContext: () => ({
+        save: () => {
+          throw new Error("private frame could not be composed");
+        },
+      }),
+      height: 0,
+      width: 0,
+    } as unknown as HTMLCanvasElement;
+
+    vi.stubGlobal("document", { createElement: () => canvas });
+    vi.stubGlobal("window", {
+      cancelAnimationFrame: vi.fn(),
+      requestAnimationFrame: vi.fn(() => 1),
+    });
+    try {
+      const compositor = createPerformanceCompositor({
+        fixture: true,
+        graphCanvas: canvas,
+        onError,
+        overlay: () => ({
+          cameraMode: "overview",
+          edgeCount: 0,
+          interactionMode: "OVERVIEW",
+          nodeCount: 0,
+          selectedTitle: null,
+          topologyLabel: "distributed",
+          topologyTitle: "Topologies of Thoughts",
+          traversalLabel: null,
+        }),
+        presentation: () => ({
+          cursorFrame: null,
+          layerVisible: true,
+          mirrored: true,
+          videoOpacity: 1,
+        }),
+        sourceHeight: 720,
+        sourceWidth: 1280,
+        video: {} as HTMLVideoElement,
+      });
+
+      compositor.start();
+      compositor.stop();
+
+      expect(onError).toHaveBeenCalledWith(
+        "private frame could not be composed",
+      );
+      expect(stopTrack).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

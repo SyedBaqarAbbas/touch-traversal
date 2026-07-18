@@ -153,6 +153,21 @@ describe("web application contract", () => {
     const rawMeasurement = JSON.parse(
       readRoot("docs/performance-measurements/2026-07-18-m2-pro-chromium.json"),
     );
+    const recordingMeasurement = JSON.parse(
+      readRoot(
+        "docs/performance-measurements/2026-07-18-m2-pro-chromium-recording.json",
+      ),
+    );
+    const studioIntakeMeasurement = JSON.parse(
+      readRoot(
+        "docs/performance-measurements/2026-07-18-m2-pro-studio-intake.json",
+      ),
+    );
+    const studioGenerationMeasurement = JSON.parse(
+      readRoot(
+        "docs/performance-measurements/2026-07-18-m2-pro-studio-generation.json",
+      ),
+    );
 
     expect(performanceReport).toContain("/demo?input=mouse");
     expect(performanceReport).toContain("overview-300-1500");
@@ -164,6 +179,9 @@ describe("web application contract", () => {
     expect(performanceReport).toContain("Minimum acceptable threshold: 45 FPS");
     expect(performanceReport).toContain("cap visible edges at 900");
     expect(performanceReport).toContain("Visible performance presentation");
+    expect(performanceReport).toContain(
+      "Visible presentation with local recording",
+    );
     expect(rawMeasurement.schemaVersion).toBe(2);
     expect(rawMeasurement.environment.sampleGraph).toEqual({
       edgeCount: 48,
@@ -195,6 +213,41 @@ describe("web application contract", () => {
     for (const scenario of rawMeasurement.performancePresentation.scenarios) {
       expect(scenario.frameTiming.minimumFps).toBeGreaterThanOrEqual(45);
     }
+    expect(recordingMeasurement).toMatchObject({
+      measurement: "webcam-graph-hand-recording",
+      recording: {
+        cleanupState: "idle-after-discard",
+        recorder: { audioTrackCount: 0, videoTrackCount: 1 },
+        supported: true,
+      },
+      schemaVersion: 1,
+      scenario: {
+        id: "recording-300-1500",
+        processedEdgeCount: 900,
+      },
+    });
+    expect(recordingMeasurement.inference.rateFps).toBeGreaterThanOrEqual(15);
+    expect(
+      recordingMeasurement.scenario.frameTiming.minimumFps,
+    ).toBeGreaterThanOrEqual(45);
+    expect(studioIntakeMeasurement.profiles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fileCount: 200,
+          renderedRows: 200,
+          sourceBytes: 16 * 1024 * 1024,
+        }),
+      ]),
+    );
+    expect(studioGenerationMeasurement.profiles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          nodeCount: 200,
+          noteCount: 200,
+          profile: "maximum-file-count-compact",
+        }),
+      ]),
+    );
   });
 
   it("defines the explicit single-stream performance presentation", () => {
@@ -241,6 +294,7 @@ describe("web application contract", () => {
 
   it("keeps the complete setup, privacy, architecture, and recovery guide current", () => {
     const guide = readRoot("docs/project-guide.md");
+    const releaseGuide = readRoot("docs/personal-graph-studio-release.md");
     const makefile = readRoot("Makefile");
     const readme = readRoot("README.md");
 
@@ -261,7 +315,9 @@ describe("web application contract", () => {
     expect(makefile).toContain(
       "sync --extra embeddings --extra layouts --all-groups --locked",
     );
-    expect(guide).toContain("There is no application backend in the MVP");
+    expect(guide).toContain(
+      "There is no hosted application backend in the MVP",
+    );
     expect(guide).toContain(
       "live hand input share the graph interaction state",
     );
@@ -270,8 +326,17 @@ describe("web application contract", () => {
     expect(guide).toContain("Hand model or WASM fails to load");
     expect(guide).toContain("The scene reports medium or low quality");
     expect(guide).toContain("diagrams/gesture-input.svg");
+    expect(releaseGuide).toContain("full chunk text");
+    expect(releaseGuide).toContain("five-minute expiry");
+    expect(releaseGuide).toContain("Playwright Chromium 149");
+    expect(releaseGuide).toContain(
+      "malicious software already running as the same operating-system user",
+    );
     expect(readme).toContain(
       "performance-measurements/2026-07-18-m2-pro-chromium.json",
+    );
+    expect(readme).toContain(
+      "performance-measurements/2026-07-18-m2-pro-chromium-recording.json",
     );
     expect(readme).toContain(
       "https://syedbaqarabbas.github.io/touch-traversal/",

@@ -157,6 +157,19 @@ export function TutorialExperience() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       let next = loadTutorialState(window.localStorage);
+      const requestedInputPath = new URLSearchParams(
+        window.location.search,
+      ).get("path");
+      if (
+        (next.status === "new" || next.status === "skipped") &&
+        (requestedInputPath === "full" || requestedInputPath === "mouse")
+      ) {
+        next = reduceTutorialState(next, {
+          type: "START",
+          inputPath: requestedInputPath === "mouse" ? "mouse-keyboard" : "full",
+        });
+        saveTutorialState(window.localStorage, next);
+      }
       const requestedStep =
         window.location.hash === "#controls"
           ? "mouse-keyboard"
@@ -187,14 +200,18 @@ export function TutorialExperience() {
   };
 
   const start = (inputPath: TutorialInputPath) => {
-    if (!window.sessionStorage.getItem(TUTORIAL_SESSION_STORAGE_KEY)) {
-      window.sessionStorage.setItem(
-        TUTORIAL_SESSION_STORAGE_KEY,
-        JSON.stringify({
-          path: "/",
-          source: personalGraphSessions.snapshot().source,
-        }),
-      );
+    try {
+      if (!window.sessionStorage.getItem(TUTORIAL_SESSION_STORAGE_KEY)) {
+        window.sessionStorage.setItem(
+          TUTORIAL_SESSION_STORAGE_KEY,
+          JSON.stringify({
+            path: "/",
+            source: personalGraphSessions.snapshot().source,
+          }),
+        );
+      }
+    } catch {
+      // The tutorial remains usable and exits to its safe default route.
     }
     personalGraphSessions.selectSource("sample");
     update(
@@ -212,7 +229,11 @@ export function TutorialExperience() {
     } else {
       personalGraphSessions.selectSource("sample");
     }
-    window.sessionStorage.removeItem(TUTORIAL_SESSION_STORAGE_KEY);
+    try {
+      window.sessionStorage.removeItem(TUTORIAL_SESSION_STORAGE_KEY);
+    } catch {
+      // There is no retained note/media state in this return-route hint.
+    }
     router.push(session.path as Route);
   };
 

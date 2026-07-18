@@ -14,11 +14,15 @@ export function TraversalHistoryDebugPanel() {
 
   useEffect(() => {
     const readHistory = () => {
-      setHistory(
-        parseTraversalHistory(
-          window.sessionStorage.getItem(TRAVERSAL_HISTORY_STORAGE_KEY),
-        ),
-      );
+      try {
+        setHistory(
+          parseTraversalHistory(
+            window.sessionStorage.getItem(TRAVERSAL_HISTORY_STORAGE_KEY),
+          ),
+        );
+      } catch {
+        setHistory([]);
+      }
     };
 
     readHistory();

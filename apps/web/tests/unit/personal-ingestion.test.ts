@@ -13,6 +13,7 @@ import {
 } from "../../lib/local-studio-provider";
 import {
   createMemoryPersonalGraphSessionStore,
+  maximumPersonalGraphImportBytes,
   personalGraphSessionVersion,
   PersonalGraphSessionError,
 } from "../../lib/personal-graph-session";
@@ -404,6 +405,9 @@ describe("personal graph contracts and memory lifecycle", () => {
     expect(() => target.importSession('{"sessionVersion":2}')).toThrow(
       "compatible version 1",
     );
+    expect(() =>
+      target.importSession("x".repeat(maximumPersonalGraphImportBytes + 1)),
+    ).toThrow("32 MiB private import limit");
   });
 
   it("rejects zero-node activation while preserving the current personal graph", () => {

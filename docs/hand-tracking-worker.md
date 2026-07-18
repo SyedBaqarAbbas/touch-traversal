@@ -20,8 +20,9 @@ Runtime policy:
   quality and 15 FPS at low quality before core graph navigation is reduced.
 - Worker failures post typed `ERROR` messages so the UI can preserve mouse and keyboard access.
 - Responsiveness is summarized by `summarizeHandWorkerResponsiveness`: inference must stay inside 15–30 FPS and render cadence must stay at or above 45 FPS.
-- Normalized landmark frames feed the guarded gesture controller; cursor, select, traversal, return,
-  and topology actions use the same scene interaction paths as mouse input.
+- Normalized landmark frames feed the guarded gesture controller. Cursor, select, traversal, return,
+  and topology actions use the same scene interaction paths as mouse input; an empty-space pinch
+  also drives guarded orbit, pan, depth zoom, and release through the shared view-control path.
 - Background tabs do not submit new frames. Disabling, exiting, unmounting, a worker failure, or an
   ended camera track releases the owned tracks and worker; returning to graph-only presentation
   without disabling keeps that same stream alive.

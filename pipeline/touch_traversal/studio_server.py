@@ -59,6 +59,9 @@ DEFAULT_ALLOWED_ORIGINS = (
 MAX_NOTES = 200
 MAX_NOTE_BYTES = 2 * 1024 * 1024
 MAX_REQUEST_BYTES = 20 * 1024 * 1024
+MAX_ACTIVE_JOBS = 2
+MAX_RETAINED_JOBS = 8
+JOB_RETENTION_SECONDS = 5 * 60.0
 
 _STAGE_MESSAGES = {
     StudioProgressStage.ACCEPTED: "request accepted",
@@ -117,6 +120,7 @@ class _StudioJob:
     result: StudioBuildResult | None = None
     error: StudioFailure | None = None
     cancel_event: threading.Event = field(default_factory=threading.Event)
+    cleanup_timer: threading.Timer | None = field(default=None, repr=False)
 
 
 def _pipeline_builder(config: PipelineConfig) -> StudioBundleBuilder:
@@ -155,15 +159,6 @@ def _is_loopback_hostname(host: str) -> bool:
         return False
 
 
-def _origin_is_loopback(origin: str) -> bool:
-    parsed = urlparse(origin)
-    return (
-        parsed.scheme in {"http", "https"}
-        and parsed.hostname is not None
-        and (_is_loopback_hostname(parsed.hostname))
-    )
-
-
 class StudioService:
     """Own authenticated in-memory jobs and their temporary local workspaces."""
 
@@ -173,10 +168,14 @@ class StudioService:
         *,
         allowed_origins: tuple[str, ...] = DEFAULT_ALLOWED_ORIGINS,
         session_token: str | None = None,
+        job_retention_seconds: float = JOB_RETENTION_SECONDS,
     ) -> None:
+        if job_retention_seconds <= 0:
+            raise ValueError("studio job retention must be positive")
         self._builder = builder
         self._allowed_origins = frozenset(origin.rstrip("/") for origin in allowed_origins)
         self._session_token = session_token or secrets.token_urlsafe(32)
+        self._job_retention_seconds = job_retention_seconds
         self._jobs: dict[str, _StudioJob] = {}
         self._lock = threading.RLock()
 
@@ -188,7 +187,7 @@ class StudioService:
         if origin is None:
             return True
         normalized = origin.rstrip("/")
-        return normalized in self._allowed_origins or _origin_is_loopback(normalized)
+        return normalized in self._allowed_origins
 
     def authorized(self, authorization: str | None) -> bool:
         if authorization is None or not authorization.startswith("Bearer "):
@@ -220,6 +219,39 @@ class StudioService:
         job_id = f"job-{uuid4().hex}"
         job = _StudioJob(request_id=request.request_id, job_id=job_id)
         with self._lock:
+            active_jobs = sum(
+                candidate.state in {StudioJobState.QUEUED, StudioJobState.RUNNING}
+                for candidate in self._jobs.values()
+            )
+            if active_jobs >= MAX_ACTIVE_JOBS:
+                raise StudioRequestError(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    StudioErrorCode.BUILD_FAILED,
+                    "the local studio is already building the maximum number of graphs",
+                    retryable=True,
+                )
+            while len(self._jobs) >= MAX_RETAINED_JOBS:
+                terminal_job_id = next(
+                    (
+                        retained_id
+                        for retained_id, retained in self._jobs.items()
+                        if retained.state
+                        in {
+                            StudioJobState.SUCCEEDED,
+                            StudioJobState.FAILED,
+                            StudioJobState.CANCELLED,
+                        }
+                    ),
+                    None,
+                )
+                if terminal_job_id is None:
+                    raise StudioRequestError(
+                        HTTPStatus.SERVICE_UNAVAILABLE,
+                        StudioErrorCode.BUILD_FAILED,
+                        "the local studio job queue is full; retry after an active build finishes",
+                        retryable=True,
+                    )
+                self._delete_job(terminal_job_id)
             self._jobs[job_id] = job
         worker = threading.Thread(
             target=self._run_job,
@@ -282,12 +314,15 @@ class StudioService:
                     retryable=False,
                 ),
             )
-        except Exception as error:
+        except Exception:
             self._fail(
                 job_id,
                 StudioFailure(
                     code=StudioErrorCode.BUILD_FAILED,
-                    message=str(error) or "personal graph build failed",
+                    message=(
+                        "Personal graph build failed locally. Review note encoding and "
+                        "pipeline configuration, then retry."
+                    ),
                     retryable=False,
                 ),
             )
@@ -325,21 +360,24 @@ class StudioService:
             job = self._job(job_id)
             if job.cancel_event.is_set():
                 job.state = StudioJobState.CANCELLED
-                return
-            job.state = StudioJobState.SUCCEEDED
-            job.result = result
-            job.progress = StudioProgress(
-                sequence=job.progress.sequence + 1,
-                stage=StudioProgressStage.COMPLETE,
-                stage_index=len(STUDIO_PROGRESS_STAGES) - 1,
-                message=_STAGE_MESSAGES[StudioProgressStage.COMPLETE],
-            )
+                job.result = None
+            else:
+                job.state = StudioJobState.SUCCEEDED
+                job.result = result
+                job.progress = StudioProgress(
+                    sequence=job.progress.sequence + 1,
+                    stage=StudioProgressStage.COMPLETE,
+                    stage_index=len(STUDIO_PROGRESS_STAGES) - 1,
+                    message=_STAGE_MESSAGES[StudioProgressStage.COMPLETE],
+                )
+        self._schedule_expiry(job_id)
 
     def _fail(self, job_id: str, failure: StudioFailure) -> None:
         with self._lock:
             job = self._job(job_id)
             job.state = StudioJobState.FAILED
             job.error = failure
+        self._schedule_expiry(job_id)
 
     def _cancelled(self, job_id: str) -> None:
         with self._lock:
@@ -347,6 +385,41 @@ class StudioService:
             job.state = StudioJobState.CANCELLED
             job.error = None
             job.result = None
+        self._schedule_expiry(job_id)
+
+    def _schedule_expiry(self, job_id: str) -> None:
+        timer = threading.Timer(
+            self._job_retention_seconds,
+            self._expire_job,
+            args=(job_id,),
+        )
+        timer.daemon = True
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return
+            if job.cleanup_timer is not None:
+                job.cleanup_timer.cancel()
+            job.cleanup_timer = timer
+        timer.start()
+
+    def _expire_job(self, job_id: str) -> None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None or job.state in {
+                StudioJobState.QUEUED,
+                StudioJobState.RUNNING,
+            }:
+                return
+            self._delete_job(job_id)
+
+    def _delete_job(self, job_id: str) -> None:
+        job = self._jobs.pop(job_id)
+        if job.cleanup_timer is not None:
+            job.cleanup_timer.cancel()
+        job.cleanup_timer = None
+        job.result = None
+        job.error = None
 
     def snapshot(self, job_id: str) -> StudioJobSnapshot:
         with self._lock:
@@ -380,7 +453,7 @@ class StudioService:
                 StudioJobState.FAILED,
                 StudioJobState.CANCELLED,
             }:
-                del self._jobs[job_id]
+                self._delete_job(job_id)
                 return None
             job.cancel_event.set()
             return self.snapshot(job_id)
@@ -408,9 +481,10 @@ def _handler_for(service: StudioService) -> type[BaseHTTPRequestHandler]:
 
         def _cors_headers(self) -> None:
             origin = self._origin()
-            if origin is not None and service.origin_allowed(origin):
-                self.send_header("Access-Control-Allow-Origin", origin)
-                self.send_header("Vary", "Origin")
+            if origin is None or not service.origin_allowed(origin):
+                return
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
             if self.headers.get("Access-Control-Request-Private-Network") == "true":
                 self.send_header("Access-Control-Allow-Private-Network", "true")
 
@@ -585,6 +659,7 @@ def create_studio_server(
     allowed_origins: tuple[str, ...] = DEFAULT_ALLOWED_ORIGINS,
     builder: StudioBundleBuilder | None = None,
     session_token: str | None = None,
+    job_retention_seconds: float = JOB_RETENTION_SECONDS,
 ) -> ThreadingHTTPServer:
     """Create a loopback server; non-loopback binding is rejected before socket creation."""
     if not _is_loopback_hostname(host):
@@ -595,6 +670,7 @@ def create_studio_server(
         builder or _pipeline_builder(config),
         allowed_origins=allowed_origins,
         session_token=session_token,
+        job_retention_seconds=job_retention_seconds,
     )
     return _StudioHttpServer((host, port), _handler_for(service))
 

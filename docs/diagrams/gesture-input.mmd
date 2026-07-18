@@ -25,7 +25,7 @@ config:
 ---
 flowchart TB
     accTitle: Touch Traversal local gesture and unified input flow
-    accDescr: After explicit permission, local camera video is resized and throttled before transfer to a dedicated worker. Local MediaPipe inference returns normalized hand landmarks. Signal extraction, smoothing, and deterministic classifiers produce pointer, select, return, and topology actions for the shared graph interaction state. Mouse and keyboard remain available if camera access or the worker fails.
+    accDescr: After explicit permission, local camera video is resized and throttled before transfer to a dedicated worker. Local MediaPipe inference returns normalized hand landmarks. Signal extraction, smoothing, and deterministic classifiers produce pointer, select, return, topology, orbit, pan, and depth zoom actions for the shared graph state. The same silent stream can also feed an explicit local recording compositor. Mouse and keyboard remain available if camera access or the worker fails.
 
     subgraph CAPTURE["Explicit, local capture"]
         direction LR
@@ -54,9 +54,18 @@ flowchart TB
     subgraph UNIFIED["Unified graph input"]
         direction LR
         ACTIONS["Interaction actions\npointer · select · return · topology"]
+        VIEW["Direct view actions\ngrab · orbit · pan · depth zoom · release"]
         STATE["Graph interaction state\nfocus · traversal · topology"]
         SCENE["React Three Fiber / WebGL scene"]
         ACTIONS --> STATE --> SCENE
+        VIEW --> SCENE
+    end
+
+    subgraph RECORD["Optional local recording"]
+        direction LR
+        COMPOSE["Webcam + transparent graph\n+ authored overlays"]
+        BLOB["Silent in-memory Blob\ndownload or discard"]
+        COMPOSE --> BLOB
     end
 
     MOUSE["Mouse / pointer"]
@@ -66,8 +75,13 @@ flowchart TB
     FRAME --> BITMAP
     LANDMARKS --> SIGNAL
     CONTROLLER --> ACTIONS
+    CONTROLLER --> VIEW
     MOUSE --> ACTIONS
+    MOUSE --> VIEW
     KEYBOARD --> ACTIONS
+    KEYBOARD --> VIEW
+    CAMERA -. "explicit record" .-> COMPOSE
+    SCENE -. "transparent frame" .-> COMPOSE
     CAMERA -. "denied / unavailable" .-> FALLBACK
     MEDIAPIPE -. "typed error" .-> FALLBACK
     FALLBACK -. "preserve access" .-> MOUSE
@@ -80,6 +94,6 @@ flowchart TB
     classDef fallback fill:#f5eded,stroke:#7a4848,color:#111111;
     class PERMISSION,CAMERA,FRAME,MOUSE,KEYBOARD source;
     class BITMAP,MEDIAPIPE,LANDMARKS worker;
-    class SIGNAL,INTENT,CONTROLLER process;
-    class ACTIONS,STATE,SCENE output;
+    class SIGNAL,INTENT,CONTROLLER,COMPOSE process;
+    class ACTIONS,VIEW,STATE,SCENE,BLOB output;
     class FALLBACK fallback;

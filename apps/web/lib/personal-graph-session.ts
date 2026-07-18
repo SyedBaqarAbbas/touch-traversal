@@ -5,6 +5,7 @@ import {
 import { buildGraphModel, type GraphModel } from "@/lib/graph-model";
 
 export const personalGraphSessionVersion = 1 as const;
+export const maximumPersonalGraphImportBytes = 32 * 1024 * 1024;
 
 export type PersonalGraphSessionMetadata = {
   sessionVersion: typeof personalGraphSessionVersion;
@@ -182,6 +183,11 @@ export function createMemoryPersonalGraphSessionStore(): PersonalGraphSessionSto
       )}\n`;
     },
     importSession(input) {
+      if (input.length > maximumPersonalGraphImportBytes) {
+        throw new PersonalGraphSessionError(
+          "The selected personal graph file exceeds the 32 MiB private import limit.",
+        );
+      }
       let value: unknown;
       try {
         value = JSON.parse(input);

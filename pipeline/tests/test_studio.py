@@ -98,11 +98,24 @@ class _BlockingBuilder:
         raise CorpusBuildCancelled("fixture cancellation")
 
 
+class _FailingBuilder:
+    def __call__(
+        self,
+        corpus_path: Path,
+        embedding_cache_dir: Path,
+        on_progress: BuildProgressCallback,
+        cancellation_requested: CancellationCheck,
+    ) -> ArtifactBundle:
+        del corpus_path, embedding_cache_dir, on_progress, cancellation_requested
+        raise RuntimeError("PRIVATE_NOTE_MARKER must not reach the browser")
+
+
 @contextlib.contextmanager
 def _running_server(
     config: PipelineConfig,
     builder: StudioBundleBuilder,
     *,
+    job_retention_seconds: float = 300.0,
     session_token: str = _TOKEN,
 ) -> Iterator[str]:
     server = create_studio_server(
@@ -111,6 +124,7 @@ def _running_server(
         config,
         allowed_origins=(_ORIGIN,),
         builder=builder,
+        job_retention_seconds=job_retention_seconds,
         session_token=session_token,
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -303,10 +317,20 @@ class StudioServerTests(unittest.TestCase):
                 base_url,
                 "/v1/capabilities",
                 origin="https://attacker.example",
+                private_network=True,
             )
             self.assertEqual(denied_status, HTTPStatus.FORBIDDEN)
             self.assertEqual(denied["error"]["code"], "unsupported_origin")  # type: ignore[index]
             self.assertNotIn("Access-Control-Allow-Origin", denied_headers)
+            self.assertNotIn("Access-Control-Allow-Private-Network", denied_headers)
+
+            loopback_status, _payload, loopback_headers = _request(
+                base_url,
+                "/v1/capabilities",
+                origin="http://localhost:9999",
+            )
+            self.assertEqual(loopback_status, HTTPStatus.FORBIDDEN)
+            self.assertNotIn("Access-Control-Allow-Origin", loopback_headers)
 
     def test_note_routes_require_the_per_process_capability_token(self) -> None:
         first_builder = _PipelineFixtureBuilder(self.config)
@@ -381,6 +405,34 @@ class StudioServerTests(unittest.TestCase):
             terminal = _wait_for_terminal(base_url, job_id)
             self.assertEqual(terminal["state"], "cancelled")
             self.assertTrue(all(not path.exists() for path in builder.workspaces))
+
+    def test_terminal_jobs_expire_and_generic_failures_are_sanitized(self) -> None:
+        with _running_server(
+            self.config,
+            _FailingBuilder(),
+            job_retention_seconds=0.2,
+        ) as base_url:
+            status, accepted, _headers = _request(
+                base_url,
+                "/v1/jobs",
+                method="POST",
+                body=_fixture_request("sanitized-failure"),
+                token=_TOKEN,
+            )
+            self.assertEqual(status, HTTPStatus.ACCEPTED)
+            job_id = str(accepted["jobId"])  # type: ignore[index]
+            terminal = _wait_for_terminal(base_url, job_id)
+            self.assertEqual(terminal["state"], "failed")
+            self.assertNotIn("PRIVATE_NOTE_MARKER", json.dumps(terminal))
+
+            time.sleep(0.25)
+            expired_status, expired, _headers = _request(
+                base_url,
+                f"/v1/jobs/{job_id}",
+                token=_TOKEN,
+            )
+            self.assertEqual(expired_status, HTTPStatus.NOT_FOUND)
+            self.assertEqual(expired["error"]["code"], "not_found")  # type: ignore[index]
 
     def test_non_loopback_binding_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "loopback"):

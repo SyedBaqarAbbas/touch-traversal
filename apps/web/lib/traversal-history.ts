@@ -14,6 +14,17 @@ export type FocusRestoration = {
 export const TRAVERSAL_HISTORY_STORAGE_KEY = "touch-traversal:history";
 export const MAX_TRAVERSAL_HISTORY_ENTRIES = 24;
 
+export function clearTraversalHistory(
+  storage: Pick<Storage, "removeItem">,
+): boolean {
+  try {
+    storage.removeItem(TRAVERSAL_HISTORY_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function appendTraversalHistory(
   history: readonly TraversalHistoryEntry[],
   entry: TraversalHistoryEntry,

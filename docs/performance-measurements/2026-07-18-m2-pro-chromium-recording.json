@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "measurement": "webcam-graph-hand-recording",
+  "capturedAt": "2026-07-18T09:53:43.572Z",
+  "browserVersion": "149.0.7827.55",
+  "host": {
+    "architecture": "arm64",
+    "cpu": "Apple M2 Pro",
+    "deviceName": "MacBook Pro",
+    "gpu": "Apple M2 Pro",
+    "gpuCores": 16,
+    "hardwareModel": "Mac14,9",
+    "logicalCores": 10,
+    "memoryGiB": 16,
+    "operatingSystem": "darwin 25.5.0"
+  },
+  "environment": {
+    "devicePixelRatio": 1,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)",
+    "sampleGraph": {
+      "edgeCount": 48,
+      "nodeCount": 16,
+      "quality": "high"
+    },
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    },
+    "camera": "Chromium privacy-safe synthetic 640x480 video device",
+    "workerFrame": {
+      "height": 240,
+      "width": 320
+    }
+  },
+  "recording": {
+    "supported": true,
+    "recorder": {
+      "audioTrackCount": 0,
+      "mimeType": "video/webm;codecs=vp9",
+      "videoTrackCount": 1
+    },
+    "readySummary": "843 KiB · video/webm;codecs=vp9",
+    "cleanupState": "idle-after-discard"
+  },
+  "inference": {
+    "rateFps": 21.4,
+    "resultCount": 55,
+    "timingMs": {
+      "average": 25.63,
+      "maximum": 31.2,
+      "p95": 28.4,
+      "sampleCount": 55
+    }
+  },
+  "scenario": {
+    "id": "recording-300-1500",
+    "nodeCount": 300,
+    "edgeCount": 1500,
+    "processedEdgeCount": 900,
+    "quality": "low",
+    "frameTiming": {
+      "averageFps": 120,
+      "averageMs": 8.33,
+      "maximumMs": 9.3,
+      "minimumFps": 107.5,
+      "p95Ms": 8.7,
+      "sampleCount": 300
+    }
+  },
+  "notes": [
+    "The real visible sample WebGL scene, mirrored synthetic camera, MediaPipe worker, 2D recording compositor, and native MediaRecorder were active together.",
+    "The 300/1500 scale is representative JavaScript work and applies the runtime 900-edge cap; it is not a fully instantiated 300/1500 WebGL graph.",
+    "The synthetic camera produced no recognized hand; worker inference was real, while a visible hand cursor could not be measured.",
+    "The recording was explicitly stopped, became ready in memory, and was discarded before the camera was disabled."
+  ]
+}

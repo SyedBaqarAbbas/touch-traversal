@@ -22,14 +22,19 @@ export function TutorialInvitation() {
     return () => window.clearTimeout(timer);
   }, []);
   if (!visible) return null;
-  const remember = () =>
-    window.sessionStorage.setItem(
-      TUTORIAL_SESSION_STORAGE_KEY,
-      JSON.stringify({
-        path: "/#tutorial-entry",
-        source: personalGraphSessions.snapshot().source,
-      }),
-    );
+  const remember = () => {
+    try {
+      window.sessionStorage.setItem(
+        TUTORIAL_SESSION_STORAGE_KEY,
+        JSON.stringify({
+          path: "/#tutorial-entry",
+          source: personalGraphSessions.snapshot().source,
+        }),
+      );
+    } catch {
+      // A blocked return-route hint must not block tutorial navigation.
+    }
+  };
   return (
     <aside
       className="home-tutorial-invitation"
@@ -44,7 +49,7 @@ export function TutorialInvitation() {
       </p>
       <div className="tutorial-actions">
         <Link
-          href="/tutorial"
+          href="/tutorial?path=full"
           onClick={() => {
             remember();
             personalGraphSessions.selectSource("sample");

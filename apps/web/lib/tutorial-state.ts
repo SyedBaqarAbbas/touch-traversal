@@ -106,24 +106,38 @@ export function reduceTutorialState(
 }
 
 export function loadTutorialState(storage: StorageReader): TutorialState {
-  return (
-    parseTutorialState(storage.getItem(TUTORIAL_STORAGE_KEY)) ??
-    migrateLegacyTutorialState(storage.getItem(LEGACY_TUTORIAL_STORAGE_KEY)) ??
-    initialTutorialState
-  );
+  try {
+    return (
+      parseTutorialState(storage.getItem(TUTORIAL_STORAGE_KEY)) ??
+      migrateLegacyTutorialState(
+        storage.getItem(LEGACY_TUTORIAL_STORAGE_KEY),
+      ) ??
+      initialTutorialState
+    );
+  } catch {
+    return initialTutorialState;
+  }
 }
 
 export function saveTutorialState(
   storage: StorageWriter,
   state: TutorialState,
 ): void {
-  storage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(state));
-  storage.removeItem(LEGACY_TUTORIAL_STORAGE_KEY);
+  try {
+    storage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(state));
+    storage.removeItem(LEGACY_TUTORIAL_STORAGE_KEY);
+  } catch {
+    // Progress remains usable in React state when storage is blocked or full.
+  }
 }
 
 export function resetTutorialState(storage: StorageWriter): void {
-  storage.removeItem(TUTORIAL_STORAGE_KEY);
-  storage.removeItem(LEGACY_TUTORIAL_STORAGE_KEY);
+  try {
+    storage.removeItem(TUTORIAL_STORAGE_KEY);
+    storage.removeItem(LEGACY_TUTORIAL_STORAGE_KEY);
+  } catch {
+    // Reset remains an in-memory action when browser storage is unavailable.
+  }
 }
 
 function parseTutorialState(raw: string | null): TutorialState | null {

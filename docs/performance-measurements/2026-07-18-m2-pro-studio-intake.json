@@ -1,0 +1,41 @@
+{
+  "browserVersion": "149.0.7827.55",
+  "capturedAt": "2026-07-18T10:41:45.642Z",
+  "environment": {
+    "architecture": "arm64",
+    "operatingSystem": "darwin 25.5.0",
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "limits": {
+    "acceptedCorpusBytes": 16777216,
+    "fileCount": 200,
+    "noteBytes": 2097152
+  },
+  "notes": [
+    "All payloads are generated fictional UTF-8 Markdown held only for the browser benchmark.",
+    "The upper profile simultaneously reaches the 200-file and 16 MiB accepted-corpus limits; no companion request or graph generation occurs.",
+    "Wall time includes Playwright file transfer plus browser validation and preview rendering."
+  ],
+  "profiles": [
+    {
+      "browserMs": 59.8,
+      "fileCount": 2,
+      "profile": "small-two-file",
+      "renderedRows": 2,
+      "sourceBytes": 1000,
+      "wallMs": 58.6
+    },
+    {
+      "browserMs": 1262,
+      "fileCount": 200,
+      "profile": "maximum-count-and-corpus-bytes",
+      "renderedRows": 200,
+      "sourceBytes": 16777216,
+      "wallMs": 1261.4
+    }
+  ],
+  "schemaVersion": 1
+}

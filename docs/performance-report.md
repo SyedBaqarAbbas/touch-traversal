@@ -91,6 +91,53 @@ they do not claim the draw cost of a fully instantiated 100/400 or 300/1500 grap
 15 FPS inference target for an actual `low`-quality artifact is covered by deterministic policy
 tests rather than this sample graph, which remains `high` quality.
 
+## Visible presentation with local recording
+
+A second headed Chromium run added the production 2D compositor and native `MediaRecorder` to the
+visible webcam + graph + real MediaPipe-worker presentation. The checked-in raw result is
+[`performance-measurements/2026-07-18-m2-pro-chromium-recording.json`](performance-measurements/2026-07-18-m2-pro-chromium-recording.json).
+It used the same host, 1440 × 900 viewport, synthetic 640 × 480 camera, and representative 300/1500
+workload with the runtime 900-edge cap.
+
+| Scenario                   | Avg FPS | Min FPS | Avg frame | p95 frame |
+| -------------------------- | ------: | ------: | --------: | --------: |
+| recording-300-1500         |   120.0 |   107.5 |   8.33 ms |    8.7 ms |
+| MediaPipe during recording |    21.4 |       — |  25.63 ms |   28.4 ms |
+
+The native recorder received one video track and zero audio tracks, selected
+`video/webm;codecs=vp9`, and produced an 843 KiB in-memory take during the 2.5-second probe. The
+script stopped and discarded the take, observed the recorder return to `idle-after-discard`, then
+disabled the camera. This measures the real recording compositor/codec path, but the scene remains
+the 16/48 sample plus representative scale work and the synthetic video contained no recognized
+hand. It therefore does not establish a visible-cursor rate or full 300/1500 WebGL draw cost.
+
+## Studio intake and local generation capacity
+
+Two additional measurements use only generated fictional Markdown. The headed-browser intake
+record is
+[`performance-measurements/2026-07-18-m2-pro-studio-intake.json`](performance-measurements/2026-07-18-m2-pro-studio-intake.json),
+and the production Python pipeline record is
+[`performance-measurements/2026-07-18-m2-pro-studio-generation.json`](performance-measurements/2026-07-18-m2-pro-studio-generation.json).
+
+| Profile                               | Files | Source bytes | Result                             | Wall time |
+| ------------------------------------- | ----: | -----------: | ---------------------------------- | --------: |
+| Browser preview, small                |     2 |        1,000 | 2 accepted and 2 metadata rows     |   58.6 ms |
+| Browser preview, intake hard ceilings |   200 |   16,777,216 | 200 accepted and 200 metadata rows |  1,261 ms |
+| Pipeline generation, small            |     2 |        1,000 | 2 nodes, 1 edge                    |   10.10 s |
+| Pipeline generation, max file count   |   200 |      100,000 | 200 nodes, 600 edges               |   12.31 s |
+
+The browser ceiling profile simultaneously reaches the 200-file and 16 MiB accepted-corpus limits
+without sending a companion request. Its timing includes Playwright's file transfer, UTF-8 and
+policy validation, and rendering every preview row. The generation ceiling profile intentionally
+reaches the 200-file limit with compact notes, not the 16 MiB byte ceiling: expanding 16 MiB into an
+unbounded number of chunks would describe a different graph-size product promise. The UI discloses
+progress and elapsed time rather than guaranteeing generation time for all accepted text.
+
+The two-note build includes local model initialization and spent 10.09 seconds in embedding. The
+200-note build ran next in the same process with the model and optional modules warm; embedding took
+4.13 seconds and layout generation 7.89 seconds. Model acquisition may still require a one-time
+network download before either measurement can begin.
+
 ## Bottlenecks and adaptive quality
 
 Real MediaPipe inference was the largest measured per-frame task: 24.97 ms on average in the
@@ -135,11 +182,19 @@ make dev
 PERF_TARGET_URL=http://127.0.0.1:3000 \
   PERF_SCENARIO_DURATION_MS=2500 \
   PERF_WORKER_DURATION_MS=8000 \
-  PERF_OUTPUT_PATH=/tmp/touch-traversal-performance.json \
+PERF_OUTPUT_PATH=/tmp/touch-traversal-performance.json \
   node scripts/measure-performance.mjs
+
+PERF_TARGET_URL=http://127.0.0.1:3000 \
+  PERF_OUTPUT_PATH=/tmp/touch-traversal-studio-intake.json \
+  node scripts/measure-studio-intake.mjs
+
+cd pipeline && uv run python ../scripts/measure-studio-generation.py \
+  --output /tmp/touch-traversal-studio-generation.json
 ```
 
 The output path is deliberately restricted to `/tmp`; review the measured environment and results
-before replacing the checked-in raw record. `/demo?input=mouse` remains the repeatable mouse route,
+before replacing a checked-in raw record. The script now includes the visible recording probe and
+explicit discard cleanup. `/demo?input=mouse` remains the repeatable mouse route,
 and browser tests cover load, hover, selection, traversal, return, label density, performance-mode
 camera lifecycle, denial fallback, graph-only switching, reduced motion, and accessible controls.

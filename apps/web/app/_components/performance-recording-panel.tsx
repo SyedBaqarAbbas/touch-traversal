@@ -169,6 +169,9 @@ export const PerformanceRecordingPanel = forwardRef<
     startedAtRef.current = performance.now();
     capturedAtRef.current = new Date();
 
+    let pendingCompositor: ReturnType<
+      typeof createPerformanceCompositor
+    > | null = null;
     try {
       const compositor = createPerformanceCompositor({
         fixture,
@@ -185,6 +188,7 @@ export const PerformanceRecordingPanel = forwardRef<
         sourceWidth: shell.clientWidth,
         video,
       });
+      pendingCompositor = compositor;
       const recorder = createNativeRecorderAdapter(
         compositor.stream,
         capability.mimeType,
@@ -214,11 +218,13 @@ export const PerformanceRecordingPanel = forwardRef<
         release: () => compositor.stop(),
       });
       runtimeRef.current = { compositor, session };
+      pendingCompositor = null;
       session.start();
       dispatch({ mimeType: capability.mimeType, type: "START" });
       elapsedTimerRef.current = window.setInterval(updateProgress, 250);
       compositor.start();
     } catch (error: unknown) {
+      pendingCompositor?.stop();
       failRecording(
         error instanceof Error ? error.message : "Recording could not start.",
       );

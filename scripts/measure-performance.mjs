@@ -318,6 +318,7 @@ try {
       "The fake camera contains no recognizable hand; a visible cursor rate is null when MediaPipe returns no landmarks.",
       "The checked-in 16-node/48-edge sample selects the high quality preset.",
       "Performance presentation measurements keep the real visible video layer, sample WebGL graph, and MediaPipe worker active while adding representative synthetic scale work.",
+      "The recording probe adds native silent MediaRecorder capture to the visible presentation and 300/1500 representative workload, then discards the take and verifies the recorder UI returns to idle.",
     ],
     performancePresentation,
     sceneScaleProbes,
@@ -345,6 +346,7 @@ async function installWorkerMeasurements(page) {
     const measurements = {
       errors: [],
       readyAtMs: [],
+      recorders: [],
       resultArrivalsMs: [],
       resultInferenceMs: [],
       resultSizes: [],
@@ -384,6 +386,21 @@ async function installWorkerMeasurements(page) {
     Object.setPrototypeOf(MeasuredWorker, NativeWorker);
     MeasuredWorker.prototype = NativeWorker.prototype;
     window.Worker = MeasuredWorker;
+
+    if (typeof window.MediaRecorder !== "undefined") {
+      const NativeMediaRecorder = window.MediaRecorder;
+      window.MediaRecorder = new Proxy(NativeMediaRecorder, {
+        construct(Target, args) {
+          const [stream, options] = args;
+          measurements.recorders.push({
+            audioTrackCount: stream.getAudioTracks().length,
+            mimeType: options?.mimeType ?? "",
+            videoTrackCount: stream.getVideoTracks().length,
+          });
+          return Reflect.construct(Target, args);
+        },
+      });
+    }
   });
 }
 
@@ -640,8 +657,154 @@ async function measurePerformancePresentation(page, targetUrl, durationMs) {
         }
       : null,
   };
+  output.recording = await measureRecordingPresentation(page, durationMs);
   await page.getByRole("button", { name: "Disable camera" }).click();
   return output;
+}
+
+async function measureRecordingPresentation(page, durationMs) {
+  const startButton = page.getByRole("button", { name: "Start recording" });
+  if (!(await startButton.isVisible().catch(() => false))) {
+    return {
+      capturedAt: new Date().toISOString(),
+      reason:
+        (await page
+          .getByRole("region", { name: "Local performance recording" })
+          .textContent()
+          .catch(() => null)) ?? "Local recording control unavailable.",
+      supported: false,
+    };
+  }
+
+  await page.evaluate(() => {
+    const measurements = window.__touchTraversalWorkerMeasurements;
+    measurements.recorders.length = 0;
+    measurements.resultArrivalsMs.length = 0;
+    measurements.resultInferenceMs.length = 0;
+    measurements.resultSizes.length = 0;
+    measurements.submissionsMs.length = 0;
+  });
+  await startButton.click();
+  const panel = page.getByRole("region", {
+    name: "Local performance recording",
+  });
+  await panel.waitFor();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector(".performance-recording-panel")
+        ?.getAttribute("data-recording-state") === "recording",
+  );
+
+  const scenario = await page.evaluate(async (measurementDurationMs) => {
+    const nodeCount = 300;
+    const edgeCount = 1500;
+    const processedEdgeCount = 900;
+    const positions = new Float64Array(nodeCount * 3);
+    const landmarks = new Float64Array(21 * 3);
+    const edgeSources = new Uint16Array(processedEdgeCount);
+    const edgeTargets = new Uint16Array(processedEdgeCount);
+    for (let index = 0; index < nodeCount; index += 1) {
+      const offset = index * 3;
+      const angle = (index / nodeCount) * Math.PI * 2;
+      positions[offset] = Math.cos(angle) * 4;
+      positions[offset + 1] = Math.sin(angle) * 4;
+      positions[offset + 2] = Math.sin(angle * 3);
+    }
+    for (let index = 0; index < processedEdgeCount; index += 1) {
+      edgeSources[index] = index % nodeCount;
+      edgeTargets[index] = (index * 17 + 7) % nodeCount;
+    }
+
+    const frameDurationsMs = [];
+    let previousFrameAtMs = null;
+    let checksum = 0;
+    const startedAtMs = performance.now();
+    while (performance.now() - startedAtMs < measurementDurationMs) {
+      const frameAtMs = await new Promise(requestAnimationFrame);
+      if (previousFrameAtMs !== null) {
+        frameDurationsMs.push(frameAtMs - previousFrameAtMs);
+      }
+      const phase = (Math.sin(frameAtMs / 760) + 1) / 2;
+      for (let index = 0; index < processedEdgeCount; index += 1) {
+        const sourceOffset = edgeSources[index] * 3;
+        const targetOffset = edgeTargets[index] * 3;
+        checksum += Math.hypot(
+          positions[targetOffset] - positions[sourceOffset],
+          positions[targetOffset + 1] - positions[sourceOffset + 1],
+          positions[targetOffset + 2] - positions[sourceOffset + 2],
+        );
+      }
+      for (let index = 0; index < landmarks.length; index += 3) {
+        landmarks[index] = landmarks[index] * 0.72 + phase * 0.28;
+        landmarks[index + 1] = landmarks[index + 1] * 0.72 + (1 - phase) * 0.28;
+        checksum += landmarks[index] + landmarks[index + 1];
+      }
+      previousFrameAtMs = frameAtMs;
+    }
+
+    const sorted = [...frameDurationsMs].sort((left, right) => left - right);
+    const average =
+      frameDurationsMs.reduce((sum, value) => sum + value, 0) /
+      Math.max(1, frameDurationsMs.length);
+    const maximum = sorted.at(-1) ?? 0;
+    const p95 = sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)] ?? 0;
+    const roundValue = (value, digits) => {
+      const multiplier = 10 ** digits;
+      return Math.round(value * multiplier) / multiplier;
+    };
+    return {
+      checksum: roundValue(checksum, 3),
+      edgeCount,
+      frameTiming: {
+        averageFps: roundValue(1000 / Math.max(average, 0.001), 1),
+        averageMs: roundValue(average, 2),
+        maximumMs: roundValue(maximum, 2),
+        minimumFps: roundValue(1000 / Math.max(maximum, 0.001), 1),
+        p95Ms: roundValue(p95, 2),
+        sampleCount: frameDurationsMs.length,
+      },
+      id: "recording-300-1500",
+      nodeCount,
+      processedEdgeCount,
+      quality: "low",
+    };
+  }, durationMs);
+
+  await page.getByRole("button", { name: "Stop recording" }).click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector(".performance-recording-panel")
+        ?.getAttribute("data-recording-state") === "ready",
+    undefined,
+    { timeout: 15_000 },
+  );
+  const readySummary = await panel.locator("small").textContent();
+  const workerMeasurements = await page.evaluate(
+    () => window.__touchTraversalWorkerMeasurements,
+  );
+  await page.getByRole("button", { name: "Discard recording" }).click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector(".performance-recording-panel")
+        ?.getAttribute("data-recording-state") === "idle",
+  );
+
+  return {
+    capturedAt: new Date().toISOString(),
+    cleanupState: "idle-after-discard",
+    inference: {
+      rateFps: averageFps(workerMeasurements.resultArrivalsMs),
+      resultCount: workerMeasurements.resultArrivalsMs.length,
+      timingMs: summarizeValues(workerMeasurements.resultInferenceMs),
+    },
+    recorder: workerMeasurements.recorders.at(-1) ?? null,
+    readySummary,
+    scenario,
+    supported: true,
+  };
 }
 
 function summarizeValues(values) {

@@ -25,18 +25,21 @@ config:
 ---
 flowchart TB
     accTitle: Touch Traversal system architecture
-    accDescr: Fictional Markdown notes pass through a deterministic offline Python pipeline into four static JSON artifacts. The Next.js application validates the bundle, constructs a Graphology model, and renders it with React Three Fiber and WebGL. Mouse, keyboard, and optional local hand input drive the scene without an application backend.
+    accDescr: Fictional sample notes build four checked-in static artifacts. Explicitly selected personal notes can instead cross authenticated loopback into a temporary Python companion and return as an in-memory session. The browser validates either bundle, renders one Graphology model, and accepts mouse, keyboard, or optional local hand input. An explicit local compositor can create a downloadable silent recording.
 
     subgraph SOURCE["Local source"]
         direction LR
-        NOTES["Fictional Markdown notes"]
+        NOTES["Fictional sample notes"]
+        PERSONAL["Explicit personal file/folder choice"]
         CONFIG["Validated pipeline config"]
     end
 
-    subgraph BUILD["Offline build · Python 3.11"]
+    subgraph BUILD["Local build · Python 3.11"]
         direction LR
-        PIPELINE["Deterministic graph pipeline"]
-        CONTRACT["Cross-artifact validation"]
+        PIPELINE["Batch graph pipeline"]
+        COMPANION["Authenticated 127.0.0.1 companion\ntemporary per-job workspace"]
+        STATICCONTRACT["Cross-artifact validation\nchecked-in sample output"]
+        SESSIONCONTRACT["Cross-artifact validation\nin-memory personal return"]
     end
 
     subgraph STATIC["Checked-in static boundary"]
@@ -49,37 +52,51 @@ flowchart TB
 
     subgraph BROWSER["Next.js browser application"]
         direction LR
-        LOAD["Parallel static fetch"]
+        PREVIEW["Private metadata preview\nsecond send confirmation"]
+        LOAD["Static fetch or memory session"]
         VALIDATE["Strict Zod bundle validation"]
         MODEL["Graphology model"]
         SCENE["React Three Fiber scene"]
         WEBGL["Three.js / WebGL renderer"]
     end
 
-    INPUT["Mouse · keyboard\noptional on-device hand input"]
+    subgraph MEDIA["Optional browser-local media"]
+        direction LR
+        INPUT["Mouse · keyboard\nlocal hand worker"]
+        CAMERA["Explicit silent camera"]
+        COMPOSITOR["Bounded graph + webcam compositor"]
+        RECORDING["In-memory recording\nexplicit download or discard"]
+    end
 
     NOTES --> PIPELINE
+    PERSONAL --> PREVIEW --> COMPANION
     CONFIG --> PIPELINE
-    PIPELINE --> CONTRACT
-    CONTRACT --> GRAPH
-    CONTRACT --> LAYOUTS
-    CONTRACT --> MANIFEST
-    CONTRACT --> REPORT
+    CONFIG --> COMPANION
+    PIPELINE --> STATICCONTRACT
+    COMPANION --> SESSIONCONTRACT
+    STATICCONTRACT --> GRAPH
+    STATICCONTRACT --> LAYOUTS
+    STATICCONTRACT --> MANIFEST
+    STATICCONTRACT --> REPORT
     GRAPH --> LOAD
     LAYOUTS --> LOAD
     MANIFEST --> LOAD
     REPORT --> LOAD
+    SESSIONCONTRACT -. "personal bundle / memory only" .-> LOAD
     LOAD --> VALIDATE
     VALIDATE --> MODEL
     MODEL --> SCENE
     INPUT --> SCENE
+    CAMERA --> INPUT
+    CAMERA --> COMPOSITOR
+    SCENE --> COMPOSITOR --> RECORDING
     SCENE --> WEBGL
 
     classDef source fill:#f5f0e8,stroke:#765b36,color:#111111;
     classDef process fill:#f4f4f4,stroke:#555555,color:#111111;
     classDef artifact fill:#e8eef5,stroke:#385570,color:#111111;
     classDef output fill:#e7f1e8,stroke:#38633d,color:#111111;
-    class NOTES,CONFIG source;
-    class PIPELINE,CONTRACT,LOAD,VALIDATE,MODEL,SCENE,INPUT process;
+    class NOTES,PERSONAL,CONFIG,CAMERA source;
+    class PIPELINE,COMPANION,STATICCONTRACT,SESSIONCONTRACT,PREVIEW,LOAD,VALIDATE,MODEL,SCENE,INPUT,COMPOSITOR process;
     class GRAPH,LAYOUTS,MANIFEST,REPORT artifact;
-    class WEBGL output;
+    class WEBGL,RECORDING output;

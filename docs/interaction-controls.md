@@ -25,20 +25,43 @@ If temporal coverage is insufficient, the temporal button is disabled and the HU
 Mouse controls mirror topology modes through the sparse top-right HUD. Hovering a node reveals its
 title, clicking focuses it, and clicking an active focused neighbor starts traversal.
 
+## View manipulation
+
+View changes are offsets around the authored overview/focus/traversal camera poses; they do not
+rewrite graph layouts or note data.
+
+| Input                | Action                                                                |
+| -------------------- | --------------------------------------------------------------------- |
+| `A` / `D`            | Orbit the view left / right.                                          |
+| `Shift` + arrow keys | Pan the view left, up, down, or right.                                |
+| `+` / `-`            | Zoom in / out.                                                        |
+| Mouse wheel          | Zoom over the graph surface.                                          |
+| `0`                  | Reset every view offset.                                              |
+| Named view buttons   | Apply the same orbit, pan, zoom, and reset actions without shortcuts. |
+
+Modified shortcuts are ignored, wheel input is scoped to the graph surface, and editable fields do
+not lose their normal keyboard behavior.
+
 ## Live hand controls
 
 After **Enable hand camera** starts the local worker:
 
-| Gesture             | Action                                               |
-| ------------------- | ---------------------------------------------------- |
-| Point at a node     | Move the hand cursor and establish the hover target. |
-| Pinch over a target | Focus it, or traverse when it is an active neighbor. |
-| Hold an open palm   | Return from a focused thought to overview.           |
-| Swipe horizontally  | Cycle through available topology modes.              |
+| Gesture                               | Action                                               |
+| ------------------------------------- | ---------------------------------------------------- |
+| Point at a node                       | Move the hand cursor and establish the hover target. |
+| Pinch over a target                   | Focus it, or traverse when it is an active neighbor. |
+| Hold an open palm                     | Return from a focused thought to overview.           |
+| Swipe horizontally                    | Cycle through available topology modes.              |
+| Pinch empty space and move left/right | Grab and orbit the view.                             |
+| Pinch empty space and move up/down    | Grab and pan the view.                               |
+| Move the grabbed palm in depth        | Zoom the view.                                       |
+| Release the empty-space pinch         | End the view grab.                                   |
 
 Pinch hysteresis, open-palm hold time, swipe guards, and cooldowns prevent single-frame actions.
 Recent mouse movement takes precedence for 700 ms, after which hand input resumes automatically.
-The injected-fixture browser flow uses the same cursor and landmark handlers as live input.
+Node pinches keep selection/traversal priority. Hand loss and conflicting scene transitions cancel
+an empty-space grab safely. The injected-fixture browser flow uses the same cursor and landmark
+handlers as live input.
 
 ## Performance presentation
 
@@ -74,7 +97,8 @@ the URL. Filenames use `touch-traversal-performance-<UTC timestamp>` and never n
 WebM/VP9, WebM/VP8, plain WebM, then browser-confirmed MP4 are tried in that order. Microphone and
 audio tracks are always absent. Recordings warn at four minutes or 96 MiB and stop at five minutes
 or 128 MiB. Camera disable, exit, track end, encoder error, backgrounding, and unmount stop or
-discard recording resources; no upload, cache, telemetry, or persistence path exists.
+discard recording resources; no upload, cache, telemetry, or automatic/browser-storage persistence
+path exists. An explicit download is the only durable output.
 
 ## Recording take
 
