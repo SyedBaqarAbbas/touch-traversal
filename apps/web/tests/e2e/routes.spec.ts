@@ -58,47 +58,66 @@ async function pointHandCursorAtNode(
   accessibleName: RegExp,
 ): Promise<void> {
   const node = page.getByRole("button", { name: accessibleName });
-  await node.evaluate(
-    (element) =>
-      new Promise<void>((resolve) => {
-        element.scrollIntoView({ block: "nearest", inline: "center" });
-        requestAnimationFrame(() => resolve());
-      }),
-  );
-  const box = await node.boundingBox();
-  if (!box) {
-    throw new Error(`Could not locate gesture target ${accessibleName}`);
-  }
   const pointing = findGestureFixture(gestureFixtures, "pointing").frames[0]!;
-  await page.evaluate(
-    ({ center, frame }) => {
-      const timestampMs = performance.now();
-      window.dispatchEvent(
-        new CustomEvent("touch-traversal:hand-cursor-frame", {
-          detail: {
-            confidence: 0.92,
-            pinchProgress: 0,
-            position: {
-              x: (center.x / window.innerWidth) * 2 - 1,
-              y: 1 - (center.y / window.innerHeight) * 2,
-            },
-            status: "tracking",
-            timestampMs,
-            visible: true,
+  await node.evaluate(async (element, frame) => {
+    element.scrollIntoView({ block: "nearest", inline: "center" });
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    const box = element.getBoundingClientRect();
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const timestampMs = performance.now();
+    window.dispatchEvent(
+      new CustomEvent("touch-traversal:hand-cursor-frame", {
+        detail: {
+          confidence: 0.92,
+          pinchProgress: 0,
+          position: {
+            x: (center.x / window.innerWidth) * 2 - 1,
+            y: 1 - (center.y / window.innerHeight) * 2,
           },
-        }),
-      );
-      window.dispatchEvent(
-        new CustomEvent("touch-traversal:landmark-frame", {
-          detail: { ...frame, timestampMs },
-        }),
-      );
-    },
-    {
-      center: { x: box.x + box.width / 2, y: box.y + box.height / 2 },
-      frame: pointing,
-    },
-  );
+          status: "tracking",
+          timestampMs,
+          visible: true,
+        },
+      }),
+    );
+    window.dispatchEvent(
+      new CustomEvent("touch-traversal:landmark-frame", {
+        detail: { ...frame, timestampMs },
+      }),
+    );
+  }, pointing);
+}
+
+async function moveHandCursorAtNode(
+  page: Page,
+  accessibleName: RegExp,
+): Promise<void> {
+  const node = page.getByRole("button", { name: accessibleName });
+  await node.evaluate(async (element) => {
+    element.scrollIntoView({ block: "nearest", inline: "center" });
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    const box = element.getBoundingClientRect();
+    const target = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    window.dispatchEvent(
+      new CustomEvent("touch-traversal:hand-cursor-frame", {
+        detail: {
+          confidence: 0.92,
+          pinchProgress: 0,
+          position: {
+            x: (target.x / window.innerWidth) * 2 - 1,
+            y: 1 - (target.y / window.innerHeight) * 2,
+          },
+          status: "tracking",
+          timestampMs: performance.now(),
+          visible: true,
+        },
+      }),
+    );
+  });
 }
 
 async function injectLandmarkFrames(
@@ -362,6 +381,10 @@ test("interactive hand tutorial confirms the ordered production gesture flow", a
   await expect(page.locator(".scene-thought-label--hover")).toContainText(
     "Constellations before filing",
   );
+  await expect(page.locator(".scene-thought-label--hover")).toHaveCSS(
+    "opacity",
+    "0.92",
+  );
   await injectLandmarkFrames(
     page,
     findGestureFixture(gestureFixtures, "stable-pinch").frames,
@@ -469,6 +492,97 @@ test("/demo reveals a title-only hover label after stable hover", async ({
     timeout: 1200,
   });
   await expect(hoverLabel).not.toContainText("A memory observatory");
+});
+
+test("/demo gives the moving hand cursor mouse-equivalent hover feedback", async ({
+  page,
+}) => {
+  await page.goto("/demo?input=gesture-fixture");
+
+  await moveHandCursorAtNode(page, /Constellations before filing/);
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Constellations before filing",
+  );
+
+  await releaseHandInput(page);
+  await expect(page.locator(".scene-thought-label--hover")).toHaveCount(0);
+
+  await page.getByRole("button", { name: /Orientation before action/ }).hover();
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Orientation before action",
+  );
+  await moveHandCursorAtNode(page, /Constellations before filing/);
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Constellations before filing",
+  );
+  await page.mouse.move(0, 0);
+  await page.getByRole("button", { name: /Orientation before action/ }).hover();
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Orientation before action",
+  );
+  await releaseHandInput(page);
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Orientation before action",
+  );
+});
+
+test("camera mode controls explain and enforce when they can act", async ({
+  page,
+}) => {
+  await page.goto("/demo?input=mouse");
+
+  const controls = page.locator(".scene-controls");
+  const overview = controls.getByRole("button", {
+    exact: true,
+    name: "overview",
+  });
+  const focus = controls.getByRole("button", { exact: true, name: "focus" });
+  const inspect = controls.getByRole("button", {
+    exact: true,
+    name: "inspect",
+  });
+  const returnControl = controls.getByRole("button", {
+    exact: true,
+    name: "return",
+  });
+
+  await expect(overview).toBeDisabled();
+  await expect(focus).toBeDisabled();
+  await expect(inspect).toBeDisabled();
+  await expect(returnControl).toBeDisabled();
+
+  await inspect.hover({ force: true });
+  await expect(page.locator("#scene-control-inspect-tooltip")).toContainText(
+    "not available yet",
+  );
+  await expect(page.locator("#scene-control-inspect-tooltip")).toBeVisible();
+
+  await restoreSceneHud(page);
+  await page
+    .getByRole("button", { name: /Constellations before filing/ })
+    .hover();
+  await expect(focus).toBeEnabled();
+  await focus.hover();
+  await expect(page.locator("#scene-control-focus-tooltip")).toContainText(
+    "Constellations before filing",
+  );
+  await expect(page.locator("#scene-control-focus-tooltip")).toBeVisible();
+
+  await focus.click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+  await expect(overview).toBeEnabled();
+  await expect(focus).toBeDisabled();
+  await expect(returnControl).toBeEnabled();
+
+  await returnControl.hover();
+  await expect(page.locator("#scene-control-return-tooltip")).toContainText(
+    "Escape does the same",
+  );
+  await returnControl.click();
+  await expect(page.getByText("idle / overview")).toBeVisible();
+  await expect(returnControl).toBeDisabled();
 });
 
 test("/demo camera denial preserves mouse and keyboard access", async ({

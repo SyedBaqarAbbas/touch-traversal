@@ -25,6 +25,18 @@ If temporal coverage is insufficient, the temporal button is disabled and the HU
 Mouse controls mirror topology modes through the sparse top-right HUD. Hovering a node reveals its
 title, clicking focuses it, and clicking an active focused neighbor starts traversal.
 
+The bottom-left camera-mode controls expose their availability and explanation in hover tooltips:
+
+| Control      | Availability and action                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| **overview** | Enabled after selection; clears the selected thought and restores the full graph.        |
+| **focus**    | Enabled after a mouse or hand cursor hovers a thought; focuses that latest hover target. |
+| **inspect**  | Disabled; reserved for a future detailed-reading mode that is not implemented yet.       |
+| **return**   | Enabled after selection; clears focus and returns to overview, like pressing `Escape`.   |
+
+Controls that would have no effect remain disabled rather than accepting a no-op click. The active
+overview/focus mode remains visible through `aria-pressed` styling even when its button is disabled.
+
 ## View manipulation
 
 View changes are offsets around the authored overview/focus/traversal camera poses; they do not
@@ -57,11 +69,15 @@ After **Enable hand camera** starts the local worker:
 | Move the grabbed palm in depth        | Zoom the view.                                       |
 | Release the empty-space pinch         | End the view grab.                                   |
 
-Pinch hysteresis, open-palm hold time, swipe guards, and cooldowns prevent single-frame actions.
-Recent mouse movement takes precedence for 700 ms, after which hand input resumes automatically.
-Node pinches keep selection/traversal priority. Hand loss and conflicting scene transitions cancel
-an empty-space grab safely. The injected-fixture browser flow uses the same cursor and landmark
-handlers as live input.
+Visible hand-cursor frames use the same shared node hover state as the mouse, so moving the fingertip
+cursor over a thought immediately produces the same highlight and title label. There is no separate
+mouse-only tooltip state or fixed cursor precedence: the most recently moved cursor owns hover.
+Recent mouse movement still suppresses pinch, swipe, and manipulation actions for 700 ms so a hand
+gesture cannot fire while the mouse is actively controlling the scene. Hand loss cannot erase a
+newer mouse-owned hover. Pinch hysteresis, open-palm hold time, swipe guards, and cooldowns prevent
+single-frame actions. Node pinches keep selection/traversal priority. Hand loss and conflicting scene
+transitions cancel an empty-space grab safely. The injected-fixture browser flow uses the same cursor
+and landmark handlers as live input.
 
 `/calibration` uses those same production classifiers as a live rehearsal checklist. It verifies
 finger point, stable pinch, the open-palm hold, and horizontal sweep distance, speed, and direction

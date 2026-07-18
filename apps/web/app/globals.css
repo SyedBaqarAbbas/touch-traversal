@@ -1316,6 +1316,43 @@ a {
   pointer-events: auto;
 }
 
+.scene-control {
+  position: relative;
+  display: inline-flex;
+}
+
+.scene-control__tooltip {
+  position: absolute;
+  z-index: 5;
+  bottom: calc(100% + 0.55rem);
+  left: 0;
+  width: min(15rem, calc(100vw - 3rem));
+  padding: 0.48rem 0.58rem;
+  border: 1px solid rgba(242, 240, 234, 0.16);
+  color: var(--primary-text);
+  background: rgba(5, 5, 5, 0.94);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.035em;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: none;
+  transform: translateY(0.2rem);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 140ms ease;
+  visibility: hidden;
+}
+
+.scene-control:hover .scene-control__tooltip,
+.scene-control:focus-within .scene-control__tooltip {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
 .scene-view-controls {
   position: absolute;
   top: clamp(5.8rem, 12vh, 8.2rem);
@@ -1970,13 +2007,24 @@ a {
 }
 
 .scene-controls button[aria-pressed="true"],
-.scene-controls button:hover,
+.scene-controls button:not(:disabled):hover,
 .scene-controls button:focus-visible,
 .scene-node-list button[aria-pressed="true"],
 .scene-node-list button:hover,
 .scene-node-list button:focus-visible {
   color: var(--primary-text);
   background: var(--quiet-fill-strong);
+}
+
+.scene-controls button:disabled {
+  color: rgba(242, 240, 234, 0.34);
+  background: rgba(5, 5, 5, 0.78);
+  cursor: not-allowed;
+}
+
+.scene-controls button:disabled[aria-pressed="true"] {
+  color: rgba(242, 240, 234, 0.62);
+  background: var(--quiet-fill);
 }
 
 .scene-node-list {

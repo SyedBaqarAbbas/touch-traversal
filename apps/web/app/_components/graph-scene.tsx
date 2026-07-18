@@ -101,12 +101,12 @@ import {
   handCursorPointer,
   topologyAfterSwipe,
 } from "@/lib/scene-gesture-input";
+import { buildSceneModeControls } from "@/lib/scene-mode-controls";
 import {
   buildSceneEdges,
   buildFocusSceneNodes,
   buildSceneNodes,
   buildSceneThoughtLabels,
-  cameraModes,
   getCameraPose,
   rankTraversableNeighbors,
   selectNearbySceneNodes,
@@ -244,6 +244,9 @@ export function GraphScene({
   const [hudVisible, setHudVisible] = useState(true);
   const [nearbyThoughtTextVisible, setNearbyThoughtTextVisible] =
     useState(true);
+  const [focusControlTargetNodeId, setFocusControlTargetNodeId] = useState<
+    string | null
+  >(null);
   const [hudActivityKey, setHudActivityKey] = useState(0);
   const [sceneTransitionMs, setSceneTransitionMs] =
     useState(FOCUS_TRANSITION_MS);
@@ -266,8 +269,7 @@ export function GraphScene({
   const manipulationConfigRef = useRef(
     manipulationConfigFromCalibration(defaultHandCalibrationSettings),
   );
-  const handCursorFrameRef = useRef<HandCursorFrame | null>(null);
-  const handPointerActiveRef = useRef(false);
+  const activeHoverSourceRef = useRef<UnifiedPointer["source"] | null>(null);
   const handRaycastRequestRef = useRef<HandRaycastRequest | null>(null);
   const handRaycastSequenceRef = useRef(0);
   const nearbyThoughtListRef = useRef<HTMLDivElement>(null);
@@ -284,6 +286,30 @@ export function GraphScene({
   const hoverNodeId = hoverState.hoveredNodeId;
   const previewNodeId = hoverState.previewNodeId;
   const selectedNodeId = interaction.selectedNodeId;
+  const validFocusControlTargetNodeId =
+    focusControlTargetNodeId && model.graph.hasNode(focusControlTargetNodeId)
+      ? focusControlTargetNodeId
+      : null;
+  const focusControlTargetTitle = validFocusControlTargetNodeId
+    ? model.graph.getNodeAttributes(validFocusControlTargetNodeId).thought.title
+    : null;
+  const sceneModeControls = useMemo(
+    () =>
+      buildSceneModeControls({
+        cameraMode,
+        focusTargetNodeId: validFocusControlTargetNodeId,
+        focusTargetTitle: focusControlTargetTitle,
+        interactionMode: interaction.mode,
+        selectedNodeId,
+      }),
+    [
+      cameraMode,
+      validFocusControlTargetNodeId,
+      focusControlTargetTitle,
+      interaction.mode,
+      selectedNodeId,
+    ],
+  );
   useLayoutEffect(() => {
     gestureContextRef.current = {
       canSwitchTopology,
@@ -528,22 +554,56 @@ export function GraphScene({
     };
   }, [noteHudActivity]);
 
-  const handlePointerCandidate = (
-    nodeId: string | null,
-    pointer: ReturnType<typeof pointerFromThreeEvent>,
-  ) => {
-    if (pointer.source === "mouse") {
-      lastMouseActivityAtRef.current = pointer.timestampMs;
-    }
-    if (pointer.source === "hand") {
-      handPointerActiveRef.current = nodeId !== null;
-    }
-    dispatch({
-      type: "POINTER_CANDIDATE",
-      nodeId,
-      pointer,
-    });
-  };
+  const handlePointerCandidate = useCallback(
+    (
+      nodeId: string | null,
+      pointer: ReturnType<typeof pointerFromThreeEvent>,
+    ) => {
+      if (pointer.source === "mouse") {
+        lastMouseActivityAtRef.current = pointer.timestampMs;
+      }
+      if (
+        pointer.source === "hand" &&
+        nodeId === null &&
+        activeHoverSourceRef.current !== "hand"
+      ) {
+        return;
+      }
+      activeHoverSourceRef.current = nodeId ? pointer.source : null;
+      if (nodeId) {
+        setFocusControlTargetNodeId(nodeId);
+      }
+      dispatch({
+        type: "POINTER_CANDIDATE",
+        nodeId,
+        pointer,
+      });
+      if (pointer.source === "hand" && nodeId) {
+        announceTutorialAction("hand-point");
+      }
+    },
+    [],
+  );
+  const handleImmediatePointerHover = useCallback(
+    (
+      nodeId: string | null,
+      source: UnifiedPointer["source"],
+      timestampMs: number,
+    ) => {
+      if (source === "mouse") {
+        lastMouseActivityAtRef.current = timestampMs;
+      }
+      if (nodeId === null && activeHoverSourceRef.current !== source) {
+        return;
+      }
+      activeHoverSourceRef.current = nodeId ? source : null;
+      if (nodeId) {
+        setFocusControlTargetNodeId(nodeId);
+      }
+      dispatch({ type: "IMMEDIATE_HOVER", nodeId, timestampMs });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (interaction.mode !== "FOCUSING") {
@@ -568,6 +628,7 @@ export function GraphScene({
         return;
       }
       setActiveTraversal(null);
+      setFocusControlTargetNodeId(null);
       dispatch({
         type: "RETURN_OVERVIEW",
         timestampMs: event.timeStamp,
@@ -700,6 +761,7 @@ export function GraphScene({
     nodeId: string,
     timestampMs: number,
   ): "focus" | "traverse" => {
+    setFocusControlTargetNodeId(null);
     gestureControllerRef.current = cancelGestureControllerManipulation(
       gestureControllerRef.current,
     );
@@ -723,6 +785,7 @@ export function GraphScene({
   };
 
   const returnOverview = (timestampMs: number) => {
+    setFocusControlTargetNodeId(null);
     gestureControllerRef.current = cancelGestureControllerManipulation(
       gestureControllerRef.current,
     );
@@ -789,145 +852,135 @@ export function GraphScene({
       const nodeId = sceneNodeIdAtPoint(pointer.screen.x, pointer.screen.y);
       noteHudActivity();
       if (nodeId) {
-        handPointerActiveRef.current = true;
-        dispatch({ type: "POINTER_CANDIDATE", nodeId, pointer });
-        announceTutorialAction("hand-point");
+        handlePointerCandidate(nodeId, pointer);
         return;
       }
 
-      handPointerActiveRef.current = false;
       handRaycastSequenceRef.current += 1;
       handRaycastRequestRef.current = {
         pointer,
         sequence: handRaycastSequenceRef.current,
       };
     },
-    [noteHudActivity],
+    [handlePointerCandidate, noteHudActivity],
   );
 
-  const handleHandCursorFrame = useCallback((frame: HandCursorFrame | null) => {
-    handCursorFrameRef.current = frame;
-    if (frame && frame.visible && frame.status !== "lost") {
-      return;
-    }
-    handRaycastRequestRef.current = null;
-    if (handPointerActiveRef.current) {
-      handPointerActiveRef.current = false;
-      dispatch({
-        type: "IMMEDIATE_HOVER",
-        nodeId: null,
-        timestampMs: frame?.timestampMs ?? performance.now(),
-      });
-    }
-  }, []);
-
-  const handleLandmarkFrame = useCallback(
-    (frame: TimestampedLandmarkFrame) => {
-      const context = gestureContextRef.current;
-      const actions = gestureActionsRef.current;
-      if (!context || !actions) {
+  const handleHandCursorFrame = useCallback(
+    (frame: HandCursorFrame | null) => {
+      if (frame && frame.visible && frame.status !== "lost") {
+        routeHandPointer(frame);
         return;
       }
-
-      const update = updateGestureController(
-        gestureControllerRef.current,
-        frame,
-        {
-          manipulationAllowed:
-            context.manipulationAllowed &&
-            frame.timestampMs >= context.topologyMorphingUntilMs,
-          manipulationConfig: manipulationConfigRef.current,
-          mouseSuppressionUntilMs:
-            lastMouseActivityAtRef.current + MOUSE_HAND_SUPPRESSION_MS,
-          safeToReturn:
-            context.selectedNodeId !== null &&
-            context.interactionMode === "FOCUSED",
-          targetNodeId: context.hoverNodeId,
-          topologyMorphing:
-            !context.canSwitchTopology ||
-            frame.timestampMs < context.topologyMorphingUntilMs,
-        },
-      );
-      gestureControllerRef.current = update.state;
-
-      for (const action of update.actions) {
-        switch (action.type) {
-          case "pointer": {
-            const cursorFrame = handCursorFrameRef.current;
-            if (cursorFrame) {
-              routeHandPointer(cursorFrame);
-            }
-            break;
-          }
-          case "select": {
-            const result = actions.selectNode(
-              action.nodeId,
-              action.timestampMs,
-            );
-            actions.showGestureHint(
-              result === "traverse"
-                ? "gesture / pinch traverse"
-                : "gesture / pinch select",
-              action.timestampMs,
-            );
-            announceTutorialAction(
-              result === "traverse" ? "hand-traverse" : "hand-select",
-            );
-            break;
-          }
-          case "manipulation": {
-            announceTutorialAction(
-              action.event.phase === "begin"
-                ? "manipulation-start"
-                : action.event.phase === "end"
-                  ? "manipulation-end"
-                  : "manipulation-update",
-            );
-            if (action.event.phase === "begin") {
-              announceTutorialAction("hand-grab");
-            }
-            if (action.event.phase === "update") {
-              cameraManipulationRef.current = applyHandManipulationDelta(
-                cameraManipulationRef.current,
-                action.event.delta,
-              );
-              const tutorialAction = tutorialActionForManipulationDelta(
-                action.event.delta,
-              );
-              if (tutorialAction) announceTutorialAction(tutorialAction);
-            }
-            if (
-              action.event.phase === "end" &&
-              action.event.reason === "release"
-            ) {
-              announceTutorialAction("hand-release");
-            }
-            break;
-          }
-          case "return":
-            actions.returnOverview(action.timestampMs);
-            announceTutorialAction("hand-return");
-            break;
-          case "topology":
-            actions.switchTopology(
-              topologyAfterSwipe(
-                context.layoutName,
-                action.direction,
-                context.temporalAvailable,
-              ),
-            );
-            announceTutorialAction("hand-topology");
-            break;
-          case "hint":
-            if (action.label !== "gesture / pinch select") {
-              actions.showGestureHint(action.label, action.timestampMs);
-            }
-            break;
-        }
+      handRaycastRequestRef.current = null;
+      if (activeHoverSourceRef.current === "hand") {
+        activeHoverSourceRef.current = null;
+        dispatch({
+          type: "IMMEDIATE_HOVER",
+          nodeId: null,
+          timestampMs: frame?.timestampMs ?? performance.now(),
+        });
       }
     },
     [routeHandPointer],
   );
+
+  const handleLandmarkFrame = useCallback((frame: TimestampedLandmarkFrame) => {
+    const context = gestureContextRef.current;
+    const actions = gestureActionsRef.current;
+    if (!context || !actions) {
+      return;
+    }
+
+    const update = updateGestureController(
+      gestureControllerRef.current,
+      frame,
+      {
+        manipulationAllowed:
+          context.manipulationAllowed &&
+          frame.timestampMs >= context.topologyMorphingUntilMs,
+        manipulationConfig: manipulationConfigRef.current,
+        mouseSuppressionUntilMs:
+          lastMouseActivityAtRef.current + MOUSE_HAND_SUPPRESSION_MS,
+        safeToReturn:
+          context.selectedNodeId !== null &&
+          context.interactionMode === "FOCUSED",
+        targetNodeId: context.hoverNodeId,
+        topologyMorphing:
+          !context.canSwitchTopology ||
+          frame.timestampMs < context.topologyMorphingUntilMs,
+      },
+    );
+    gestureControllerRef.current = update.state;
+
+    for (const action of update.actions) {
+      switch (action.type) {
+        case "pointer": {
+          break;
+        }
+        case "select": {
+          const result = actions.selectNode(action.nodeId, action.timestampMs);
+          actions.showGestureHint(
+            result === "traverse"
+              ? "gesture / pinch traverse"
+              : "gesture / pinch select",
+            action.timestampMs,
+          );
+          announceTutorialAction(
+            result === "traverse" ? "hand-traverse" : "hand-select",
+          );
+          break;
+        }
+        case "manipulation": {
+          announceTutorialAction(
+            action.event.phase === "begin"
+              ? "manipulation-start"
+              : action.event.phase === "end"
+                ? "manipulation-end"
+                : "manipulation-update",
+          );
+          if (action.event.phase === "begin") {
+            announceTutorialAction("hand-grab");
+          }
+          if (action.event.phase === "update") {
+            cameraManipulationRef.current = applyHandManipulationDelta(
+              cameraManipulationRef.current,
+              action.event.delta,
+            );
+            const tutorialAction = tutorialActionForManipulationDelta(
+              action.event.delta,
+            );
+            if (tutorialAction) announceTutorialAction(tutorialAction);
+          }
+          if (
+            action.event.phase === "end" &&
+            action.event.reason === "release"
+          ) {
+            announceTutorialAction("hand-release");
+          }
+          break;
+        }
+        case "return":
+          actions.returnOverview(action.timestampMs);
+          announceTutorialAction("hand-return");
+          break;
+        case "topology":
+          actions.switchTopology(
+            topologyAfterSwipe(
+              context.layoutName,
+              action.direction,
+              context.temporalAvailable,
+            ),
+          );
+          announceTutorialAction("hand-topology");
+          break;
+        case "hint":
+          if (action.label !== "gesture / pinch select") {
+            actions.showGestureHint(action.label, action.timestampMs);
+          }
+          break;
+      }
+    }
+  }, []);
 
   const handleViewControl = useCallback(
     (control: CameraViewControl) => {
@@ -1199,29 +1252,42 @@ export function GraphScene({
         </p>
 
         <div className="scene-controls" aria-label="Camera modes">
-          {cameraModes.map((mode) => (
-            <button
-              aria-pressed={cameraMode === mode}
-              key={mode}
-              disabled={mode !== "overview" && mode !== "focus"}
-              onClick={(event) => {
-                if (mode === "overview") {
-                  returnOverview(event.timeStamp);
-                } else if (mode === "focus" && hoverNodeId) {
-                  selectNode(hoverNodeId, event.timeStamp);
-                }
-              }}
-              type="button"
-            >
-              {mode}
-            </button>
-          ))}
-          <button
-            onClick={(event) => returnOverview(event.timeStamp)}
-            type="button"
-          >
-            return
-          </button>
+          {sceneModeControls.map((control) => {
+            const tooltipId = `scene-control-${control.id}-tooltip`;
+            return (
+              <span className="scene-control" key={control.id}>
+                <button
+                  aria-describedby={tooltipId}
+                  aria-pressed={control.pressed ?? undefined}
+                  disabled={control.disabled}
+                  onClick={(event) => {
+                    if (control.action === "return-overview") {
+                      returnOverview(event.timeStamp);
+                    } else if (
+                      control.action === "focus-hovered" &&
+                      validFocusControlTargetNodeId
+                    ) {
+                      selectNode(
+                        validFocusControlTargetNodeId,
+                        event.timeStamp,
+                      );
+                    }
+                  }}
+                  title={control.tooltip}
+                  type="button"
+                >
+                  {control.label}
+                </button>
+                <span
+                  className="scene-control__tooltip"
+                  id={tooltipId}
+                  role="tooltip"
+                >
+                  {control.tooltip}
+                </span>
+              </span>
+            );
+          })}
         </div>
       </section>
 
@@ -1262,18 +1328,18 @@ export function GraphScene({
               key={node.id}
               onClick={(event) => selectNode(node.id, event.timeStamp)}
               onPointerEnter={(event) =>
-                dispatch({
-                  type: "IMMEDIATE_HOVER",
-                  nodeId: node.id,
-                  timestampMs: event.timeStamp,
-                })
+                handleImmediatePointerHover(
+                  node.id,
+                  pointerSourceFromPointerType(event.pointerType),
+                  event.timeStamp,
+                )
               }
               onPointerLeave={(event) =>
-                dispatch({
-                  type: "IMMEDIATE_HOVER",
-                  nodeId: null,
-                  timestampMs: event.timeStamp,
-                })
+                handleImmediatePointerHover(
+                  null,
+                  pointerSourceFromPointerType(event.pointerType),
+                  event.timeStamp,
+                )
               }
               type="button"
             >
@@ -2117,14 +2183,21 @@ function pointerFromThreeEvent(event: ThreeEvent<PointerEvent>) {
     clientX: event.nativeEvent.clientX,
     clientY: event.nativeEvent.clientY,
     rect,
-    source:
-      event.nativeEvent.pointerType === "touch"
-        ? "touch"
-        : event.nativeEvent.pointerType === "pen"
-          ? "hand"
-          : "mouse",
+    source: pointerSourceFromPointerType(event.nativeEvent.pointerType),
     timestampMs: performance.now(),
   });
+}
+
+function pointerSourceFromPointerType(
+  pointerType: string,
+): UnifiedPointer["source"] {
+  if (pointerType === "touch") {
+    return "touch";
+  }
+  if (pointerType === "pen") {
+    return "hand";
+  }
+  return "mouse";
 }
 
 function sceneNodeIdAtPoint(clientX: number, clientY: number): string | null {
@@ -2134,6 +2207,38 @@ function sceneNodeIdAtPoint(clientX: number, clientY: number): string | null {
     if (nodeId) {
       return nodeId;
     }
+  }
+
+  let nearestContainingNode: {
+    distanceSquared: number;
+    nodeId: string;
+  } | null = null;
+  for (const element of document.querySelectorAll<HTMLElement>(
+    "[data-scene-node-id]",
+  )) {
+    const nodeId = element.dataset.sceneNodeId;
+    const rect = element.getBoundingClientRect();
+    if (
+      !nodeId ||
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom
+    ) {
+      continue;
+    }
+    const distanceSquared =
+      (clientX - (rect.left + rect.right) / 2) ** 2 +
+      (clientY - (rect.top + rect.bottom) / 2) ** 2;
+    if (
+      !nearestContainingNode ||
+      distanceSquared < nearestContainingNode.distanceSquared
+    ) {
+      nearestContainingNode = { distanceSquared, nodeId };
+    }
+  }
+  if (nearestContainingNode) {
+    return nearestContainingNode.nodeId;
   }
   return null;
 }
