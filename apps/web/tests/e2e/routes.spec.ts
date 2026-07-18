@@ -1079,7 +1079,7 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
     .getByRole("button", {
       name: /Orientation before action/,
     })
-    .click();
+    .click({ force: true });
   await expect(page.getByText("traversing / focus")).toBeVisible();
   await expect(page.locator(".scene-traversal-status")).toContainText(
     "Constellations before filing → Orientation before action",
