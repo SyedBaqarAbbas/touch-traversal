@@ -148,6 +148,15 @@ Disabling or exiting owns the opposite lifecycle: ended-track listeners detach, 
 stops, the worker is disposed, and the graph falls back to mouse/keyboard input. Background tabs
 skip frame submission, while resize and orientation changes retain cover-fit framing.
 
+Performance recording is a separate local boundary. It composites the visible webcam/fixture,
+preserved transparent WebGL frame, cursor, and curated authored overlays into a bounded 2D canvas,
+then gives only that canvas's silent video stream to `MediaRecorder`. The visible red recording
+indicator is excluded from the exported frame by product decision. Output exists only as an
+in-memory Blob/object URL after explicit stop, and an explicit download uses a UTC app/mode
+filename without graph content. Download, discard, camera shutdown, route exit, track end, error,
+backgrounding, and unmount release the compositor stream and revoke any URL. There is no recorder
+construction on load and no network, upload, remote cache, telemetry, or persistence path.
+
 Classifier/controller modules use hysteresis, holds, cooldowns, and transition guards rather than
 single-frame activation. Recorded privacy-safe fixtures exercise the same runtime cursor and
 landmark handlers used by the live camera path. Recent mouse movement briefly takes precedence to
@@ -172,6 +181,9 @@ is never required.
 | Click **Graph only**               | Hide video but keep the scene, stream, and hand input mounted.   |
 | Change emphasis or mirror          | Adjust only the visible composition; graph state stays intact.   |
 | Click **exit performance**         | Stop owned tracks and return to `/demo`.                         |
+| Click **Start recording**          | Begin an explicit silent local webcam + graph composition.       |
+| Click **Stop recording**           | Finalize an in-memory local file for download or discard.        |
+| Click **Discard recording**        | Immediately release the local recording and object URL.          |
 | Point at a node                    | Move the live hand cursor and establish the hover target.        |
 | Pinch over a target                | Focus it, or traverse to it when it is an active neighbor.       |
 | Hold an open palm                  | Return from a focused thought to the overview.                   |

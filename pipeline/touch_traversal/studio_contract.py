@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from pathlib import PurePath
+from pathlib import PurePath, PurePosixPath
 from typing import Annotated, Literal, Self
 
 from pydantic import AwareDatetime, Field, StringConstraints, model_validator
@@ -70,6 +70,7 @@ class StudioErrorCode(StrEnum):
 
 class StudioNote(ArtifactModel):
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=180)]
+    relative_path: Annotated[str, StringConstraints(min_length=1, max_length=512)] | None = None
     media_type: Literal["text/markdown", "text/plain"]
     content: Annotated[str, StringConstraints(min_length=1)]
     modified_at: AwareDatetime | None = None
@@ -80,7 +81,28 @@ class StudioNote(ArtifactModel):
             raise ValueError("name must be a single local filename without path components")
         if "\\" in self.name or "\x00" in self.name:
             raise ValueError("name must not contain path separators or NUL bytes")
+        if self.relative_path is not None:
+            relative_path = self.relative_path
+            if (
+                relative_path.startswith("/")
+                or relative_path.endswith("/")
+                or "\\" in relative_path
+                or "\x00" in relative_path
+                or any(ord(character) < 32 or ord(character) == 127 for character in relative_path)
+            ):
+                raise ValueError("relativePath must be a safe canonical POSIX path")
+            segments = relative_path.split("/")
+            if any(
+                not segment or segment in {".", ".."} or len(segment) > 180 for segment in segments
+            ):
+                raise ValueError("relativePath must not contain empty, dot, or oversized segments")
+            if PurePosixPath(relative_path).name != self.name:
+                raise ValueError("relativePath must end with name")
         return self
+
+    @property
+    def effective_relative_path(self) -> str:
+        return self.relative_path or self.name
 
 
 class StudioBuildRequest(ArtifactModel):
@@ -90,9 +112,9 @@ class StudioBuildRequest(ArtifactModel):
 
     @model_validator(mode="after")
     def validate_unique_names(self) -> Self:
-        folded_names = [note.name.casefold() for note in self.notes]
-        if len(folded_names) != len(set(folded_names)):
-            raise ValueError("note names must be unique ignoring case")
+        folded_paths = [note.effective_relative_path.casefold() for note in self.notes]
+        if len(folded_paths) != len(set(folded_paths)):
+            raise ValueError("note relative paths must be unique ignoring case")
         return self
 
 

@@ -12,7 +12,7 @@ import threading
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Protocol
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -238,10 +238,16 @@ class StudioService:
                 corpus = workspace / "notes"
                 corpus.mkdir()
                 self._advance(job_id, StudioProgressStage.MATERIALIZING)
-                for note in sorted(request.notes, key=lambda candidate: candidate.name.casefold()):
+                for note in sorted(
+                    request.notes,
+                    key=lambda candidate: candidate.effective_relative_path.casefold(),
+                ):
                     if self._cancel_requested(job_id):
                         raise CorpusBuildCancelled("personal graph build cancelled")
-                    note_path = corpus / note.name
+                    note_path = corpus.joinpath(*PurePosixPath(note.effective_relative_path).parts)
+                    if not note_path.resolve(strict=False).is_relative_to(corpus.resolve()):
+                        raise ValueError("note relative path escaped the temporary corpus")
+                    note_path.parent.mkdir(parents=True, exist_ok=True)
                     note_path.write_text(note.content, encoding="utf-8")
                     modified_timestamp = note.modified_at.timestamp() if note.modified_at else 0.0
                     os.utime(note_path, (modified_timestamp, modified_timestamp))

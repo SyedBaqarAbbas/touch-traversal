@@ -12,6 +12,7 @@ const routes = [
   ["/", "Explore the topologies of your thoughts."],
   ["/demo", "Graph artifact boundary"],
   ["/perform", "Webcam graph performance"],
+  ["/studio", "Choose notes for a local graph."],
   ["/calibration", "Calibrate hand traversal."],
   ["/debug", "Graph diagnostics"],
 ] as const;
@@ -398,6 +399,107 @@ test("/perform preserves reduced-motion and named controls", async ({
   await expect(
     page.getByRole("button", { name: "exit performance" }),
   ).toBeVisible();
+});
+
+test("/perform records and downloads the deterministic local composition", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    class MockMediaRecorder extends EventTarget {
+      static isTypeSupported(mimeType: string) {
+        return mimeType === "video/webm;codecs=vp8";
+      }
+
+      readonly mimeType: string;
+      state: RecordingState = "inactive";
+
+      constructor(stream: MediaStream, options?: MediaRecorderOptions) {
+        super();
+        this.mimeType = options?.mimeType ?? "video/webm";
+        sessionStorage.setItem(
+          "recording-audio-tracks",
+          String(stream.getAudioTracks().length),
+        );
+        sessionStorage.setItem("recording-mime", this.mimeType);
+      }
+
+      start() {
+        this.state = "recording";
+      }
+
+      stop() {
+        if (this.state === "inactive") return;
+        this.state = "inactive";
+        queueMicrotask(() => {
+          const dataEvent = new Event("dataavailable") as Event & {
+            data: Blob;
+          };
+          dataEvent.data = new Blob(["webcam+graph+authored-overlays"], {
+            type: this.mimeType,
+          });
+          this.dispatchEvent(dataEvent);
+          this.dispatchEvent(new Event("stop"));
+        });
+      }
+    }
+    Object.defineProperty(window, "MediaRecorder", {
+      configurable: true,
+      value: MockMediaRecorder,
+    });
+    const nativeRevoke = URL.revokeObjectURL.bind(URL);
+    URL.revokeObjectURL = (url) => {
+      const count = Number(sessionStorage.getItem("recording-revokes"));
+      sessionStorage.setItem("recording-revokes", String(count + 1));
+      nativeRevoke(url);
+    };
+  });
+  await page.goto("/perform?fixture=camera-free");
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await page.getByRole("button", { name: "Start recording" }).click();
+  await expect(page.getByText("recording locally")).toBeVisible();
+  await expect(page.getByText("00:00")).toBeVisible();
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("recording-mime")),
+  ).toBe("video/webm;codecs=vp8");
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("recording-audio-tracks")),
+  ).toBe("0");
+
+  await page.getByRole("button", { name: "Stop recording" }).click();
+  await expect(page.getByText("recording ready")).toBeVisible();
+  const downloadEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download recording" }).click();
+  const download = await downloadEvent;
+  expect(download.suggestedFilename()).toMatch(
+    /^touch-traversal-performance-\d{8}T\d{6}Z\.webm$/,
+  );
+  expect(download.suggestedFilename()).not.toContain("memory");
+  await expect(page.getByText("not recording")).toBeVisible();
+  expect(
+    Number(
+      await page.evaluate(() => sessionStorage.getItem("recording-revokes")),
+    ),
+  ).toBeGreaterThanOrEqual(1);
+});
+
+test("/perform keeps live mode when local recording is unsupported", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "MediaRecorder", {
+      configurable: true,
+      value: undefined,
+    });
+  });
+  await page.goto("/perform?fixture=camera-free");
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await expect(
+    page.getByText("This browser cannot create local recordings"),
+  ).toBeVisible();
+  await expect(page.locator(".scene-shell")).toHaveAttribute(
+    "data-presentation",
+    "performance",
+  );
 });
 
 test("/demo focuses a node and returns by mouse or keyboard", async ({

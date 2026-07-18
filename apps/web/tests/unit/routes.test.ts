@@ -22,6 +22,7 @@ describe("web application contract", () => {
     ["app/page.tsx", "Explore the topologies of your thoughts."],
     ["app/_components/graph-scene.tsx", "Graph artifact boundary"],
     ["app/perform/page.tsx", "performanceMode"],
+    ["app/studio/page.tsx", "StudioIntake"],
     ["app/calibration/page.tsx", "Calibrate hand traversal."],
     ["app/debug/page.tsx", "Graph diagnostics"],
   ])("keeps the route shell at %s", (path, marker) => {

@@ -169,6 +169,7 @@ def _fixture_request(request_id: str = "two-note") -> dict[str, object]:
         notes.append(
             {
                 "name": path.name,
+                **({"relativePath": f"nested/{path.name}"} if path.name == "companion.txt" else {}),
                 "mediaType": "text/markdown" if path.suffix == ".md" else "text/plain",
                 "content": path.read_text(encoding="utf-8"),
             }
@@ -245,7 +246,7 @@ class StudioServerTests(unittest.TestCase):
             )
             self.assertEqual(
                 {node.source.path for node in result.bundle.graph.nodes},
-                {"companion.txt", "origin.md"},
+                {"nested/companion.txt", "origin.md"},
             )
             cleanup_status, _payload, _headers = _request(
                 base_url,
@@ -336,6 +337,26 @@ class StudioServerTests(unittest.TestCase):
             )
             self.assertEqual(status, HTTPStatus.UNAUTHORIZED)
             self.assertEqual(payload["error"]["code"], "unauthorized")  # type: ignore[index]
+
+    def test_relative_paths_are_nested_and_traversal_is_rejected_before_materializing(self) -> None:
+        builder = _PipelineFixtureBuilder(self.config)
+        invalid = _fixture_request("unsafe-relative-path")
+        notes = invalid["notes"]
+        self.assertIsInstance(notes, list)
+        notes[0]["relativePath"] = "../origin.md"  # type: ignore[index]
+
+        with _running_server(self.config, builder) as base_url:
+            status, payload, _headers = _request(
+                base_url,
+                "/v1/jobs",
+                method="POST",
+                body=invalid,
+                token=_TOKEN,
+            )
+
+        self.assertEqual(status, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(payload["error"]["code"], "invalid_request")  # type: ignore[index]
+        self.assertEqual(builder.workspaces, [])
 
     def test_cancellation_cleans_the_temporary_corpus(self) -> None:
         builder = _BlockingBuilder()

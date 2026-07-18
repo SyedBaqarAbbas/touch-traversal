@@ -117,6 +117,7 @@ const routes = [
   { href: "/", label: "home" },
   { href: "/demo", label: "demo" },
   { href: "/perform", label: "perform" },
+  { href: "/studio", label: "studio" },
   { href: "/calibration", label: "calibration" },
   { href: "/debug", label: "debug" },
 ] as const;
@@ -1021,6 +1022,7 @@ export function GraphScene({
           alpha: performanceMode,
           antialias: true,
           powerPreference: "high-performance",
+          preserveDrawingBuffer: performanceMode,
         }}
         onCreated={({ gl }) => configureSceneRenderer(gl, performanceMode)}
       >
@@ -1311,6 +1313,18 @@ export function GraphScene({
                 onToggleMirror: () =>
                   dispatchPerformancePresentation({ type: "TOGGLE_MIRROR" }),
                 quality: sceneQuality.name,
+                recordingOverlay: {
+                  cameraMode,
+                  edgeCount: model.graph.size,
+                  interactionMode: interaction.mode,
+                  nodeCount: model.graph.order,
+                  selectedTitle: selectedThought?.title ?? null,
+                  topologyLabel: activeTopology.label,
+                  topologyTitle: activeTopology.title,
+                  traversalLabel: activeTraversalLabel
+                    ? `${activeTraversalLabel.source} → ${activeTraversalLabel.target}`
+                    : null,
+                },
               }
             : undefined
         }

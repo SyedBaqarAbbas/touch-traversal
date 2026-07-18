@@ -11,6 +11,10 @@ import {
 } from "react";
 
 import {
+  PerformanceRecordingPanel,
+  type PerformanceRecordingHandle,
+} from "@/app/_components/performance-recording-panel";
+import {
   cameraAccessCopy,
   classifyCameraAccessError,
   type CameraAccessStatus,
@@ -43,6 +47,7 @@ import {
   performanceCompositionPolicy,
   type PerformanceEmphasis,
 } from "@/lib/performance-presentation";
+import type { PerformanceRecordingOverlay } from "@/lib/performance-compositor";
 import type { SceneQuality } from "@/lib/performance-policy";
 import type {
   HandWorkerOutboundMessage,
@@ -62,6 +67,7 @@ export type PerformanceCameraPresentation = {
   onToggleLayer: () => void;
   onToggleMirror: () => void;
   quality: SceneQuality["name"];
+  recordingOverlay: PerformanceRecordingOverlay;
 };
 
 export type CameraAccessPanelProps = {
@@ -84,12 +90,14 @@ export function CameraAccessPanel({
   );
   const [cursorFrame, setCursorFrame] = useState<HandCursorFrame | null>(null);
   const [workerPhase, setWorkerPhase] = useState<HandWorkerPhase>("idle");
+  const [recordingActive, setRecordingActive] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const workerRef = useRef<HandTrackingWorkerController | null>(null);
   const frameLoopRef = useRef<number | null>(null);
   const cursorLoopRef = useRef<number | null>(null);
   const detachTrackEndedRef = useRef<(() => void) | null>(null);
+  const recordingRef = useRef<PerformanceRecordingHandle>(null);
   const pageVisibleRef = useRef(true);
   const handInputRef = useRef<HandInputBridgeState>(
     createHandInputBridgeState(),
@@ -132,7 +140,9 @@ export function CameraAccessPanel({
   }, []);
 
   useEffect(() => {
+    const recording = recordingRef.current;
     return () => {
+      recording?.discard();
       stopFrameLoop(frameLoopRef.current);
       stopFrameLoop(cursorLoopRef.current);
       workerRef.current?.dispose();
@@ -225,6 +235,7 @@ export function CameraAccessPanel({
       stopCameraStream(streamRef.current);
       streamRef.current = stream;
       detachTrackEndedRef.current = watchCameraStreamEnded(stream, () => {
+        recordingRef.current?.discard();
         stopFrameLoop(frameLoopRef.current);
         stopFrameLoop(cursorLoopRef.current);
         workerRef.current?.dispose();
@@ -251,6 +262,7 @@ export function CameraAccessPanel({
       startFrameLoop();
       dispatch({ type: "ACTIVE" });
     } catch (error: unknown) {
+      recordingRef.current?.discard();
       stopFrameLoop(frameLoopRef.current);
       workerRef.current?.dispose();
       workerRef.current = null;
@@ -264,6 +276,7 @@ export function CameraAccessPanel({
   };
 
   const disableCamera = () => {
+    recordingRef.current?.discard();
     stopFrameLoop(frameLoopRef.current);
     stopFrameLoop(cursorLoopRef.current);
     workerRef.current?.dispose();
@@ -300,6 +313,7 @@ export function CameraAccessPanel({
           createHandTrackingWorkerController({
             onMessage: handleWorkerMessage,
             onError: () => {
+              recordingRef.current?.discard();
               stopFrameLoop(frameLoopRef.current);
               detachTrackEndedRef.current?.();
               detachTrackEndedRef.current = null;
@@ -328,6 +342,7 @@ export function CameraAccessPanel({
         void controller
           .submitVideoFrame(video, performance.now())
           .catch((error: unknown) => {
+            recordingRef.current?.discard();
             stopFrameLoop(frameLoopRef.current);
             detachTrackEndedRef.current?.();
             detachTrackEndedRef.current = null;
@@ -463,47 +478,63 @@ export function CameraAccessPanel({
             onClick={handleAction}
             type="button"
           >
-            {copy.actionLabel}
+            {recordingActive && state.status === "active"
+              ? "Disable camera + discard recording"
+              : copy.actionLabel}
           </button>
         ) : null}
         {performancePresentation ? (
-          <div
-            aria-label="Performance presentation"
-            className="performance-presentation-controls"
-          >
-            <button
-              aria-pressed={!performancePresentation.layerVisible}
-              onClick={performancePresentation.onToggleLayer}
-              type="button"
+          <>
+            <PerformanceRecordingPanel
+              cameraActive={state.status === "active"}
+              cursorFrame={cursorFrame}
+              fixture={performancePresentation.fixture}
+              layerVisible={performancePresentation.layerVisible}
+              mirrored={performancePresentation.mirrored}
+              onRecordingChange={setRecordingActive}
+              overlay={performancePresentation.recordingOverlay}
+              ref={recordingRef}
+              videoOpacity={composition?.videoOpacity ?? 0}
+              videoRef={videoRef}
+            />
+            <div
+              aria-label="Performance presentation"
+              className="performance-presentation-controls"
             >
-              {performancePresentation.layerVisible
-                ? "Graph only"
-                : "Show video layer"}
-            </button>
-            <button
-              aria-label={`Graph and video emphasis: ${performancePresentation.emphasis}`}
-              onClick={performancePresentation.onCycleEmphasis}
-              type="button"
-            >
-              emphasis / {performancePresentation.emphasis}
-            </button>
-            <button
-              aria-pressed={performancePresentation.mirrored}
-              onClick={performancePresentation.onToggleMirror}
-              type="button"
-            >
-              mirror
-            </button>
-            <button
-              onClick={performancePresentation.onResetFraming}
-              type="button"
-            >
-              reset framing
-            </button>
-            <button onClick={handleExitPerformance} type="button">
-              exit performance
-            </button>
-          </div>
+              <button
+                aria-pressed={!performancePresentation.layerVisible}
+                onClick={performancePresentation.onToggleLayer}
+                type="button"
+              >
+                {performancePresentation.layerVisible
+                  ? "Graph only"
+                  : "Show video layer"}
+              </button>
+              <button
+                aria-label={`Graph and video emphasis: ${performancePresentation.emphasis}`}
+                onClick={performancePresentation.onCycleEmphasis}
+                type="button"
+              >
+                emphasis / {performancePresentation.emphasis}
+              </button>
+              <button
+                aria-pressed={performancePresentation.mirrored}
+                onClick={performancePresentation.onToggleMirror}
+                type="button"
+              >
+                mirror
+              </button>
+              <button
+                onClick={performancePresentation.onResetFraming}
+                type="button"
+              >
+                reset framing
+              </button>
+              <button onClick={handleExitPerformance} type="button">
+                exit performance
+              </button>
+            </div>
+          </>
         ) : null}
       </aside>
     </>

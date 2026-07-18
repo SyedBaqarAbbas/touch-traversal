@@ -60,6 +60,22 @@ failure, or missing hardware removes the video layer and leaves complete mouse/k
 with one retry action. `?fixture=camera-free` provides a deterministic synthetic visual surface for
 browser screenshots; it never requests a device or stores a camera frame.
 
+### Local recording
+
+After the camera and video layer are active, **Start recording** explicitly begins a local-only
+take. A dedicated 1280 × 720 maximum 2D canvas draws the mirrored camera, transparent WebGL graph,
+hand cursor, topology, selection, and traversal overlays; its 30 FPS video-only stream is the sole
+`MediaRecorder` input. This avoids assuming that independent DOM layers appear in one recording.
+
+The persistent red UI indicator, elapsed time, and recording buttons are intentionally excluded
+from the saved composition. **Stop recording** creates an in-memory Blob/object URL; only
+**Download recording** writes a file. **Discard recording** immediately clears chunks and revokes
+the URL. Filenames use `touch-traversal-performance-<UTC timestamp>` and never note titles.
+WebM/VP9, WebM/VP8, plain WebM, then browser-confirmed MP4 are tried in that order. Microphone and
+audio tracks are always absent. Recordings warn at four minutes or 96 MiB and stop at five minutes
+or 128 MiB. Camera disable, exit, track end, encoder error, backgrounding, and unmount stop or
+discard recording resources; no upload, cache, telemetry, or persistence path exists.
+
 ## Recording take
 
 `/demo?recording=1` runs one deterministic 25-second take: constellation reveal, local hand

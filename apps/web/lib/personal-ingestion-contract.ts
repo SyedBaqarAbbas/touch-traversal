@@ -56,15 +56,51 @@ const noteName = z
       !value.includes("\0"),
     "must be a single local filename without path components",
   );
+const noteRelativePath = z
+  .string()
+  .min(1)
+  .max(512)
+  .refine((value) => {
+    if (
+      value.startsWith("/") ||
+      value.endsWith("/") ||
+      value.includes("\\") ||
+      value.includes("\0") ||
+      /[\u0000-\u001f\u007f]/u.test(value)
+    ) {
+      return false;
+    }
+    const segments = value.split("/");
+    return segments.every(
+      (segment) =>
+        segment.length > 0 &&
+        segment.length <= 180 &&
+        segment !== "." &&
+        segment !== "..",
+    );
+  }, "must be a safe canonical POSIX path relative to the selected folder");
 
 export const studioNoteSchema = z
   .object({
     name: noteName,
+    relativePath: noteRelativePath.optional(),
     mediaType: z.enum(["text/markdown", "text/plain"]),
     content: z.string().min(1),
     modifiedAt: z.iso.datetime({ offset: true }).nullable().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((note, context) => {
+    if (
+      note.relativePath !== undefined &&
+      note.relativePath.split("/").at(-1) !== note.name
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "relativePath must end with name",
+        path: ["relativePath"],
+      });
+    }
+  });
 
 export const studioBuildRequestSchema = z
   .object({
@@ -74,17 +110,19 @@ export const studioBuildRequestSchema = z
   })
   .strict()
   .superRefine((request, context) => {
-    const names = new Set<string>();
+    const paths = new Set<string>();
     for (const [index, note] of request.notes.entries()) {
-      const folded = note.name.toLocaleLowerCase("en-US");
-      if (names.has(folded)) {
+      const folded = (note.relativePath ?? note.name).toLocaleLowerCase(
+        "en-US",
+      );
+      if (paths.has(folded)) {
         context.addIssue({
           code: "custom",
-          message: "note names must be unique ignoring case",
-          path: ["notes", index, "name"],
+          message: "note relative paths must be unique ignoring case",
+          path: ["notes", index, note.relativePath ? "relativePath" : "name"],
         });
       }
-      names.add(folded);
+      paths.add(folded);
     }
   });
 

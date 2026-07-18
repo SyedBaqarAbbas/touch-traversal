@@ -14,6 +14,7 @@ const routes = [
   { href: "/", label: "home" },
   { href: "/demo", label: "demo" },
   { href: "/perform", label: "perform" },
+  { href: "/studio", label: "studio" },
   { href: "/calibration", label: "calibration" },
   { href: "/debug", label: "debug" },
 ] as const;

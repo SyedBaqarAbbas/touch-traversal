@@ -1,7 +1,38 @@
 # Personal ingestion contract
 
-THO-63 establishes an executable provider boundary; it does not add the later file-picker or studio
-route. The public static build remains a working sample viewer with fixed public artifacts.
+THO-63 establishes the executable provider boundary and THO-66 adds the private intake surface at
+`/studio`. The public static build remains a working sample viewer with fixed public artifacts.
+
+## Select and preview a corpus
+
+Open `/studio` and use the standard multi-file picker, drop files or a folder, or use **Choose
+folder**. Browsers with the File System Access API use its directory picker; other browsers fall
+back to a directory-enabled file input. The ordinary multi-file input remains the baseline and does
+not depend on either directory API.
+
+Selection is a local, in-memory preview step. It makes no HTTP requests, starts no graph work,
+writes no tracked artifacts, and uses neither localStorage nor IndexedDB. Navigating away, clearing
+the selection, or unmounting the route releases the selected `File` references and any prepared
+request. The fictional sample link works without filesystem access.
+
+The preview displays relative paths and metadata, never note bodies. It accepts UTF-8 `.md`,
+`.markdown`, and `.txt` files in deterministic relative-path order. It mirrors the pipeline's hidden
+path and configured exclusions for `AGENTS.md`, `.git`, `node_modules`, `attachments`, and
+`generated`. Unsafe or traversal paths, case-insensitive duplicate relative paths, unsupported
+extensions, empty or binary-looking content, invalid UTF-8, unreadable files, and files over the
+hard budgets remain visible as exclusions with an actionable reason.
+
+Intake budgets intentionally fit within the companion's request envelope:
+
+| Budget          | Soft warning | Hard acceptance limit |
+| --------------- | -----------: | --------------------: |
+| File count      |          100 |                   200 |
+| Individual file |        1 MiB |                 2 MiB |
+| Accepted corpus |        8 MiB |                16 MiB |
+
+The companion retains its 20 MiB HTTP request limit for JSON framing and metadata overhead. The
+Continue action is an explicit consent boundary that prepares a versioned request in memory; the
+generation stage consumes that request separately.
 
 ## Start local studio mode
 
@@ -57,6 +88,7 @@ No remote fallback is attempted.
   "notes": [
     {
       "name": "origin.md",
+      "relativePath": "field-notes/origin.md",
       "mediaType": "text/markdown",
       "content": "# A local note\n\nContents stay on this machine."
     }
@@ -64,8 +96,11 @@ No remote fallback is attempted.
 }
 ```
 
-Filenames are single pathless names and unique ignoring case. Supported media types are
-`text/markdown` and `text/plain`. The companion returns a job snapshot immediately.
+`name` remains the pathless basename for backward compatibility. Folder imports may additionally
+provide a canonical POSIX `relativePath`; it must be relative, contain no dot or empty segments,
+end with `name`, and be unique ignoring case. The companion creates nested directories only inside
+the per-job temporary corpus and verifies filesystem containment before writing. Supported media
+types are `text/markdown` and `text/plain`. The companion returns a job snapshot immediately.
 
 - `GET /v1/jobs/{jobId}` returns typed state and monotonic progress.
 - `GET /v1/jobs/{jobId}/result` returns `{graph, layouts, manifest, report}` only after success.
@@ -100,4 +135,6 @@ Run the focused contract checks from the repository root:
 ```bash
 cd pipeline && uv run pytest tests/test_studio.py
 pnpm --filter @touch-traversal/web test tests/unit/personal-ingestion.test.ts
+pnpm --filter @touch-traversal/web test tests/unit/studio-intake.test.ts
+npx playwright test tests/e2e/studio-intake.spec.ts --project=chromium
 ```
