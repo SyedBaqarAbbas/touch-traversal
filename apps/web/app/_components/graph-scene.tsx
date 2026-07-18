@@ -109,6 +109,7 @@ import {
   cameraModes,
   getCameraPose,
   rankTraversableNeighbors,
+  selectNearbySceneNodes,
   type CameraMode,
   type SceneEdge,
   type SceneNode,
@@ -241,6 +242,8 @@ export function GraphScene({
   );
   const [measuredFps, setMeasuredFps] = useState<number | undefined>();
   const [hudVisible, setHudVisible] = useState(true);
+  const [nearbyThoughtTextVisible, setNearbyThoughtTextVisible] =
+    useState(true);
   const [hudActivityKey, setHudActivityKey] = useState(0);
   const [sceneTransitionMs, setSceneTransitionMs] =
     useState(FOCUS_TRANSITION_MS);
@@ -267,6 +270,7 @@ export function GraphScene({
   const handPointerActiveRef = useRef(false);
   const handRaycastRequestRef = useRef<HandRaycastRequest | null>(null);
   const handRaycastSequenceRef = useRef(0);
+  const nearbyThoughtListRef = useRef<HTMLDivElement>(null);
   const topologyMorphingUntilRef = useRef(0);
   const recordingStartedRef = useRef(false);
   const sceneShellRef = useRef<HTMLElement>(null);
@@ -309,23 +313,6 @@ export function GraphScene({
     selectedNodeId && model.graph.hasNode(selectedNodeId)
       ? model.graph.getNodeAttributes(selectedNodeId).thought
       : null;
-  const nodeRailSummaries = useMemo(() => {
-    if (!selectedNodeId) {
-      return nodeSummaries.slice(0, 5);
-    }
-    const summariesById = new Map(
-      nodeSummaries.map((summary) => [summary.id, summary]),
-    );
-    const selectedSummary = summariesById.get(selectedNodeId);
-    const neighborSummaries = rankTraversableNeighbors(model, selectedNodeId)
-      .filter((neighbor) => neighbor.selectable)
-      .map((neighbor) => summariesById.get(neighbor.nodeId))
-      .filter((summary) => summary != null);
-    return [
-      ...(selectedSummary ? [selectedSummary] : []),
-      ...neighborSummaries,
-    ].slice(0, 5);
-  }, [model, nodeSummaries, selectedNodeId]);
   const activeTraversalLabel = useMemo(() => {
     if (!activeTraversal) {
       return null;
@@ -396,6 +383,23 @@ export function GraphScene({
           }),
     [hoverNodeId, layoutName, model, selectedNodeId],
   );
+  const nodeRailSummaries = useMemo(() => {
+    const summariesById = new Map(
+      nodeSummaries.map((summary) => [summary.id, summary]),
+    );
+    return selectNearbySceneNodes(
+      sceneNodes,
+      selectedNodeId,
+      Math.min(sceneNodes.length, 24),
+    )
+      .map((node) => summariesById.get(node.id))
+      .filter((summary) => summary != null);
+  }, [nodeSummaries, sceneNodes, selectedNodeId]);
+  useLayoutEffect(() => {
+    if (nearbyThoughtListRef.current) {
+      nearbyThoughtListRef.current.scrollLeft = 0;
+    }
+  }, [layoutName, selectedNodeId]);
   const positionsByNodeId = useMemo(
     () => new Map(sceneNodes.map((node) => [node.id, node.position])),
     [sceneNodes],
@@ -1228,34 +1232,59 @@ export function GraphScene({
         />
       ) : null}
 
-      <aside className="scene-node-list" aria-label="Thought nodes">
-        {nodeRailSummaries.map((node, index) => (
+      <aside
+        className="scene-node-list"
+        aria-label="Nearby thoughts"
+        data-text-visible={nearbyThoughtTextVisible ? "true" : "false"}
+      >
+        <div className="scene-node-list__header">
+          <strong>nearby thoughts</strong>
           <button
-            aria-label={`Select ${node.title}`}
-            aria-pressed={selectedNodeId === node.id}
-            data-scene-node-id={node.id}
-            key={node.id}
-            onClick={(event) => selectNode(node.id, event.timeStamp)}
-            onPointerEnter={(event) =>
-              dispatch({
-                type: "IMMEDIATE_HOVER",
-                nodeId: node.id,
-                timestampMs: event.timeStamp,
-              })
-            }
-            onPointerLeave={(event) =>
-              dispatch({
-                type: "IMMEDIATE_HOVER",
-                nodeId: null,
-                timestampMs: event.timeStamp,
-              })
-            }
+            aria-controls="scene-nearby-thought-items"
+            aria-pressed={nearbyThoughtTextVisible}
+            className="scene-node-text-toggle"
+            onClick={() => setNearbyThoughtTextVisible((visible) => !visible)}
             type="button"
           >
-            <span>{node.title}</span>
-            <small>{index + 1}</small>
+            {nearbyThoughtTextVisible ? "hide text" : "show text"}
           </button>
-        ))}
+        </div>
+        <div
+          className="scene-node-list__items"
+          id="scene-nearby-thought-items"
+          ref={nearbyThoughtListRef}
+        >
+          {nodeRailSummaries.map((node, index) => (
+            <button
+              aria-label={`Select ${node.title}`}
+              aria-pressed={selectedNodeId === node.id}
+              data-scene-node-id={node.id}
+              key={node.id}
+              onClick={(event) => selectNode(node.id, event.timeStamp)}
+              onPointerEnter={(event) =>
+                dispatch({
+                  type: "IMMEDIATE_HOVER",
+                  nodeId: node.id,
+                  timestampMs: event.timeStamp,
+                })
+              }
+              onPointerLeave={(event) =>
+                dispatch({
+                  type: "IMMEDIATE_HOVER",
+                  nodeId: null,
+                  timestampMs: event.timeStamp,
+                })
+              }
+              type="button"
+            >
+              <span className="scene-node-list__copy">
+                <strong>{node.title}</strong>
+                <em>{node.summary}</em>
+              </span>
+              <small>{index + 1}</small>
+            </button>
+          ))}
+        </div>
       </aside>
 
       <div className="scene-label-layer" aria-live="polite">
@@ -2446,7 +2475,7 @@ varying float vOpacity;
 varying vec3 vColor;
 
 void main() {
-  float emphasis = max(instanceHover * 0.2, instanceSelected * 0.36);
+  float emphasis = max(instanceHover * 0.72, instanceSelected * 0.52);
   float haloScale = mix(1.0, 0.09, uHalo);
   vOpacity = clamp(instanceOpacity * instanceVisibility * haloScale * (1.0 + emphasis), 0.0, 1.0);
 
@@ -2456,7 +2485,8 @@ void main() {
   float clusterBand = mod(instanceCluster, 3.0);
   vColor = mix(base, clusterA, step(0.5, clusterBand) * 0.18);
   vColor = mix(vColor, clusterB, step(1.5, clusterBand) * 0.14);
-  vColor = mix(vColor, vec3(1.0, 0.99, 0.96), instanceSelected * 0.48);
+  vColor = mix(vColor, vec3(1.0, 1.0, 1.0), instanceHover * 0.86);
+  vColor = mix(vColor, vec3(1.0, 0.98, 0.90), instanceSelected * 0.68);
 
   vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mvPosition;

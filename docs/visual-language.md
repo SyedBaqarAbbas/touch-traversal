@@ -38,7 +38,7 @@ projects that graph over a mirrored person while keeping both layers quiet and l
 
 - The HUD lives in the top-right with ample empty space around it.
 - Route and camera controls stay low and small, leaving the graph as the primary viewport.
-- The node chooser is a dot rail instead of an always-visible title list.
+- The node chooser ranks the nearest selectable thoughts in the current scene and shows a compact title-and-summary list by default. “Hide text” collapses it to the original dot rail without removing the accessible node controls.
 - DOM thought labels are projected near graph positions and clamped away from viewport edges.
 - Panels are matte, not blurred glass. They can use one-pixel rules and low-alpha fills, but no frosted-card treatment.
 

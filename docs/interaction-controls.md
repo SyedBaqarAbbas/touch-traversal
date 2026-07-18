@@ -63,6 +63,13 @@ Node pinches keep selection/traversal priority. Hand loss and conflicting scene 
 an empty-space grab safely. The injected-fixture browser flow uses the same cursor and landmark
 handlers as live input.
 
+`/calibration` uses those same production classifiers as a live rehearsal checklist. It verifies
+finger point, stable pinch, the open-palm hold, and horizontal sweep distance, speed, and direction
+stability, then checks empty-space grab, orbit, pan, depth zoom, and intentional release. The page
+shows current point, pinch, palm-hold, and sweep progress and keeps completed gestures visible until
+**reset gesture rehearsal** is pressed. Pointing brightens a thought; it never selects one without a
+pinch.
+
 The optional hand step in `/tutorial` includes a visual movement guide for point, pinch,
 open-palm return, and topology swipe. Its **Start interactive hand practice** action opens the
 sample graph with a persistent ordered checklist that confirms those movements only when the live

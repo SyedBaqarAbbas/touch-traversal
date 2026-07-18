@@ -15,6 +15,7 @@ import {
   cameraModes,
   getCameraPose,
   rankTraversableNeighbors,
+  selectNearbySceneNodes,
 } from "../../lib/scene-model";
 import graph from "../../public/data/graph.json";
 import layouts from "../../public/data/layouts.json";
@@ -74,6 +75,42 @@ describe("scene model", () => {
     expect(nodes.every((node) => node.scale > 0 && node.opacity > 0)).toBe(
       true,
     );
+  });
+
+  it("lists selectable scene nodes by current spatial proximity", () => {
+    const nodes = buildSceneNodes(model, "semantic");
+    const anchor = nodes.find((node) => node.id === selectedThoughtId);
+    if (!anchor) {
+      throw new Error("expected selected thought in scene nodes");
+    }
+    const hiddenId = nodes.find((node) => node.id !== anchor.id)?.id;
+    const adjustedNodes = nodes.map((node, index) => ({
+      ...node,
+      position: [index, 0, 0] as Vec3,
+      selectable: node.id === hiddenId ? 0 : 1,
+    }));
+    const adjustedAnchor = adjustedNodes.find(
+      (node) => node.id === selectedThoughtId,
+    );
+    if (!adjustedAnchor) {
+      throw new Error("expected adjusted anchor node");
+    }
+
+    const nearby = selectNearbySceneNodes(adjustedNodes, selectedThoughtId, 4);
+    const expected = adjustedNodes
+      .filter((node) => node.selectable === 1)
+      .sort(
+        (left, right) =>
+          Math.abs(left.position[0] - adjustedAnchor.position[0]) -
+            Math.abs(right.position[0] - adjustedAnchor.position[0]) ||
+          left.id.localeCompare(right.id),
+      )
+      .slice(0, 4)
+      .map((node) => node.id);
+
+    expect(nearby.map((node) => node.id)).toEqual(expected);
+    expect(nearby.some((node) => node.id === hiddenId)).toBe(false);
+    expect(nearby[0]?.id).toBe(selectedThoughtId);
   });
 
   it("projects relationship edges with selected-neighborhood emphasis", () => {

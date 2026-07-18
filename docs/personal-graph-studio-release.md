@@ -135,6 +135,8 @@ The graph source controls on `/demo` make the active source explicit:
 - **personal** selects the current in-memory personal session and is disabled until one exists.
 - **import private JSON** validates and activates a compatible version 1 session file up to 32 MiB
   in memory.
+- **JSON format + example** explains the required envelope and graph/layout bundle, and downloads
+  the full JSON Schema or an importable Touch Traversal Linear project graph.
 - **export private JSON** downloads `touch-traversal-personal-session.json` only after an explicit
   click.
 - **remove personal graph** always clears the personal bundle from browser memory, returns to the

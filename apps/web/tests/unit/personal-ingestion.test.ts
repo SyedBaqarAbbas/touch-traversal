@@ -29,6 +29,8 @@ import graph from "../../public/data/graph.json";
 import layouts from "../../public/data/layouts.json";
 import manifest from "../../public/data/manifest.json";
 import report from "../../public/data/pipeline-report.json";
+import personalGraphSessionSchema from "../../public/examples/personal-graph-session.schema.json";
+import linearProjectSession from "../../public/examples/touch-traversal-linear-project.json";
 
 const token = "fixture-process-token-with-at-least-32-characters";
 const request: StudioBuildRequest = {
@@ -332,6 +334,52 @@ describe("local personal-ingestion provider", () => {
 });
 
 describe("personal graph contracts and memory lifecycle", () => {
+  it("ships a documented, importable Linear project graph with dependency edges", () => {
+    const store = createMemoryPersonalGraphSessionStore();
+    const imported = store.importSession(JSON.stringify(linearProjectSession));
+    const nodeIds = new Set(imported.bundle.graph.nodes.map((node) => node.id));
+    const dependencyEdges = imported.bundle.graph.edges.filter((edge) =>
+      edge.id.startsWith("blocks-"),
+    );
+
+    expect(personalGraphSessionSchema.required).toEqual([
+      "sessionVersion",
+      "metadata",
+      "bundle",
+    ]);
+    expect(personalGraphSessionSchema.properties.sessionVersion.const).toBe(
+      personalGraphSessionVersion,
+    );
+    expect(imported.metadata).toMatchObject({
+      id: "linear-touch-traversal-personal-graph-studio",
+      nodeCount: 9,
+      edgeCount: 24,
+      corpusName: "Touch Traversal — Personal Graph Studio",
+    });
+    expect(nodeIds).toEqual(
+      new Set([
+        "personal-graph-studio",
+        "THO-62",
+        "THO-63",
+        "THO-64",
+        "THO-65",
+        "THO-66",
+        "THO-67",
+        "THO-68",
+        "THO-69",
+      ]),
+    );
+    expect(dependencyEdges).toHaveLength(16);
+    expect(dependencyEdges).toContainEqual(
+      expect.objectContaining({
+        source: "THO-68",
+        target: "THO-69",
+        directed: true,
+        type: "explicit",
+      }),
+    );
+  });
+
   it("rejects progress stages whose numeric position drifts", () => {
     expect(
       studioProgressSchema.safeParse({

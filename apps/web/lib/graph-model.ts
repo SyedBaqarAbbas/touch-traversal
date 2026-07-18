@@ -48,6 +48,7 @@ export type GraphModel = {
 export type NodeSummary = {
   id: string;
   title: string;
+  summary: string;
   clusterId: string;
   degree: number;
   importance: number;
@@ -128,6 +129,7 @@ export function selectNodeSummaries(model: GraphModel): NodeSummary[] {
     summaries.push({
       id: node,
       title: attributes.thought.title,
+      summary: attributes.thought.summary,
       clusterId: attributes.clusterId,
       degree: model.graph.degree(node),
       importance: attributes.importance,

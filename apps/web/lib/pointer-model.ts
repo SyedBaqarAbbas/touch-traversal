@@ -79,6 +79,13 @@ export function updateHoverCandidate(
   },
   config: HoverConfig = defaultHoverConfig,
 ): HoverState {
+  if (next.pointer.source === "hand") {
+    return {
+      ...immediateHoverState(next.nodeId, next.pointer.timestampMs),
+      lastPointer: next.pointer,
+    };
+  }
+
   if (state.hoveredNodeId && shouldRetainHover(state, next, config)) {
     return advanceHoverState(
       {

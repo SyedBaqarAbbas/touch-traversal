@@ -12,17 +12,21 @@ import {
 import {
   createOpenPalmReturnState,
   updateOpenPalmReturn,
+  type OpenPalmPose,
   type OpenPalmReturnState,
 } from "@/lib/gesture-return";
 import {
   classifyPointingIntent,
   createPinchSelectionState,
   updatePinchSelection,
+  type PinchPhase,
+  type PointingIntent,
   type PinchSelectionState,
 } from "@/lib/gesture-selection";
 import {
   createSwipeState,
   updateSwipeRecognition,
+  type SwipeMetrics,
   type SwipeState,
 } from "@/lib/gesture-swipe";
 
@@ -56,6 +60,15 @@ export type GestureControllerState = {
 
 export type GestureControllerUpdate = {
   actions: GestureControllerAction[];
+  diagnostics: {
+    manipulationPhase: HandManipulationState["phase"];
+    openPalm: OpenPalmPose;
+    openPalmProgress: number;
+    pinchPhase: PinchPhase;
+    pinchRatio: number;
+    pointing: PointingIntent;
+    swipe: SwipeMetrics;
+  };
   state: GestureControllerState;
 };
 
@@ -165,6 +178,15 @@ export function updateGestureController(
 
   return {
     actions,
+    diagnostics: {
+      manipulationPhase: manipulationUpdate.state.phase,
+      openPalm: openPalmUpdate.pose,
+      openPalmProgress: openPalmUpdate.state.progress,
+      pinchPhase: pinchUpdate.state.phase,
+      pinchRatio: pinchUpdate.ratio,
+      pointing,
+      swipe: swipeUpdate.metrics,
+    },
     state: {
       manipulation: manipulationUpdate.state,
       openPalm: openPalmUpdate.state,

@@ -52,6 +52,9 @@ the existing scene—personal artifacts are never loaded from fixed public URLs.
 The graph-source controls switch between sample and personal models without reloading the page.
 They can explicitly export a versioned private-session JSON file, import a compatible file back
 into memory, or remove the personal graph. Import validates before replacing the active session.
+The `/demo` controls now include a discoverable format summary plus downloads for the canonical
+JSON Schema and an importable Linear project example. See `personal-graph-json-format.md` for the
+field and cross-artifact contracts.
 Remove/reset always clears the in-memory personal graph and returns to the sample; it never deletes
 or modifies the original source files. It also attempts to remove `sessionStorage` traversal history
 that may contain identifiers derived from the personal graph. If browser storage blocks that

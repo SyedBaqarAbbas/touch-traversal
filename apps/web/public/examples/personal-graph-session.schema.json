@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://touch-traversal.local/examples/personal-graph-session.schema.json",
+  "title": "Touch Traversal personal graph session",
+  "description": "Version 1 import envelope. Runtime validation also verifies matching node/layout IDs, valid edge endpoints, ordered similarity statistics, and matching counts across artifacts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sessionVersion", "metadata", "bundle"],
+  "properties": {
+    "sessionVersion": { "const": 1 },
+    "metadata": { "$ref": "#/$defs/sessionMetadata" },
+    "bundle": { "$ref": "#/$defs/artifactBundle" }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "unitFloat": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "positiveFloat": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 date-time with a UTC or numeric offset."
+    },
+    "nullableTimestamp": {
+      "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+    },
+    "vec3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number" }
+    },
+    "sessionMetadata": {
+      "type": "object",
+      "required": ["id", "createdAt", "noteCount"],
+      "properties": {
+        "sessionVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "origin": { "enum": ["generated", "imported"] },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "noteCount": { "type": "integer", "minimum": 0 },
+        "nodeCount": { "type": "integer", "minimum": 0 },
+        "edgeCount": { "type": "integer", "minimum": 0 },
+        "corpusName": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "additionalProperties": true
+    },
+    "sourceProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "documentId", "headingPath"],
+      "properties": {
+        "path": { "$ref": "#/$defs/nonEmptyString" },
+        "documentId": { "$ref": "#/$defs/nonEmptyString" },
+        "headingPath": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "startLine": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "endLine": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "When both line values exist, endLine must be greater than or equal to startLine."
+        }
+      }
+    },
+    "nodeMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tags", "entities", "wordCount", "importance"],
+      "properties": {
+        "createdAt": { "$ref": "#/$defs/nullableTimestamp" },
+        "modifiedAt": { "$ref": "#/$defs/nullableTimestamp" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "entities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "wordCount": { "type": "integer", "minimum": 0 },
+        "importance": { "$ref": "#/$defs/unitFloat" }
+      }
+    },
+    "thoughtNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "text",
+        "summary",
+        "source",
+        "metadata",
+        "visual"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "text": { "$ref": "#/$defs/nonEmptyString" },
+        "summary": { "$ref": "#/$defs/nonEmptyString" },
+        "source": { "$ref": "#/$defs/sourceProvenance" },
+        "metadata": { "$ref": "#/$defs/nodeMetadata" },
+        "visual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["clusterId", "size", "baseOpacity"],
+          "properties": {
+            "clusterId": { "$ref": "#/$defs/nonEmptyString" },
+            "size": { "$ref": "#/$defs/positiveFloat" },
+            "baseOpacity": { "$ref": "#/$defs/unitFloat" }
+          }
+        }
+      }
+    },
+    "thoughtEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "target",
+        "directed",
+        "type",
+        "weight",
+        "confidence",
+        "evidence",
+        "visual"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "source": { "$ref": "#/$defs/nonEmptyString" },
+        "target": { "$ref": "#/$defs/nonEmptyString" },
+        "directed": { "type": "boolean" },
+        "type": {
+          "enum": [
+            "explicit",
+            "structural",
+            "semantic",
+            "temporal",
+            "entity",
+            "manual"
+          ]
+        },
+        "weight": { "$ref": "#/$defs/unitFloat" },
+        "confidence": { "$ref": "#/$defs/unitFloat" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["description", "sharedTerms", "sharedEntities"],
+          "properties": {
+            "description": { "$ref": "#/$defs/nonEmptyString" },
+            "sharedTerms": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "sharedEntities": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "similarity": {
+              "oneOf": [{ "$ref": "#/$defs/unitFloat" }, { "type": "null" }]
+            },
+            "timeDistanceDays": {
+              "type": ["number", "null"],
+              "minimum": 0
+            }
+          }
+        },
+        "visual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opacity", "width"],
+          "properties": {
+            "opacity": { "$ref": "#/$defs/unitFloat" },
+            "width": { "$ref": "#/$defs/positiveFloat" }
+          }
+        }
+      }
+    },
+    "graphArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "nodes", "edges"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/thoughtNode" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/thoughtEdge" }
+        }
+      }
+    },
+    "layoutMap": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/vec3" },
+      "description": "Keys must exactly match the graph node IDs."
+    },
+    "layoutArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "bounds", "layouts"],
+      "properties": {
+        "version": { "const": 1 },
+        "bounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "$ref": "#/$defs/vec3" },
+            "max": { "$ref": "#/$defs/vec3" }
+          }
+        },
+        "layouts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["semantic", "clusters", "temporal", "force"],
+          "properties": {
+            "semantic": { "$ref": "#/$defs/layoutMap" },
+            "clusters": { "$ref": "#/$defs/layoutMap" },
+            "temporal": { "$ref": "#/$defs/layoutMap" },
+            "force": { "$ref": "#/$defs/layoutMap" }
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "generatedAt",
+        "corpusName",
+        "nodeCount",
+        "edgeCount",
+        "embeddingModel",
+        "pipelineConfigHash"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "corpusName": { "$ref": "#/$defs/nonEmptyString" },
+        "nodeCount": { "type": "integer", "minimum": 0 },
+        "edgeCount": { "type": "integer", "minimum": 0 },
+        "embeddingModel": { "$ref": "#/$defs/nonEmptyString" },
+        "pipelineConfigHash": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "similarityDistribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "minimum": {
+          "oneOf": [{ "$ref": "#/$defs/unitFloat" }, { "type": "null" }]
+        },
+        "median": {
+          "oneOf": [{ "$ref": "#/$defs/unitFloat" }, { "type": "null" }]
+        },
+        "p95": {
+          "oneOf": [{ "$ref": "#/$defs/unitFloat" }, { "type": "null" }]
+        },
+        "maximum": {
+          "oneOf": [{ "$ref": "#/$defs/unitFloat" }, { "type": "null" }]
+        }
+      },
+      "description": "A non-empty distribution requires minimum, median, p95, and maximum in ascending order. An empty distribution must omit them or set them to null."
+    },
+    "edgeCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "explicit": { "type": "integer", "minimum": 0 },
+        "structural": { "type": "integer", "minimum": 0 },
+        "semantic": { "type": "integer", "minimum": 0 },
+        "temporal": { "type": "integer", "minimum": 0 },
+        "entity": { "type": "integer", "minimum": 0 },
+        "manual": { "type": "integer", "minimum": 0 }
+      },
+      "description": "Values must sum to report.edgeCount."
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "generatedAt",
+        "fileCount",
+        "chunkCount",
+        "nodeCount",
+        "edgeCount",
+        "edgeCounts",
+        "isolatedNodeCount",
+        "averageDegree",
+        "clusterCount",
+        "similarityDistribution",
+        "buildDurationMs",
+        "warnings"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "fileCount": { "type": "integer", "minimum": 0 },
+        "chunkCount": { "type": "integer", "minimum": 0 },
+        "nodeCount": { "type": "integer", "minimum": 0 },
+        "edgeCount": { "type": "integer", "minimum": 0 },
+        "edgeCounts": { "$ref": "#/$defs/edgeCounts" },
+        "isolatedNodeCount": { "type": "integer", "minimum": 0 },
+        "averageDegree": { "type": "number", "minimum": 0 },
+        "clusterCount": { "type": "integer", "minimum": 0 },
+        "similarityDistribution": {
+          "$ref": "#/$defs/similarityDistribution"
+        },
+        "buildDurationMs": { "type": "number", "minimum": 0 },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "artifactBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["graph", "layouts", "manifest", "report"],
+      "properties": {
+        "graph": { "$ref": "#/$defs/graphArtifact" },
+        "layouts": { "$ref": "#/$defs/layoutArtifact" },
+        "manifest": { "$ref": "#/$defs/manifest" },
+        "report": { "$ref": "#/$defs/report" }
+      }
+    }
+  }
+}

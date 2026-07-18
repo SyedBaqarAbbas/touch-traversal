@@ -59,6 +59,26 @@ describe("pointer model", () => {
     expect(committed.hoveredNodeId).toBe("a");
   });
 
+  it("brightens a hand-pointed node immediately without synthesizing selection", () => {
+    const handPointer = {
+      ...pointer("a", 240, 120, 0),
+      pointer: createUnifiedPointer({
+        clientX: 240,
+        clientY: 120,
+        rect,
+        source: "hand",
+        timestampMs: 0,
+      }),
+    };
+
+    const hovered = updateHoverCandidate(createIdleHoverState(), handPointer);
+
+    expect(hovered.hoveredNodeId).toBe("a");
+    expect(hovered.candidateNodeId).toBe("a");
+    expect(hovered.previewNodeId).toBeNull();
+    expect(hovered.lastPointer?.source).toBe("hand");
+  });
+
   it("retains the current hover inside the spatial dead zone", () => {
     const current = {
       ...immediateHoverState("a", 0),

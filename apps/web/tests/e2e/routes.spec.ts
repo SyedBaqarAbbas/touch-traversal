@@ -58,6 +58,13 @@ async function pointHandCursorAtNode(
   accessibleName: RegExp,
 ): Promise<void> {
   const node = page.getByRole("button", { name: accessibleName });
+  await node.evaluate(
+    (element) =>
+      new Promise<void>((resolve) => {
+        element.scrollIntoView({ block: "nearest", inline: "center" });
+        requestAnimationFrame(() => resolve());
+      }),
+  );
   const box = await node.boundingBox();
   if (!box) {
     throw new Error(`Could not locate gesture target ${accessibleName}`);
@@ -140,6 +147,35 @@ for (const [path, heading] of routes) {
     ).toBeVisible();
   });
 }
+
+test("nearby thought text is visible by default and can be hidden without removing controls", async ({
+  page,
+}) => {
+  await page.goto("/demo?input=mouse");
+
+  const nearbyThoughts = page.getByRole("complementary", {
+    name: "Nearby thoughts",
+  });
+  const firstThoughtControl = nearbyThoughts
+    .getByRole("button", { name: /^Select / })
+    .first();
+  const firstThoughtCopy = nearbyThoughts
+    .locator(".scene-node-list__copy")
+    .first();
+
+  await expect(nearbyThoughts).toHaveAttribute("data-text-visible", "true");
+  await expect(firstThoughtCopy).toBeVisible();
+
+  await nearbyThoughts.getByRole("button", { name: "hide text" }).click();
+  await expect(nearbyThoughts).toHaveAttribute("data-text-visible", "false");
+  await expect(firstThoughtCopy).not.toBeVisible();
+  await expect(firstThoughtControl).toBeVisible();
+
+  await restoreSceneHud(page);
+  await nearbyThoughts.getByRole("button", { name: "show text" }).click();
+  await expect(nearbyThoughts).toHaveAttribute("data-text-visible", "true");
+  await expect(firstThoughtCopy).toBeVisible();
+});
 
 test("first-run tutorial supports mouse-only practice, resume, and replay", async ({
   page,
@@ -733,9 +769,11 @@ test("/perform camera-free fixture composites the graph and preserves scene stat
     page.getByRole("button", { name: "Disable camera" }),
   ).toBeVisible();
 
-  await page
-    .getByRole("button", { name: /Constellations before filing/ })
-    .click();
+  const nearbyThought = page.getByRole("button", {
+    name: /Constellations before filing/,
+  });
+  await nearbyThought.focus();
+  await nearbyThought.press("Enter");
   await expect(page.getByText("focused / focus")).toBeVisible({
     timeout: focusSettleTimeoutMs,
   });

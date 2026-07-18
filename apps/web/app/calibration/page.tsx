@@ -33,8 +33,9 @@ export default function CalibrationPage() {
         <p className="eyebrow">calibration</p>
         <h1 id="calibration-title">Calibrate hand traversal.</h1>
         <p className="description">
-          Verify camera permission, mirrored fingertip motion, and pinch
-          thresholds before using hand input in the graph demo.
+          Verify framing and thresholds, then rehearse point, pinch, open-palm
+          return, horizontal sweep, orbit, pan, depth zoom, and release with the
+          production recognizers.
         </p>
       </section>
 

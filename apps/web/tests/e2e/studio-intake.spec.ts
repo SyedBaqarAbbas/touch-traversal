@@ -4,6 +4,7 @@ import graph from "../../public/data/graph.json";
 import layouts from "../../public/data/layouts.json";
 import manifest from "../../public/data/manifest.json";
 import report from "../../public/data/pipeline-report.json";
+import linearProjectSession from "../../public/examples/touch-traversal-linear-project.json";
 import rawGestureFixtures from "../fixtures/gesture-fixtures.json";
 import {
   expandGestureFixtures,
@@ -54,6 +55,13 @@ async function pointHandCursorAtNode(page: Page, title: string): Promise<void> {
     name: `Select ${title}`,
     exact: true,
   });
+  await node.evaluate(
+    (element) =>
+      new Promise<void>((resolve) => {
+        element.scrollIntoView({ block: "nearest", inline: "center" });
+        requestAnimationFrame(() => resolve());
+      }),
+  );
   const box = await node.boundingBox();
   if (!box) throw new Error(`Could not locate gesture target ${title}`);
   const pointing = findGestureFixture(gestureFixtures, "pointing").frames[0]!;
@@ -645,6 +653,13 @@ test("private export downloads, reload clears memory, and the download imports a
   page,
 }) => {
   await page.goto("/demo");
+  await page.getByText("JSON format + example", { exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "download full JSON Schema" }),
+  ).toHaveAttribute("href", "/examples/personal-graph-session.schema.json");
+  await expect(
+    page.getByRole("link", { name: "download Linear project graph" }),
+  ).toHaveAttribute("href", "/examples/touch-traversal-linear-project.json");
   await page.getByLabel("Import private graph JSON").setInputFiles({
     name: "private-session.json",
     mimeType: "application/json",
@@ -683,6 +698,46 @@ test("private export downloads, reload clears memory, and the download imports a
   await expect(
     page.locator(`[data-scene-node-id="${graph.nodes[0]!.id}"]`),
   ).toBeVisible();
+});
+
+test("the Linear project example imports and traverses a dependency", async ({
+  page,
+}) => {
+  await page.goto("/demo?input=mouse");
+  await page.getByLabel("Import private graph JSON").setInputFiles({
+    name: "touch-traversal-linear-project.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(linearProjectSession)),
+  });
+
+  await expect(page.getByRole("status")).toContainText(
+    "Imported 9 nodes into memory",
+  );
+  await expect(
+    page.getByRole("button", { name: "personal", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText(/9 thoughts and 24 relationships/)).toBeVisible();
+
+  await page
+    .getByRole("button", {
+      name: "Select Choose and implement the local personal-ingestion architecture",
+    })
+    .click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+  await page
+    .getByRole("button", {
+      name: "Select Add browser file and folder intake with private corpus preview",
+    })
+    .click();
+  await expect(page.getByText("traversing / focus")).toBeVisible();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Add browser file and folder intake with private corpus preview",
+  );
 });
 
 test("folder-shaped drop keeps relative paths ordered and reports exclusions", async ({

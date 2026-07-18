@@ -57,6 +57,13 @@ const artifactPaths = {
   report: publicAssetUrl("/data/pipeline-report.json"),
 } as const;
 
+const personalGraphExamplePaths = {
+  schema: publicAssetUrl("/examples/personal-graph-session.schema.json"),
+  linearProject: publicAssetUrl(
+    "/examples/touch-traversal-linear-project.json",
+  ),
+} as const;
+
 export async function loadArtifactModel(
   fetcher: typeof fetch = fetch,
 ): Promise<GraphModel> {
@@ -282,6 +289,47 @@ function ArtifactSourceControls({
           void importPersonal(event.currentTarget.files?.[0])
         }
       />
+      <details className="artifact-source-controls__format">
+        <summary>JSON format + example</summary>
+        <div className="artifact-source-controls__format-panel">
+          <p>
+            Import a version 1 session envelope up to 32 MiB. It must contain
+            session metadata and one validated bundle with graph, layouts,
+            manifest, and report artifacts.
+          </p>
+          <p className="artifact-source-controls__format-caption">
+            Abbreviated envelope shape; use the full schema or ready-to-import
+            example below.
+          </p>
+          <pre>{`{
+  "sessionVersion": 1,
+  "metadata": {
+    "id": "my-graph",
+    "createdAt": "2026-07-18T12:00:00.000Z",
+    "noteCount": 2
+  },
+  "bundle": {
+    "graph": { "schemaVersion": 1, "nodes": [], "edges": [] },
+    "layouts": { "version": 1, "bounds": {}, "layouts": {} },
+    "manifest": { "schemaVersion": 1 },
+    "report": { "schemaVersion": 1 }
+  }
+}`}</pre>
+          <p>
+            Node IDs must be unique. Every edge endpoint and every position in
+            the semantic, clusters, temporal, and force layouts must use those
+            same node IDs. Counts must agree across the bundle.
+          </p>
+          <div className="artifact-source-controls__format-links">
+            <a href={personalGraphExamplePaths.schema} download>
+              download full JSON Schema
+            </a>
+            <a href={personalGraphExamplePaths.linearProject} download>
+              download Linear project graph
+            </a>
+          </div>
+        </div>
+      </details>
       {snapshot.personal ? (
         <>
           <button type="button" onClick={exportPersonal}>

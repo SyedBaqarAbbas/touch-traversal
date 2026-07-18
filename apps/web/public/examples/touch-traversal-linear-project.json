@@ -1,0 +1,736 @@
+{
+  "sessionVersion": 1,
+  "metadata": {
+    "sessionVersion": 1,
+    "id": "linear-touch-traversal-personal-graph-studio",
+    "origin": "generated",
+    "createdAt": "2026-07-18T12:00:00.000Z",
+    "noteCount": 9,
+    "nodeCount": 9,
+    "edgeCount": 24,
+    "corpusName": "Touch Traversal — Personal Graph Studio"
+  },
+  "bundle": {
+    "graph": {
+      "schemaVersion": 1,
+      "nodes": [
+        {
+          "id": "personal-graph-studio",
+          "title": "Touch Traversal — Personal Graph Studio",
+          "text": "Turn the static MVP into a private, guided, camera-first graph creation and performance experience. The project is organized around local ingestion, direct hand manipulation, webcam presentation, guided learning, privacy-safe export, and release hardening.",
+          "summary": "A private, guided, camera-first graph creation and performance experience.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/project/touch-traversal-personal-graph-studio-acb61546c231",
+            "documentId": "97122c01-98d8-43d0-9672-bb878a076f32",
+            "headingPath": ["Linear", "Projects"]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": ["project", "completed", "high-priority"],
+            "entities": ["Thought-traversal", "Touch Traversal"],
+            "wordCount": 33,
+            "importance": 1
+          },
+          "visual": {
+            "clusterId": "project",
+            "size": 1.55,
+            "baseOpacity": 0.75
+          }
+        },
+        {
+          "id": "THO-62",
+          "title": "Build a full-screen webcam graph performance mode",
+          "text": "High-priority completed feature. Build a full-screen webcam graph performance mode. This foundation blocks privacy-safe recording, the guided tutorial, and release hardening.",
+          "summary": "Full-screen camera presentation with the graph layered into the performance view.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-62/build-a-full-screen-webcam-graph-performance-mode",
+            "documentId": "THO-62",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Performance"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": ["feature", "done", "high-priority", "performance-mode"],
+            "entities": ["Webcam", "Touch Traversal"],
+            "wordCount": 23,
+            "importance": 0.9
+          },
+          "visual": {
+            "clusterId": "performance",
+            "size": 1.3,
+            "baseOpacity": 0.62
+          }
+        },
+        {
+          "id": "THO-63",
+          "title": "Choose and implement the local personal-ingestion architecture",
+          "text": "Urgent completed feature. Choose and implement the local personal-ingestion architecture. This foundation blocks browser intake, personal graph generation, and release hardening.",
+          "summary": "A local-first architecture for turning private notes into graph artifacts.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-63/choose-and-implement-the-local-personal-ingestion-architecture",
+            "documentId": "THO-63",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Ingestion"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": ["feature", "done", "urgent", "local-first"],
+            "entities": ["Personal ingestion", "Touch Traversal"],
+            "wordCount": 21,
+            "importance": 1
+          },
+          "visual": {
+            "clusterId": "ingestion",
+            "size": 1.4,
+            "baseOpacity": 0.68
+          }
+        },
+        {
+          "id": "THO-64",
+          "title": "Add direct hand manipulation for orbit, pan, and zoom",
+          "text": "High-priority completed feature. Add direct hand manipulation for orbit, pan, and zoom. This interaction layer blocks guided coaching and release hardening.",
+          "summary": "Gesture-driven orbit, pan, and zoom with accessible non-camera fallbacks.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-64/add-direct-hand-manipulation-for-orbit-pan-and-zoom",
+            "documentId": "THO-64",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Interaction"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": ["feature", "done", "high-priority", "gestures"],
+            "entities": ["Hand tracking", "Touch Traversal"],
+            "wordCount": 22,
+            "importance": 0.9
+          },
+          "visual": {
+            "clusterId": "interaction",
+            "size": 1.3,
+            "baseOpacity": 0.62
+          }
+        },
+        {
+          "id": "THO-65",
+          "title": "Add privacy-safe local recording and export for performance mode",
+          "text": "Medium-priority completed feature. Add privacy-safe local recording and export for performance mode. It depends on the full-screen webcam mode and blocks tutorial and release work.",
+          "summary": "Explicit local recording, download, and discard controls for performances.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-65/add-privacy-safe-local-recording-and-export-for-performance-mode",
+            "documentId": "THO-65",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Performance"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": [
+              "feature",
+              "done",
+              "medium-priority",
+              "recording",
+              "privacy"
+            ],
+            "entities": ["Recording", "Webcam", "Touch Traversal"],
+            "wordCount": 26,
+            "importance": 0.7
+          },
+          "visual": {
+            "clusterId": "performance",
+            "size": 1.12,
+            "baseOpacity": 0.55
+          }
+        },
+        {
+          "id": "THO-66",
+          "title": "Add browser file and folder intake with private corpus preview",
+          "text": "High-priority completed feature. Add browser file and folder intake with a private corpus preview. It depends on local ingestion and blocks personal graph generation, the tutorial, and release hardening.",
+          "summary": "Private browser intake with exclusions, limits, and a review step before processing.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-66/add-browser-file-and-folder-intake-with-private-corpus-preview",
+            "documentId": "THO-66",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Ingestion"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": [
+              "feature",
+              "done",
+              "high-priority",
+              "file-intake",
+              "privacy"
+            ],
+            "entities": [
+              "Browser files",
+              "Personal ingestion",
+              "Touch Traversal"
+            ],
+            "wordCount": 29,
+            "importance": 0.9
+          },
+          "visual": {
+            "clusterId": "ingestion",
+            "size": 1.3,
+            "baseOpacity": 0.62
+          }
+        },
+        {
+          "id": "THO-67",
+          "title": "Generate, validate, and load personal graph sessions without manual CLI steps",
+          "text": "Urgent completed feature. Generate, validate, and load personal graph sessions without manual CLI steps. It depends on the ingestion architecture and browser intake, and blocks tutorial and release work.",
+          "summary": "One guided browser-to-local-pipeline flow that activates a validated in-memory graph.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-67/generate-validate-and-load-personal-graph-sessions-without-manual-cli",
+            "documentId": "THO-67",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Ingestion"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": ["feature", "done", "urgent", "session"],
+            "entities": [
+              "Graph session",
+              "Personal ingestion",
+              "Touch Traversal"
+            ],
+            "wordCount": 29,
+            "importance": 1
+          },
+          "visual": {
+            "clusterId": "ingestion",
+            "size": 1.4,
+            "baseOpacity": 0.68
+          }
+        },
+        {
+          "id": "THO-68",
+          "title": "Create first-run tutorial, contextual coaching, and replayable help",
+          "text": "High-priority completed feature. Create a first-run tutorial, contextual coaching, and replayable help. It integrates performance, recording, ingestion, session generation, and direct hand manipulation before release.",
+          "summary": "An interactive guide for graph concepts, controls, gestures, privacy, and recovery.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-68/create-first-run-tutorial-contextual-coaching-and-replayable-help",
+            "documentId": "THO-68",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Guidance"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": [
+              "feature",
+              "done",
+              "high-priority",
+              "tutorial",
+              "accessibility"
+            ],
+            "entities": ["Tutorial", "Hand tracking", "Touch Traversal"],
+            "wordCount": 27,
+            "importance": 0.9
+          },
+          "visual": {
+            "clusterId": "guidance",
+            "size": 1.3,
+            "baseOpacity": 0.62
+          }
+        },
+        {
+          "id": "THO-69",
+          "title": "Harden and release Personal Graph Studio across privacy, accessibility, browsers, and performance",
+          "text": "High-priority completed feature. Harden and release Personal Graph Studio across privacy, accessibility, browsers, and performance. This final integration issue depends on every earlier project feature.",
+          "summary": "Cross-browser, privacy, accessibility, and performance verification for release.",
+          "source": {
+            "path": "https://linear.app/thought-traversal/issue/THO-69/harden-and-release-personal-graph-studio-across-privacy-accessibility",
+            "documentId": "THO-69",
+            "headingPath": [
+              "Touch Traversal — Personal Graph Studio",
+              "Release"
+            ]
+          },
+          "metadata": {
+            "createdAt": "2026-07-18T12:00:00.000Z",
+            "modifiedAt": "2026-07-18T12:00:00.000Z",
+            "tags": ["feature", "done", "high-priority", "release"],
+            "entities": ["Personal Graph Studio", "Touch Traversal"],
+            "wordCount": 25,
+            "importance": 0.95
+          },
+          "visual": {
+            "clusterId": "release",
+            "size": 1.38,
+            "baseOpacity": 0.68
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "project-contains-THO-62",
+          "source": "personal-graph-studio",
+          "target": "THO-62",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-62 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "performance"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "project-contains-THO-63",
+          "source": "personal-graph-studio",
+          "target": "THO-63",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-63 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "ingestion"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "project-contains-THO-64",
+          "source": "personal-graph-studio",
+          "target": "THO-64",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-64 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "interaction"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "project-contains-THO-65",
+          "source": "personal-graph-studio",
+          "target": "THO-65",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-65 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "recording"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "project-contains-THO-66",
+          "source": "personal-graph-studio",
+          "target": "THO-66",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-66 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "intake"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "project-contains-THO-67",
+          "source": "personal-graph-studio",
+          "target": "THO-67",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-67 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "session"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "project-contains-THO-68",
+          "source": "personal-graph-studio",
+          "target": "THO-68",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-68 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "tutorial"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "project-contains-THO-69",
+          "source": "personal-graph-studio",
+          "target": "THO-69",
+          "directed": true,
+          "type": "structural",
+          "weight": 0.72,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-69 belongs to Touch Traversal — Personal Graph Studio.",
+            "sharedTerms": ["project", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.36, "width": 0.8 }
+        },
+        {
+          "id": "blocks-THO-62-THO-65",
+          "source": "THO-62",
+          "target": "THO-65",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-62 blocks THO-65 in Linear.",
+            "sharedTerms": ["blocks", "performance mode"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-62-THO-68",
+          "source": "THO-62",
+          "target": "THO-68",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-62 blocks THO-68 in Linear.",
+            "sharedTerms": ["blocks", "performance mode"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-62-THO-69",
+          "source": "THO-62",
+          "target": "THO-69",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-62 blocks THO-69 in Linear.",
+            "sharedTerms": ["blocks", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-63-THO-66",
+          "source": "THO-63",
+          "target": "THO-66",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-63 blocks THO-66 in Linear.",
+            "sharedTerms": ["blocks", "ingestion"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-63-THO-67",
+          "source": "THO-63",
+          "target": "THO-67",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-63 blocks THO-67 in Linear.",
+            "sharedTerms": ["blocks", "personal graph"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-63-THO-69",
+          "source": "THO-63",
+          "target": "THO-69",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-63 blocks THO-69 in Linear.",
+            "sharedTerms": ["blocks", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-64-THO-68",
+          "source": "THO-64",
+          "target": "THO-68",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-64 blocks THO-68 in Linear.",
+            "sharedTerms": ["blocks", "gestures"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-64-THO-69",
+          "source": "THO-64",
+          "target": "THO-69",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-64 blocks THO-69 in Linear.",
+            "sharedTerms": ["blocks", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-65-THO-68",
+          "source": "THO-65",
+          "target": "THO-68",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-65 blocks THO-68 in Linear.",
+            "sharedTerms": ["blocks", "recording"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-65-THO-69",
+          "source": "THO-65",
+          "target": "THO-69",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-65 blocks THO-69 in Linear.",
+            "sharedTerms": ["blocks", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-66-THO-67",
+          "source": "THO-66",
+          "target": "THO-67",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-66 blocks THO-67 in Linear.",
+            "sharedTerms": ["blocks", "personal graph"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-66-THO-68",
+          "source": "THO-66",
+          "target": "THO-68",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-66 blocks THO-68 in Linear.",
+            "sharedTerms": ["blocks", "tutorial"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-66-THO-69",
+          "source": "THO-66",
+          "target": "THO-69",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-66 blocks THO-69 in Linear.",
+            "sharedTerms": ["blocks", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-67-THO-68",
+          "source": "THO-67",
+          "target": "THO-68",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-67 blocks THO-68 in Linear.",
+            "sharedTerms": ["blocks", "session"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-67-THO-69",
+          "source": "THO-67",
+          "target": "THO-69",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-67 blocks THO-69 in Linear.",
+            "sharedTerms": ["blocks", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        },
+        {
+          "id": "blocks-THO-68-THO-69",
+          "source": "THO-68",
+          "target": "THO-69",
+          "directed": true,
+          "type": "explicit",
+          "weight": 0.95,
+          "confidence": 1,
+          "evidence": {
+            "description": "THO-68 blocks THO-69 in Linear.",
+            "sharedTerms": ["blocks", "release"],
+            "sharedEntities": ["Touch Traversal"]
+          },
+          "visual": { "opacity": 0.7, "width": 1.3 }
+        }
+      ]
+    },
+    "layouts": {
+      "version": 1,
+      "bounds": {
+        "min": [-1, -1, -1],
+        "max": [1, 1, 1]
+      },
+      "layouts": {
+        "semantic": {
+          "personal-graph-studio": [0, 0, 0],
+          "THO-62": [-0.7, 0.42, 0],
+          "THO-63": [-0.7, -0.42, 0],
+          "THO-64": [-0.28, 0.7, 0],
+          "THO-65": [-0.14, 0.28, 0],
+          "THO-66": [-0.14, -0.28, 0],
+          "THO-67": [0.28, -0.28, 0],
+          "THO-68": [0.42, 0.28, 0],
+          "THO-69": [0.84, 0, 0]
+        },
+        "clusters": {
+          "personal-graph-studio": [0, 0, 0],
+          "THO-62": [-0.7, 0.56, 0],
+          "THO-63": [-0.7, -0.56, 0],
+          "THO-64": [-0.14, 0.56, 0],
+          "THO-65": [-0.7, 0.14, 0],
+          "THO-66": [-0.28, -0.56, 0],
+          "THO-67": [0.14, -0.56, 0],
+          "THO-68": [0.28, 0.28, 0],
+          "THO-69": [0.84, 0, 0]
+        },
+        "temporal": {
+          "personal-graph-studio": [-0.96, 0, 0],
+          "THO-62": [-0.72, 0.36, 0],
+          "THO-63": [-0.72, -0.36, 0],
+          "THO-64": [-0.72, 0, 0],
+          "THO-65": [-0.24, 0.48, 0],
+          "THO-66": [-0.24, -0.36, 0],
+          "THO-67": [0.12, -0.36, 0],
+          "THO-68": [0.36, 0.24, 0],
+          "THO-69": [0.84, 0, 0]
+        },
+        "force": {
+          "personal-graph-studio": [-0.14, 0, 0],
+          "THO-62": [-0.56, 0.42, 0.14],
+          "THO-63": [-0.56, -0.42, -0.14],
+          "THO-64": [-0.28, 0.7, -0.14],
+          "THO-65": [-0.14, 0.28, 0.14],
+          "THO-66": [-0.14, -0.28, 0.14],
+          "THO-67": [0.28, -0.28, -0.14],
+          "THO-68": [0.42, 0.28, 0.14],
+          "THO-69": [0.84, 0, 0]
+        }
+      }
+    },
+    "manifest": {
+      "schemaVersion": 1,
+      "generatedAt": "2026-07-18T12:00:00.000Z",
+      "corpusName": "Touch Traversal — Personal Graph Studio",
+      "nodeCount": 9,
+      "edgeCount": 24,
+      "embeddingModel": "linear-project-relationships",
+      "pipelineConfigHash": "linear-live-snapshot-2026-07-18"
+    },
+    "report": {
+      "schemaVersion": 1,
+      "generatedAt": "2026-07-18T12:00:00.000Z",
+      "fileCount": 9,
+      "chunkCount": 9,
+      "nodeCount": 9,
+      "edgeCount": 24,
+      "edgeCounts": {
+        "explicit": 16,
+        "structural": 8,
+        "semantic": 0,
+        "temporal": 0,
+        "entity": 0,
+        "manual": 0
+      },
+      "isolatedNodeCount": 0,
+      "averageDegree": 5.333333333333333,
+      "clusterCount": 6,
+      "similarityDistribution": {
+        "count": 0
+      },
+      "buildDurationMs": 0,
+      "warnings": [
+        "Generated from the Linear project and dependency snapshot available on 2026-07-18; issue descriptions are concise summaries rather than private note content."
+      ]
+    }
+  }
+}

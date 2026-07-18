@@ -242,6 +242,36 @@ export function buildFocusSceneNodes(
   });
 }
 
+export function selectNearbySceneNodes(
+  nodes: readonly SceneNode[],
+  anchorNodeId: string | null = null,
+  limit = 5,
+): SceneNode[] {
+  const anchorPosition =
+    nodes.find((node) => node.id === anchorNodeId)?.position ??
+    ([0, 0, 0] as Vec3);
+  const normalizedLimit = Number.isFinite(limit)
+    ? Math.max(0, Math.floor(limit))
+    : 0;
+
+  return nodes
+    .filter((node) => node.visible === 1 && node.selectable === 1)
+    .map((node) => ({
+      distanceSquared:
+        (node.position[0] - anchorPosition[0]) ** 2 +
+        (node.position[1] - anchorPosition[1]) ** 2 +
+        (node.position[2] - anchorPosition[2]) ** 2,
+      node,
+    }))
+    .sort(
+      (left, right) =>
+        left.distanceSquared - right.distanceSquared ||
+        left.node.id.localeCompare(right.node.id),
+    )
+    .slice(0, normalizedLimit)
+    .map(({ node }) => node);
+}
+
 export function rankTraversableNeighbors(
   model: GraphModel,
   selectedNodeId: string | null,

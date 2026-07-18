@@ -28,12 +28,18 @@ import {
   createInjectedCalibrationHand,
   defaultHandCalibrationSettings,
   loadHandCalibrationSettings,
+  manipulationConfigFromCalibration,
   resetHandCalibrationSettings,
   saveHandCalibrationSettings,
   summarizeCalibrationHand,
   HAND_CALIBRATION_STORAGE_KEY,
   type HandCalibrationSettings,
 } from "@/lib/hand-calibration";
+import {
+  buildHandGestureCalibrationSteps,
+  createHandGestureCalibrationState,
+  updateHandGestureCalibration,
+} from "@/lib/hand-gesture-calibration";
 import { extractHandSignal, smoothHandSignal } from "@/lib/hand-signals";
 import {
   createHandTrackingWorkerController,
@@ -85,6 +91,9 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
       settings: defaultHandCalibrationSettings,
     })?.signal ?? null,
   );
+  const [gestureCalibration, setGestureCalibration] = useState(
+    createHandGestureCalibrationState,
+  );
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const workerRef = useRef<HandTrackingWorkerController | null>(null);
@@ -93,6 +102,8 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
   const cameraRequestRef = useRef(0);
   const mountedRef = useRef(true);
   const signalRef = useRef(latestSignal);
+  const settingsRef = useRef(settings);
+  const gestureCalibrationRef = useRef(gestureCalibration);
   const injectedHand = useMemo(() => createInjectedCalibrationHand(), []);
   const displayHand = latestHand ?? injectedHand;
   const summary = useMemo(
@@ -108,6 +119,10 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
     cameraStatus: cameraState.status,
     settings,
     signal: cameraState.status === "active" && latestHand ? latestSignal : null,
+  });
+  const gestureSteps = buildHandGestureCalibrationSteps({
+    cameraStatus: cameraState.status,
+    state: gestureCalibration,
   });
   const copy = cameraAccessCopy(cameraState);
   const heading =
@@ -135,6 +150,9 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
     setLatestHand(null);
     setLatestSignal(fallbackSignal);
     signalRef.current = fallbackSignal;
+    const resetGestureCalibration = createHandGestureCalibrationState();
+    gestureCalibrationRef.current = resetGestureCalibration;
+    setGestureCalibration(resetGestureCalibration);
   }, [injectedHand, settings]);
 
   const stopWithCameraEvent = useCallback(
@@ -153,6 +171,10 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
     });
     return () => window.cancelAnimationFrame(frameId);
   }, []);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -255,6 +277,16 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
               onResult: (message) => {
                 const hand = message.hands[0] ?? null;
                 setLatestHand(hand);
+                const gestureUpdate = updateHandGestureCalibration(
+                  gestureCalibrationRef.current,
+                  {
+                    hand,
+                    timestampMs: message.timestampMs,
+                  },
+                  manipulationConfigFromCalibration(settingsRef.current),
+                );
+                gestureCalibrationRef.current = gestureUpdate;
+                setGestureCalibration(gestureUpdate);
                 if (!hand) {
                   return;
                 }
@@ -318,9 +350,10 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
         </p>
         <h2 id={`${mode}-hand-calibration-title`}>{heading}</h2>
         <p>
-          Verify framing, fingertip mapping, pinch thresholds, and a comfortable
-          depth range locally. Video frames stay in this browser and are never
-          uploaded.
+          Verify framing and thresholds, then rehearse every live graph gesture
+          with the same production recognizers—including horizontal topology
+          sweeps and direct orbit, pan, and depth zoom. Video frames stay in
+          this browser and are never uploaded.
         </p>
       </div>
 
@@ -386,6 +419,21 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
               </li>
             ))}
           </ol>
+          <h3>Live gesture rehearsal</h3>
+          <ol aria-label="Live gesture calibration checklist">
+            {gestureSteps.map((step) => (
+              <li data-step-state={step.state} key={step.id}>
+                <span>
+                  {step.state}
+                  {step.state === "active" && step.progress > 0
+                    ? ` · ${Math.round(step.progress * 100)}%`
+                    : ""}
+                </span>
+                <strong>{step.title}</strong>
+                <p>{step.detail}</p>
+              </li>
+            ))}
+          </ol>
         </article>
 
         <article className="hand-calibration-metrics">
@@ -416,6 +464,18 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
             <Metric
               label="depth range"
               value={settings.depthRangeRatio.toFixed(2)}
+            />
+            <Metric
+              label="open palm hold"
+              value={`${Math.round(gestureCalibration.feedback.openPalmProgress * 100)}%`}
+            />
+            <Metric
+              label="horizontal sweep"
+              value={`${Math.round(gestureCalibration.feedback.swipeProgress * 100)}%`}
+            />
+            <Metric
+              label="gestures passed"
+              value={`${gestureCalibration.completed.length}/${gestureSteps.length}`}
             />
             <Metric label="mirrored" value={settings.mirrored ? "yes" : "no"} />
           </dl>
@@ -468,6 +528,17 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
             </button>
             <button onClick={resetSettings} type="button">
               reset calibration
+            </button>
+            <button
+              onClick={() => {
+                const resetGestureCalibration =
+                  createHandGestureCalibrationState();
+                gestureCalibrationRef.current = resetGestureCalibration;
+                setGestureCalibration(resetGestureCalibration);
+              }}
+              type="button"
+            >
+              reset gesture rehearsal
             </button>
           </div>
         </article>

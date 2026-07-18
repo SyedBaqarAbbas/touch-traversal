@@ -81,6 +81,11 @@ describe("web application contract", () => {
     expect(graphScene).not.toContain("#fff1b8");
     expect(graphScene).toContain("vec3 clusterA = vec3(0.76, 0.75, 0.70)");
     expect(graphScene).toContain("vec3 clusterB = vec3(0.66, 0.65, 0.61)");
+    expect(graphScene).toContain("instanceHover * 0.72");
+    expect(graphScene).toContain("vec3(1.0, 1.0, 1.0), instanceHover * 0.86");
+    expect(graphScene).toContain(
+      "vec3(1.0, 0.98, 0.90), instanceSelected * 0.68",
+    );
   });
 
   it("defines graceful demo intro and failure transition surfaces", () => {
