@@ -11,14 +11,14 @@ sample: true
 
 # Field Note — 14 April 2026
 
-## Observation
+## Feedback breaks the stalemate
 
 In a fictional afternoon trial, the first participant paused at the overview because every point
 seemed equally important. Once the pointer caused a nearby title and two strong relationships to
 brighten, the task became obvious. The participant moved toward the response before reading the
 instruction a second time.
 
-## Reflection
+## Calm still acknowledges action
 
 Calm does not mean withholding all feedback. The graph needs a small immediate acknowledgment,
 followed by slower contextual motion. That sequence belongs in [[Quiet Constellations]] and should

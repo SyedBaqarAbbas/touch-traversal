@@ -8,6 +8,7 @@ import {
   parseArtifactBundle,
 } from "@/lib/artifacts/schema";
 import { buildGraphModel, type GraphModel } from "@/lib/graph-model";
+import { recordingModeEnabled } from "@/lib/recording-mode";
 
 type ArtifactLoadState =
   | { status: "loading" }
@@ -110,7 +111,7 @@ export function resolveArtifactViewState(
 
 export function ArtifactBoundary() {
   const [state, setState] = useState<ArtifactLoadState>({ status: "loading" });
-  const inputMode = useInputMode();
+  const { inputMode, recordingMode } = useDemoOptions();
 
   useEffect(() => {
     let active = true;
@@ -136,23 +137,33 @@ export function ArtifactBoundary() {
   if (viewState.kind !== "ready") {
     return <ArtifactStatusScreen state={viewState} />;
   }
-  return <GraphScene inputMode={inputMode} model={viewState.model} />;
+  return (
+    <GraphScene
+      inputMode={inputMode}
+      model={viewState.model}
+      recordingMode={recordingMode}
+    />
+  );
 }
 
-function useInputMode(): GraphInputMode {
+function useDemoOptions(): {
+  inputMode: GraphInputMode;
+  recordingMode: boolean;
+} {
   const search = useSyncExternalStore(
     subscribeToLocationSearch,
     getLocationSearch,
     getServerLocationSearch,
   );
   const input = new URLSearchParams(search).get("input");
+  const recordingMode = recordingModeEnabled(search);
   if (input === "mouse") {
-    return "mouse";
+    return { inputMode: "mouse", recordingMode };
   }
   if (input === "gesture-fixture") {
-    return "gesture-fixture";
+    return { inputMode: "gesture-fixture", recordingMode };
   }
-  return "default";
+  return { inputMode: "default", recordingMode };
 }
 
 function subscribeToLocationSearch(onChange: () => void) {

@@ -20,3 +20,10 @@ If temporal coverage is insufficient, the temporal button is disabled and the HU
 | `Escape` | Return from focus to overview. |
 
 Mouse controls mirror the same topology modes through the sparse top-right HUD.
+
+## Recording take
+
+`/demo?recording=1` runs one deterministic 25-second take: constellation reveal, local hand
+acquisition cue, selection, traversal, return with a community-topology morph, and a quiet closing
+beat. The route removes navigation, node-rail, performance, and timing diagnostics from the frame.
+Camera activation remains an explicit secondary control, and the take does not use audio.

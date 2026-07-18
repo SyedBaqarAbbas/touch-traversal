@@ -11,14 +11,14 @@ sample: true
 
 # Gesture Thresholds
 
-## Classification note
+## Pinch is a transition
 
 A pinch should be treated as a short state transition, not a single-frame distance check. The
 fictional prototype enters a candidate state when thumb and index fingertips approach, confirms
 selection only after several stable frames, and requires a wider release distance before another
 pinch can begin. That hysteresis prevents noisy landmarks from producing repeated clicks.
 
-## Evaluation note
+## Thresholds across depth
 
 Thresholds should be recorded in normalized hand coordinates and tested across near, middle, and
 far camera positions. False activations matter more than shaving a few milliseconds from selection,

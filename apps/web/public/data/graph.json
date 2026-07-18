@@ -2,182 +2,1682 @@
   "schemaVersion": 1,
   "nodes": [
     {
-      "id": "thought-grounded-language",
-      "title": "Grounded language invention",
-      "text": "A grounded approach treats language as something invented from perception, action, and repeated local context.",
-      "summary": "Language invention starts from grounded perception and action.",
+      "id": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "title": "Continuity is the test",
+      "text": "The test is not whether the animation feels cinematic in isolation. It is whether someone can name\nthe selected thought before and after the movement, predict where a neighboring thought went, and\ncontinue the task without searching from the beginning. [[Quiet Constellations]] applies this rule\nto the visual system, and [[Wayfinding Study]] supplies observable navigation tasks. Reduced-motion\nbehavior should preserve the same information with shorter transitions and no ambient drift.",
+      "summary": "The test is not whether the animation feels cinematic in isolation. It is whether someone can name the selected thought before and after the movement, predict where a neighboring thought went, and…",
       "source": {
-        "path": "notes/language-invention.md",
-        "documentId": "language-invention",
-        "headingPath": ["Grounding"],
-        "startLine": 4,
-        "endLine": 8
+        "path": "learning/legibility-in-motion.md",
+        "documentId": "doc_00c9b0a359832bde7498",
+        "headingPath": [
+          "Legibility in Motion",
+          "Continuity is the test"
+        ],
+        "startLine": 23,
+        "endLine": 27
       },
       "metadata": {
-        "createdAt": "2026-07-10T09:00:00+00:00",
-        "modifiedAt": "2026-07-10T09:30:00+00:00",
-        "tags": ["language", "grounding"],
-        "entities": ["language", "perception"],
-        "wordCount": 15,
-        "importance": 1
+        "createdAt": "2026-04-10T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.282164Z",
+        "tags": [
+          "visual-design",
+          "motion",
+          "accessibility"
+        ],
+        "entities": [
+          "accessibility",
+          "motion",
+          "quiet constellations",
+          "visual-design",
+          "wayfinding study"
+        ],
+        "wordCount": 70,
+        "importance": 0.6363636363636364
       },
       "visual": {
-        "clusterId": "cluster-language",
+        "clusterId": "cluster_975c493614d16985",
+        "size": 1.309090909090909,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_2ec1a78acc3d23cb6994d581",
+      "title": "Returning to unfinished ideas",
+      "text": "A fictional design studio is testing whether a spatial map helps people return to an unfinished\nidea faster than a folder tree. The study begins with three ordinary tasks: locate an earlier\ndecision, explain why two notes are related, and resume a thread after a short interruption. The\nmap should reveal context gradually instead of presenting every label at once.",
+      "summary": "A fictional design studio is testing whether a spatial map helps people return to an unfinished idea faster than a folder tree. The study begins with three ordinary tasks: locate an earlier…",
+      "source": {
+        "path": "work/wayfinding-study.md",
+        "documentId": "doc_643aea368d77a1e063c4",
+        "headingPath": [
+          "Wayfinding Study",
+          "Returning to unfinished ideas"
+        ],
+        "startLine": 16,
+        "endLine": 19
+      },
+      "metadata": {
+        "createdAt": "2026-04-08T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.541612Z",
+        "tags": [
+          "design-research",
+          "navigation",
+          "prototype"
+        ],
+        "entities": [
+          "design-research",
+          "navigation",
+          "prototype"
+        ],
+        "wordCount": 60,
+        "importance": 0.5454545454545454
+      },
+      "visual": {
+        "clusterId": "cluster_9976b6d72917f885",
+        "size": 1.2363636363636363,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_3edaf77ef0f3fed43da90a5b",
+      "title": "Gesture states need release",
+      "text": "The interaction needs explicit begin, confirm, hold, and release states. [[Gesture Thresholds]] now\ncaptures that model, and [[Prototype Review]] will treat repeated activation as a blocking defect.\nThis entry follows [[Field Note — 14 April 2026]] so the eventual temporal topology has a small but\nmeaningful journal sequence to connect.",
+      "summary": "The interaction needs explicit begin, confirm, hold, and release states. [[Gesture Thresholds]] now captures that model, and [[Prototype Review]] will treat repeated activation as a blocking defect.…",
+      "source": {
+        "path": "journal/field-note-2026-04-24.md",
+        "documentId": "doc_b7d411b2bf6be5f9e164",
+        "headingPath": [
+          "Field Note — 24 April 2026",
+          "Gesture states need release"
+        ],
+        "startLine": 23,
+        "endLine": 26
+      },
+      "metadata": {
+        "createdAt": "2026-04-24T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.027175Z",
+        "tags": [
+          "journal",
+          "observation",
+          "gestures"
+        ],
+        "entities": [
+          "field note",
+          "field note — 14 april 2026",
+          "gesture thresholds",
+          "gestures",
+          "journal",
+          "observation",
+          "prototype review"
+        ],
+        "wordCount": 50,
+        "importance": 0.7272727272727273
+      },
+      "visual": {
+        "clusterId": "cluster_8a7feaf4e98e0595",
+        "size": 1.3818181818181818,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_3fd7a340613869143a53915f",
+      "title": "Constellations before filing",
+      "text": "A memory observatory is a place for looking across thoughts rather than filing them away. Notes\nappear as a quiet constellation whose lines have inspectable reasons: an explicit reference, a\nshared topic, a nearby date, or a structural relationship inside one document. The interface does\nnot claim to interpret a person's mind; it offers alternative arrangements of material they already\nwrote.",
+      "summary": "A memory observatory is a place for looking across thoughts rather than filing them away. Notes appear as a quiet constellation whose lines have inspectable reasons: an explicit reference, a shared…",
+      "source": {
+        "path": "ideas/memory-observatory.md",
+        "documentId": "doc_790a4d105974a686ffcb",
+        "headingPath": [
+          "Memory Observatory",
+          "Constellations before filing"
+        ],
+        "startLine": 16,
+        "endLine": 20
+      },
+      "metadata": {
+        "createdAt": "2026-04-03T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:01.636191Z",
+        "tags": [
+          "concept",
+          "knowledge-graph",
+          "spatial-interface"
+        ],
+        "entities": [
+          "concept",
+          "knowledge-graph",
+          "spatial-interface"
+        ],
+        "wordCount": 61,
+        "importance": 0.2727272727272727
+      },
+      "visual": {
+        "clusterId": "cluster_9976b6d72917f885",
+        "size": 1.0181818181818183,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_4a9e20e2796abd76390ad2ff",
+      "title": "Feedback breaks the stalemate",
+      "text": "In a fictional afternoon trial, the first participant paused at the overview because every point\nseemed equally important. Once the pointer caused a nearby title and two strong relationships to\nbrighten, the task became obvious. The participant moved toward the response before reading the\ninstruction a second time.",
+      "summary": "In a fictional afternoon trial, the first participant paused at the overview because every point seemed equally important. Once the pointer caused a nearby title and two strong relationships to…",
+      "source": {
+        "path": "journal/field-note-2026-04-14.md",
+        "documentId": "doc_f36faaae593536a334d7",
+        "headingPath": [
+          "Field Note — 14 April 2026",
+          "Feedback breaks the stalemate"
+        ],
+        "startLine": 16,
+        "endLine": 19
+      },
+      "metadata": {
+        "createdAt": "2026-04-14T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:01.898190Z",
+        "tags": [
+          "journal",
+          "observation",
+          "navigation"
+        ],
+        "entities": [
+          "journal",
+          "navigation",
+          "observation"
+        ],
+        "wordCount": 48,
+        "importance": 0.45454545454545453
+      },
+      "visual": {
+        "clusterId": "cluster_975c493614d16985",
+        "size": 1.1636363636363636,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_4ca454464334662859844679",
+      "title": "Pinch is a transition",
+      "text": "A pinch should be treated as a short state transition, not a single-frame distance check. The\nfictional prototype enters a candidate state when thumb and index fingertips approach, confirms\nselection only after several stable frames, and requires a wider release distance before another\npinch can begin. That hysteresis prevents noisy landmarks from producing repeated clicks.",
+      "summary": "A pinch should be treated as a short state transition, not a single-frame distance check. The fictional prototype enters a candidate state when thumb and index fingertips approach, confirms…",
+      "source": {
+        "path": "learning/gesture-thresholds.md",
+        "documentId": "doc_11766aace305b7f013a0",
+        "headingPath": [
+          "Gesture Thresholds",
+          "Pinch is a transition"
+        ],
+        "startLine": 16,
+        "endLine": 19
+      },
+      "metadata": {
+        "createdAt": "2026-04-17T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.153175Z",
+        "tags": [
+          "gestures",
+          "input",
+          "evaluation"
+        ],
+        "entities": [
+          "evaluation",
+          "gestures",
+          "input"
+        ],
+        "wordCount": 55,
+        "importance": 0.36363636363636365
+      },
+      "visual": {
+        "clusterId": "cluster_8a7feaf4e98e0595",
+        "size": 1.090909090909091,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_57776a5750c1dbb4e49f3442",
+      "title": "Thresholds across depth",
+      "text": "Thresholds should be recorded in normalized hand coordinates and tested across near, middle, and\nfar camera positions. False activations matter more than shaving a few milliseconds from selection,\nbut excessive dwell makes the graph feel unresponsive. Results feed into [[Prototype Review]], and\nthe informal observation in [[Field Note — 24 April 2026]] provides a scenario for replaying a slow,\ndeliberate pinch followed by an open-palm return.",
+      "summary": "Thresholds should be recorded in normalized hand coordinates and tested across near, middle, and far camera positions. False activations matter more than shaving a few milliseconds from selection,…",
+      "source": {
+        "path": "learning/gesture-thresholds.md",
+        "documentId": "doc_11766aace305b7f013a0",
+        "headingPath": [
+          "Gesture Thresholds",
+          "Thresholds across depth"
+        ],
+        "startLine": 23,
+        "endLine": 27
+      },
+      "metadata": {
+        "createdAt": "2026-04-17T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.153175Z",
+        "tags": [
+          "gestures",
+          "input",
+          "evaluation"
+        ],
+        "entities": [
+          "evaluation",
+          "field note",
+          "field note — 24 april 2026",
+          "gestures",
+          "input",
+          "prototype review"
+        ],
+        "wordCount": 66,
+        "importance": 0.45454545454545453
+      },
+      "visual": {
+        "clusterId": "cluster_8a7feaf4e98e0595",
+        "size": 1.1636363636363636,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_593024baf91914b5a7b6b7fc",
+      "title": "Gestures need rest states",
+      "text": "The fictional gesture rehearsal worked best when the participant could rest between actions. A\nslow pinch selected the intended thought, but keeping the fingers together while reading caused the\nearly classifier to fire twice. An open palm was easier to recognize after the hand moved back to a\nneutral distance from the camera.",
+      "summary": "The fictional gesture rehearsal worked best when the participant could rest between actions. A slow pinch selected the intended thought, but keeping the fingers together while reading caused the…",
+      "source": {
+        "path": "journal/field-note-2026-04-24.md",
+        "documentId": "doc_b7d411b2bf6be5f9e164",
+        "headingPath": [
+          "Field Note — 24 April 2026",
+          "Gestures need rest states"
+        ],
+        "startLine": 16,
+        "endLine": 19
+      },
+      "metadata": {
+        "createdAt": "2026-04-24T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.027175Z",
+        "tags": [
+          "journal",
+          "observation",
+          "gestures"
+        ],
+        "entities": [
+          "gestures",
+          "journal",
+          "observation"
+        ],
+        "wordCount": 53,
+        "importance": 0.36363636363636365
+      },
+      "visual": {
+        "clusterId": "cluster_8a7feaf4e98e0595",
+        "size": 1.090909090909091,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_5b5b1b207e14e4386612be20",
+      "title": "Topology without replacement",
+      "text": "Semantic, cluster, temporal, and force layouts are different explanations of the same material.\nTheir transitions should behave like a change of viewpoint, not a replacement scene. The continuity\nrule comes from [[Legibility in Motion]], while [[Memory Observatory]] supplies the broader mood.\nThe observation in [[Field Note — 14 April 2026]] is a reminder that calm pacing still needs a\nvisible response the instant the user acts.",
+      "summary": "Semantic, cluster, temporal, and force layouts are different explanations of the same material. Their transitions should behave like a change of viewpoint, not a replacement scene. The continuity…",
+      "source": {
+        "path": "ideas/quiet-constellations.md",
+        "documentId": "doc_4ada3ec24728f71ae916",
+        "headingPath": [
+          "Quiet Constellations",
+          "Topology without replacement"
+        ],
+        "startLine": 23,
+        "endLine": 27
+      },
+      "metadata": {
+        "createdAt": "2026-04-12T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:01.766806Z",
+        "tags": [
+          "visual-language",
+          "attention",
+          "topology"
+        ],
+        "entities": [
+          "attention",
+          "field note",
+          "field note — 14 april 2026",
+          "legibility in motion",
+          "memory observatory",
+          "topology",
+          "visual-language"
+        ],
+        "wordCount": 66,
+        "importance": 0.6363636363636364
+      },
+      "visual": {
+        "clusterId": "cluster_975c493614d16985",
+        "size": 1.309090909090909,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_6a58aeb6dfb3e2463a71f34c",
+      "title": "Identity survives motion",
+      "text": "Motion is useful when it preserves an object's identity across a change. A node that travels from\none topology to another should remain recognizable through position, brightness, and a continuous\npath. If labels flicker, edges redraw abruptly, or the camera moves at a competing speed, the viewer\nmust solve the interface again after every transition.",
+      "summary": "Motion is useful when it preserves an object's identity across a change. A node that travels from one topology to another should remain recognizable through position, brightness, and a continuous…",
+      "source": {
+        "path": "learning/legibility-in-motion.md",
+        "documentId": "doc_00c9b0a359832bde7498",
+        "headingPath": [
+          "Legibility in Motion",
+          "Identity survives motion"
+        ],
+        "startLine": 16,
+        "endLine": 19
+      },
+      "metadata": {
+        "createdAt": "2026-04-10T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.282164Z",
+        "tags": [
+          "visual-design",
+          "motion",
+          "accessibility"
+        ],
+        "entities": [
+          "accessibility",
+          "motion",
+          "visual-design"
+        ],
+        "wordCount": 55,
+        "importance": 0.36363636363636365
+      },
+      "visual": {
+        "clusterId": "cluster_975c493614d16985",
+        "size": 1.090909090909091,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_7a7f78d4434ff9e4d483fa41",
+      "title": "Contrast without clutter",
+      "text": "The graph should feel spacious even when many relationships exist. Most edges begin thin and dim;\nlabels wait until attention approaches; selected neighborhoods gain contrast without turning every\nother thought invisible. A dark field is useful only when it supports reading, so bloom, particles,\nand depth effects remain subordinate to node identity.",
+      "summary": "The graph should feel spacious even when many relationships exist. Most edges begin thin and dim; labels wait until attention approaches; selected neighborhoods gain contrast without turning every…",
+      "source": {
+        "path": "ideas/quiet-constellations.md",
+        "documentId": "doc_4ada3ec24728f71ae916",
+        "headingPath": [
+          "Quiet Constellations",
+          "Contrast without clutter"
+        ],
+        "startLine": 16,
+        "endLine": 19
+      },
+      "metadata": {
+        "createdAt": "2026-04-12T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:01.766806Z",
+        "tags": [
+          "visual-language",
+          "attention",
+          "topology"
+        ],
+        "entities": [
+          "attention",
+          "topology",
+          "visual-language"
+        ],
+        "wordCount": 52,
+        "importance": 0.45454545454545453
+      },
+      "visual": {
+        "clusterId": "cluster_975c493614d16985",
+        "size": 1.1636363636363636,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_8ce51b6821ab58919efbccf9",
+      "title": "Orientation before action",
+      "text": "The first view should invite orientation before action. Pointing reveals a title, selection gathers\nrelated thoughts, and traversal carries the camera along one explainable edge. The restrained visual\ntone is described in [[Quiet Constellations]]. [[Wayfinding Study]] turns this premise into tasks\nthat can fail clearly, keeping the idea grounded in navigation rather than spectacle.",
+      "summary": "The first view should invite orientation before action. Pointing reveals a title, selection gathers related thoughts, and traversal carries the camera along one explainable edge. The restrained…",
+      "source": {
+        "path": "ideas/memory-observatory.md",
+        "documentId": "doc_790a4d105974a686ffcb",
+        "headingPath": [
+          "Memory Observatory",
+          "Orientation before action"
+        ],
+        "startLine": 24,
+        "endLine": 27
+      },
+      "metadata": {
+        "createdAt": "2026-04-03T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:01.636191Z",
+        "tags": [
+          "concept",
+          "knowledge-graph",
+          "spatial-interface"
+        ],
+        "entities": [
+          "concept",
+          "knowledge-graph",
+          "quiet constellations",
+          "spatial-interface",
+          "wayfinding study"
+        ],
+        "wordCount": 54,
+        "importance": 0.6363636363636364
+      },
+      "visual": {
+        "clusterId": "cluster_9976b6d72917f885",
+        "size": 1.309090909090909,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_990dd9102a5132d8696f4455",
+      "title": "Observable wayfinding tasks",
+      "text": "Each participant first explores [[Memory Observatory]] with a mouse, then repeats the task while\nthe graph changes between semantic and temporal arrangements. Observers record hesitation,\nbacktracking, and accidental selections rather than asking whether the interface merely looks\ninteresting. [[Legibility in Motion]] defines the visual checks, while [[Prototype Review]] turns\nthe observations into the next build decisions.",
+      "summary": "Each participant first explores [[Memory Observatory]] with a mouse, then repeats the task while the graph changes between semantic and temporal arrangements. Observers record hesitation,…",
+      "source": {
+        "path": "work/wayfinding-study.md",
+        "documentId": "doc_643aea368d77a1e063c4",
+        "headingPath": [
+          "Wayfinding Study",
+          "Observable wayfinding tasks"
+        ],
+        "startLine": 23,
+        "endLine": 27
+      },
+      "metadata": {
+        "createdAt": "2026-04-08T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.541612Z",
+        "tags": [
+          "design-research",
+          "navigation",
+          "prototype"
+        ],
+        "entities": [
+          "design-research",
+          "legibility in motion",
+          "memory observatory",
+          "navigation",
+          "prototype",
+          "prototype review"
+        ],
+        "wordCount": 56,
+        "importance": 0.5454545454545454
+      },
+      "visual": {
+        "clusterId": "cluster_9976b6d72917f885",
+        "size": 1.2363636363636363,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_aae380b933bf466ac093a216",
+      "title": "Calm still acknowledges action",
+      "text": "Calm does not mean withholding all feedback. The graph needs a small immediate acknowledgment,\nfollowed by slower contextual motion. That sequence belongs in [[Quiet Constellations]] and should\nbe measured through [[Wayfinding Study]]. The next session will separate hover feedback from\nselection feedback so an exploratory point never looks like a committed navigation step.",
+      "summary": "Calm does not mean withholding all feedback. The graph needs a small immediate acknowledgment, followed by slower contextual motion. That sequence belongs in [[Quiet Constellations]] and should be…",
+      "source": {
+        "path": "journal/field-note-2026-04-14.md",
+        "documentId": "doc_f36faaae593536a334d7",
+        "headingPath": [
+          "Field Note — 14 April 2026",
+          "Calm still acknowledges action"
+        ],
+        "startLine": 23,
+        "endLine": 26
+      },
+      "metadata": {
+        "createdAt": "2026-04-14T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:01.898190Z",
+        "tags": [
+          "journal",
+          "observation",
+          "navigation"
+        ],
+        "entities": [
+          "journal",
+          "navigation",
+          "observation",
+          "quiet constellations",
+          "wayfinding study"
+        ],
+        "wordCount": 53,
+        "importance": 0.6363636363636364
+      },
+      "visual": {
+        "clusterId": "cluster_975c493614d16985",
+        "size": 1.309090909090909,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_b18a520af42910a64fa6fc63",
+      "title": "Context held through traversal",
+      "text": "The fictional review group could follow highlighted relationships when the selected thought stayed\nbright and the surrounding graph became quieter. They understood the [demo route](/demo) without a\ntour once the pointer, selection, and return actions used the same visual language. The strongest\nmoment was moving from [[Wayfinding Study]] into a related note without losing the prior location.",
+      "summary": "The fictional review group could follow highlighted relationships when the selected thought stayed bright and the surrounding graph became quieter. They understood the demo route without a tour once…",
+      "source": {
+        "path": "work/prototype-review.md",
+        "documentId": "doc_404c7aa87b5f978ded80",
+        "headingPath": [
+          "Prototype Review",
+          "Context held through traversal"
+        ],
+        "startLine": 16,
+        "endLine": 19
+      },
+      "metadata": {
+        "createdAt": "2026-04-22T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.413491Z",
+        "tags": [
+          "prototype",
+          "interaction",
+          "evaluation"
+        ],
+        "entities": [
+          "evaluation",
+          "interaction",
+          "prototype",
+          "wayfinding study"
+        ],
+        "wordCount": 57,
+        "importance": 0.6363636363636364
+      },
+      "visual": {
+        "clusterId": "cluster_9976b6d72917f885",
+        "size": 1.309090909090909,
+        "baseOpacity": 0.82
+      }
+    },
+    {
+      "id": "thought_dd7f9d7a5cb031caa9e555a9",
+      "title": "Slower intent, clearer motion",
+      "text": "Selection still felt too eager near dense clusters, and fast topology changes made labels difficult\nto reacquire. The next pass will use the measured boundaries in [[Gesture Thresholds]] and the\nmotion rules in [[Quiet Constellations]]. A successful revision should reduce accidental activation\nwithout making intentional traversal feel delayed or mechanical.",
+      "summary": "Selection still felt too eager near dense clusters, and fast topology changes made labels difficult to reacquire. The next pass will use the measured boundaries in [[Gesture Thresholds]] and the…",
+      "source": {
+        "path": "work/prototype-review.md",
+        "documentId": "doc_404c7aa87b5f978ded80",
+        "headingPath": [
+          "Prototype Review",
+          "Slower intent, clearer motion"
+        ],
+        "startLine": 23,
+        "endLine": 26
+      },
+      "metadata": {
+        "createdAt": "2026-04-22T00:00:00Z",
+        "modifiedAt": "2026-07-18T05:44:02.413491Z",
+        "tags": [
+          "prototype",
+          "interaction",
+          "evaluation"
+        ],
+        "entities": [
+          "evaluation",
+          "gesture thresholds",
+          "interaction",
+          "prototype",
+          "quiet constellations"
+        ],
+        "wordCount": 50,
+        "importance": 1.0
+      },
+      "visual": {
+        "clusterId": "cluster_975c493614d16985",
         "size": 1.6,
-        "baseOpacity": 0.82
-      }
-    },
-    {
-      "id": "thought-distributed-notes",
-      "title": "Distributed note topology",
-      "text": "A note graph stays legible when every thought is a node and every meaningful relation becomes an edge.",
-      "summary": "Thoughts become navigable when notes are connected by typed edges.",
-      "source": {
-        "path": "notes/topologies.md",
-        "documentId": "topologies",
-        "headingPath": ["Distributed mode"],
-        "startLine": 2,
-        "endLine": 7
-      },
-      "metadata": {
-        "createdAt": "2026-07-11T11:00:00+00:00",
-        "modifiedAt": "2026-07-11T12:15:00+00:00",
-        "tags": ["graphs", "notes"],
-        "entities": ["Graphology", "edges"],
-        "wordCount": 16,
-        "importance": 0.67
-      },
-      "visual": {
-        "clusterId": "cluster-language",
-        "size": 1.34,
-        "baseOpacity": 0.82
-      }
-    },
-    {
-      "id": "thought-gesture-traversal",
-      "title": "Gesture traversal",
-      "text": "A hand can pull related thoughts forward when traversal gestures map to selection, orbit, and focus intent.",
-      "summary": "Gestures turn the graph into a spatial traversal surface.",
-      "source": {
-        "path": "notes/gesture-traversal.md",
-        "documentId": "gesture-traversal",
-        "headingPath": ["Interaction"],
-        "startLine": 9,
-        "endLine": 14
-      },
-      "metadata": {
-        "createdAt": "2026-07-12T14:00:00+00:00",
-        "modifiedAt": "2026-07-12T14:40:00+00:00",
-        "tags": ["gesture", "traversal"],
-        "entities": ["hand tracking", "selection"],
-        "wordCount": 16,
-        "importance": 0.67
-      },
-      "visual": {
-        "clusterId": "cluster-interface",
-        "size": 1.34,
-        "baseOpacity": 0.82
-      }
-    },
-    {
-      "id": "thought-debug-evidence",
-      "title": "Debug evidence",
-      "text": "A separate diagnostics route keeps artifact statistics, raw node payloads, and relation evidence inspectable.",
-      "summary": "Diagnostics stay outside the cinematic traversal surface.",
-      "source": {
-        "path": "notes/debug-evidence.md",
-        "documentId": "debug-evidence",
-        "headingPath": ["Diagnostics"],
-        "startLine": 3,
-        "endLine": 6
-      },
-      "metadata": {
-        "createdAt": "2026-07-13T08:30:00+00:00",
-        "modifiedAt": "2026-07-13T09:10:00+00:00",
-        "tags": ["debug", "evidence"],
-        "entities": ["artifacts", "statistics"],
-        "wordCount": 13,
-        "importance": 0.33
-      },
-      "visual": {
-        "clusterId": "cluster-interface",
-        "size": 1.07,
         "baseOpacity": 0.82
       }
     }
   ],
   "edges": [
     {
-      "id": "edge-language-topology",
-      "source": "thought-grounded-language",
-      "target": "thought-distributed-notes",
-      "directed": false,
+      "id": "edge_8573b09529c87524b41ca6ec",
+      "source": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "target": "thought_2ec1a78acc3d23cb6994d581",
+      "directed": true,
       "type": "explicit",
-      "weight": 0.91,
-      "confidence": 1,
+      "weight": 1.0,
+      "confidence": 1.0,
       "evidence": {
-        "description": "The language note links to distributed note topology.",
-        "sharedTerms": ["language", "note"],
-        "sharedEntities": ["language"]
+        "description": "explicit: wiki link to \"Wayfinding Study\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
       },
       "visual": {
-        "opacity": 0.76,
-        "width": 1.6
+        "opacity": 0.9,
+        "width": 2.4
       }
     },
     {
-      "id": "edge-topology-gesture",
-      "source": "thought-distributed-notes",
-      "target": "thought-gesture-traversal",
+      "id": "edge_c88897d98cd8c0afed74a355",
+      "source": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "target": "thought_5b5b1b207e14e4386612be20",
       "directed": false,
       "type": "semantic",
-      "weight": 0.82,
-      "confidence": 0.86,
+      "weight": 0.4803157993579434,
+      "confidence": 1.0,
       "evidence": {
-        "description": "Both thoughts describe traversing a structured spatial graph.",
-        "sharedTerms": ["graph", "traversal"],
-        "sharedEntities": ["Graphology"],
-        "similarity": 0.82
+        "description": "semantic: cosine similarity 0.5671; mutual top-K neighbors",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": 0.5671052768860325,
+        "timeDistanceDays": null
       },
       "visual": {
-        "opacity": 0.68,
-        "width": 1.36
+        "opacity": 0.5622052695826631,
+        "width": 1.464568438844298
       }
     },
     {
-      "id": "edge-gesture-debug",
-      "source": "thought-gesture-traversal",
-      "target": "thought-debug-evidence",
+      "id": "edge_b2025519bf8869b69ebcd339",
+      "source": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "target": "thought_6a58aeb6dfb3e2463a71f34c",
       "directed": false,
       "type": "entity",
-      "weight": 0.66,
-      "confidence": 0.72,
+      "weight": 0.8999999999999999,
+      "confidence": 1.0,
       "evidence": {
-        "description": "Both thoughts discuss interaction evidence that needs inspection.",
-        "sharedTerms": ["evidence", "traversal"],
-        "sharedEntities": ["selection"]
+        "description": "structural: same document \"learning/legibility-in-motion.md\"; adjacent source sections; shared heading \"Legibility in Motion\" | entity: shared entities weighted by rarity: accessibility, motion, visual-design",
+        "sharedTerms": [
+          "Legibility in Motion"
+        ],
+        "sharedEntities": [
+          "accessibility",
+          "motion",
+          "visual-design"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
       },
       "visual": {
-        "opacity": 0.58,
-        "width": 1.08
+        "opacity": 0.835,
+        "width": 2.2199999999999998
       }
     },
     {
-      "id": "edge-language-debug-temporal",
-      "source": "thought-grounded-language",
-      "target": "thought-debug-evidence",
+      "id": "edge_c1eaae7b9305035e4ee52990",
+      "source": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "target": "thought_7a7f78d4434ff9e4d483fa41",
       "directed": true,
-      "type": "temporal",
-      "weight": 0.55,
-      "confidence": 0.7,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
       "evidence": {
-        "description": "The diagnostic note follows the language note in the sample timeline.",
-        "sharedTerms": ["thought", "note"],
-        "timeDistanceDays": 3
+        "description": "explicit: wiki link to \"Quiet Constellations\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
       },
       "visual": {
-        "opacity": 0.5,
-        "width": 0.96
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_22115f39469d69b524c2008a",
+      "source": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "target": "thought_8ce51b6821ab58919efbccf9",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.48,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "entity: shared entities weighted by rarity: quiet constellations, wayfinding study",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "quiet constellations",
+          "wayfinding study"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.562,
+        "width": 1.464
+      }
+    },
+    {
+      "id": "edge_f3e2542e0f2ea89e14939f41",
+      "source": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "target": "thought_aae380b933bf466ac093a216",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.48,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "entity: shared entities weighted by rarity: quiet constellations, wayfinding study",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "quiet constellations",
+          "wayfinding study"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.562,
+        "width": 1.464
+      }
+    },
+    {
+      "id": "edge_80b5529668e37c997a9189ec",
+      "source": "thought_1e0ded4b4b41aea2dd3ead7d",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.7432288478352224,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.4901; selected by one top-K neighborhood | entity: shared entities weighted by rarity: quiet constellations",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "quiet constellations"
+        ],
+        "similarity": 0.49012947864971007,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.7330987510928946,
+        "width": 1.9378119261034001
+      }
+    },
+    {
+      "id": "edge_7e60e734902c2fa83309cacf",
+      "source": "thought_2ec1a78acc3d23cb6994d581",
+      "target": "thought_4a9e20e2796abd76390ad2ff",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.8131985210113539,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.4873; mutual top-K neighbors | entity: shared entities weighted by rarity: navigation",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "navigation"
+        ],
+        "similarity": 0.48730958028322613,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.7785790386573801,
+        "width": 2.0637573378204372
+      }
+    },
+    {
+      "id": "edge_e24d294d9c95d65c0c36e772",
+      "source": "thought_2ec1a78acc3d23cb6994d581",
+      "target": "thought_990dd9102a5132d8696f4455",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.8999999999999999,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "structural: same document \"work/wayfinding-study.md\"; adjacent source sections; shared heading \"Wayfinding Study\" | entity: shared entities weighted by rarity: design-research, navigation, prototype",
+        "sharedTerms": [
+          "Wayfinding Study"
+        ],
+        "sharedEntities": [
+          "design-research",
+          "navigation",
+          "prototype"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.835,
+        "width": 2.2199999999999998
+      }
+    },
+    {
+      "id": "edge_1d03cc056963f3773a288c19",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_4a9e20e2796abd76390ad2ff",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Field Note — 14 April 2026\" | entity: shared entities weighted by rarity: journal, observation",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "journal",
+          "observation"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_f0f372b5f54c57bf4d662907",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_4ca454464334662859844679",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Gesture Thresholds\" | semantic: cosine similarity 0.5534; mutual top-K neighbors | entity: shared entities weighted by rarity: gestures",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "gestures"
+        ],
+        "similarity": 0.5534215048072154,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_e861dc91f84d04a0daea052d",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_57776a5750c1dbb4e49f3442",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.9357382286881764,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5330; mutual top-K neighbors | entity: shared entities weighted by rarity: field note, gestures, prototype review",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "field note",
+          "gestures",
+          "prototype review"
+        ],
+        "similarity": 0.5329697620669116,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.8582298486473147,
+        "width": 2.2843288116387175
+      }
+    },
+    {
+      "id": "edge_9bbd962f98d2f946cea1e465",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_593024baf91914b5a7b6b7fc",
+      "directed": false,
+      "type": "entity",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.4990; mutual top-K neighbors | structural: same document \"journal/field-note-2026-04-24.md\"; adjacent source sections; shared heading \"Field Note — 24 April 2026\" | entity: shared entities weighted by rarity: gestures, journal, observation",
+        "sharedTerms": [
+          "Field Note — 24 April 2026"
+        ],
+        "sharedEntities": [
+          "gestures",
+          "journal",
+          "observation"
+        ],
+        "similarity": 0.4990272729658608,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_388d3ff41d992c6a995cf919",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_5b5b1b207e14e4386612be20",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.48,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "entity: shared entities weighted by rarity: field note, field note — 14 april 2026",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "field note",
+          "field note — 14 april 2026"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.562,
+        "width": 1.464
+      }
+    },
+    {
+      "id": "edge_88fa42465dfb8a93b015860e",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_aae380b933bf466ac093a216",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.48,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "entity: shared entities weighted by rarity: journal, observation",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "journal",
+          "observation"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.562,
+        "width": 1.464
+      }
+    },
+    {
+      "id": "edge_d33d434a08306f137b3d18cd",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_b18a520af42910a64fa6fc63",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Prototype Review\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_9768fd3eff0ffb7f7d317304",
+      "source": "thought_3edaf77ef0f3fed43da90a5b",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.9505382353208797,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5535; mutual top-K neighbors | entity: shared entities weighted by rarity: gesture thresholds",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "gesture thresholds"
+        ],
+        "similarity": 0.5535253268345551,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.8678498529585718,
+        "width": 2.3109688235775834
+      }
+    },
+    {
+      "id": "edge_ada59cb96e493b5a631af8cc",
+      "source": "thought_3fd7a340613869143a53915f",
+      "target": "thought_8ce51b6821ab58919efbccf9",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.8999999999999999,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "structural: same document \"ideas/memory-observatory.md\"; adjacent source sections; shared heading \"Memory Observatory\" | entity: shared entities weighted by rarity: concept, knowledge-graph, spatial-interface",
+        "sharedTerms": [
+          "Memory Observatory"
+        ],
+        "sharedEntities": [
+          "concept",
+          "knowledge-graph",
+          "spatial-interface"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.835,
+        "width": 2.2199999999999998
+      }
+    },
+    {
+      "id": "edge_ed1b101d2b47c21ff01d4e53",
+      "source": "thought_4a9e20e2796abd76390ad2ff",
+      "target": "thought_aae380b933bf466ac093a216",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.8999999999999999,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "structural: same document \"journal/field-note-2026-04-14.md\"; adjacent source sections; shared heading \"Field Note — 14 April 2026\" | entity: shared entities weighted by rarity: journal, navigation, observation",
+        "sharedTerms": [
+          "Field Note — 14 April 2026"
+        ],
+        "sharedEntities": [
+          "journal",
+          "navigation",
+          "observation"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.835,
+        "width": 2.2199999999999998
+      }
+    },
+    {
+      "id": "edge_1f083b0a6f1786686df62c47",
+      "source": "thought_4a9e20e2796abd76390ad2ff",
+      "target": "thought_b18a520af42910a64fa6fc63",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.42981679963590164,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.4970; mutual top-K neighbors",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": 0.4969677772720856,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.5293809197633361,
+        "width": 1.373670239344623
+      }
+    },
+    {
+      "id": "edge_afca15aadd0d75a87ea9d5aa",
+      "source": "thought_4ca454464334662859844679",
+      "target": "thought_57776a5750c1dbb4e49f3442",
+      "directed": false,
+      "type": "semantic",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.6160; mutual top-K neighbors | structural: same document \"learning/gesture-thresholds.md\"; adjacent source sections; shared heading \"Gesture Thresholds\" | entity: shared entities weighted by rarity: evaluation, gestures, input",
+        "sharedTerms": [
+          "Gesture Thresholds"
+        ],
+        "sharedEntities": [
+          "evaluation",
+          "gestures",
+          "input"
+        ],
+        "similarity": 0.6159693828879789,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_d03d2633a6fc88a9b97bf7a0",
+      "source": "thought_4ca454464334662859844679",
+      "target": "thought_593024baf91914b5a7b6b7fc",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.8313012740164998,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5125; mutual top-K neighbors | entity: shared entities weighted by rarity: gestures",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "gestures"
+        ],
+        "similarity": 0.5124522927903732,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.7903458281107248,
+        "width": 2.0963422932296996
+      }
+    },
+    {
+      "id": "edge_b8751b368f876f0b0f58b088",
+      "source": "thought_57776a5750c1dbb4e49f3442",
+      "target": "thought_593024baf91914b5a7b6b7fc",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Field Note — 24 April 2026\" | semantic: cosine similarity 0.5391; mutual top-K neighbors | entity: shared entities weighted by rarity: gestures",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "gestures"
+        ],
+        "similarity": 0.5391426474820332,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_76ae75210d888ff1a80c0abb",
+      "source": "thought_57776a5750c1dbb4e49f3442",
+      "target": "thought_b18a520af42910a64fa6fc63",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Prototype Review\" | entity: shared entities weighted by rarity: evaluation",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "evaluation"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_ca2de2e105ae4ffcbd56ebdb",
+      "source": "thought_57776a5750c1dbb4e49f3442",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.8508325061873354,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5396; mutual top-K neighbors | entity: shared entities weighted by rarity: evaluation",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "evaluation"
+        ],
+        "similarity": 0.5395790041387559,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.803041129021768,
+        "width": 2.131498511137204
+      }
+    },
+    {
+      "id": "edge_22db6bb33c880446494b416d",
+      "source": "thought_593024baf91914b5a7b6b7fc",
+      "target": "thought_aae380b933bf466ac093a216",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.69,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "entity: shared entities weighted by rarity: journal, observation | temporal: reliable source sequence from \"journal/field-note-2026-04-14.md\" to \"journal/field-note-2026-04-24.md\" (10 days)",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "journal",
+          "observation"
+        ],
+        "similarity": null,
+        "timeDistanceDays": 10.0
+      },
+      "visual": {
+        "opacity": 0.6984999999999999,
+        "width": 1.842
+      }
+    },
+    {
+      "id": "edge_52108b84deeb4c55f5e3bbe7",
+      "source": "thought_5b5b1b207e14e4386612be20",
+      "target": "thought_3fd7a340613869143a53915f",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Memory Observatory\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_072ca07d332f31e4ed9c58a4",
+      "source": "thought_5b5b1b207e14e4386612be20",
+      "target": "thought_4a9e20e2796abd76390ad2ff",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Field Note — 14 April 2026\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_ac43c2d68882cef73bf4d7c8",
+      "source": "thought_5b5b1b207e14e4386612be20",
+      "target": "thought_6a58aeb6dfb3e2463a71f34c",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Legibility in Motion\" | semantic: cosine similarity 0.5226; mutual top-K neighbors",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": 0.5225572029864922,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_0643f6be7eb19346bc52271b",
+      "source": "thought_5b5b1b207e14e4386612be20",
+      "target": "thought_7a7f78d4434ff9e4d483fa41",
+      "directed": false,
+      "type": "entity",
+      "weight": 0.8999999999999999,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "structural: same document \"ideas/quiet-constellations.md\"; adjacent source sections; shared heading \"Quiet Constellations\" | entity: shared entities weighted by rarity: attention, topology, visual-language",
+        "sharedTerms": [
+          "Quiet Constellations"
+        ],
+        "sharedEntities": [
+          "attention",
+          "topology",
+          "visual-language"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.835,
+        "width": 2.2199999999999998
+      }
+    },
+    {
+      "id": "edge_7833d9f0dbd08d49f20e67ad",
+      "source": "thought_5b5b1b207e14e4386612be20",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.4374434041881476,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5076; mutual top-K neighbors",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": 0.5075602835946494,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.534338212722296,
+        "width": 1.3873981275386655
+      }
+    },
+    {
+      "id": "edge_afdfd52431933faa5155a2b5",
+      "source": "thought_6a58aeb6dfb3e2463a71f34c",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.43797070706908126,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5083; mutual top-K neighbors",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": 0.5082926487070574,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.5346809595949028,
+        "width": 1.3883472727243462
+      }
+    },
+    {
+      "id": "edge_8ef4702b5dd6549d9209de88",
+      "source": "thought_8ce51b6821ab58919efbccf9",
+      "target": "thought_2ec1a78acc3d23cb6994d581",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Wayfinding Study\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_c12c85259832ce5d3a51f6cf",
+      "source": "thought_8ce51b6821ab58919efbccf9",
+      "target": "thought_7a7f78d4434ff9e4d483fa41",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Quiet Constellations\" | temporal: reliable source sequence from \"ideas/memory-observatory.md\" to \"ideas/quiet-constellations.md\" (9 days)",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": 9.0
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_a26713fa77b57009ea53d79c",
+      "source": "thought_8ce51b6821ab58919efbccf9",
+      "target": "thought_990dd9102a5132d8696f4455",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.5002257810180446,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5948; mutual top-K neighbors",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": 0.5947580291917287,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.5751467576617291,
+        "width": 1.5004064058324804
+      }
+    },
+    {
+      "id": "edge_89b64d463187bfdde736b525",
+      "source": "thought_8ce51b6821ab58919efbccf9",
+      "target": "thought_b18a520af42910a64fa6fc63",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.9245658040991,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.6420; mutual top-K neighbors | entity: shared entities weighted by rarity: wayfinding study",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "wayfinding study"
+        ],
+        "similarity": 0.6419863623495403,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.850967772664415,
+        "width": 2.26421844737838
+      }
+    },
+    {
+      "id": "edge_51d78bd9e29cca0d6068b82a",
+      "source": "thought_8ce51b6821ab58919efbccf9",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.8942904110037475,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5999; mutual top-K neighbors | entity: shared entities weighted by rarity: quiet constellations",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "quiet constellations"
+        ],
+        "similarity": 0.5999372052726617,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.8312887671524359,
+        "width": 2.2097227398067454
+      }
+    },
+    {
+      "id": "edge_21ae18ce0aaf453503c42214",
+      "source": "thought_990dd9102a5132d8696f4455",
+      "target": "thought_3fd7a340613869143a53915f",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Memory Observatory\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_722e21e1017863467914af4e",
+      "source": "thought_990dd9102a5132d8696f4455",
+      "target": "thought_6a58aeb6dfb3e2463a71f34c",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Legibility in Motion\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_7afc98fbd7ca860652db85a9",
+      "source": "thought_990dd9102a5132d8696f4455",
+      "target": "thought_b18a520af42910a64fa6fc63",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Prototype Review\" | semantic: cosine similarity 0.5032; mutual top-K neighbors | entity: shared entities weighted by rarity: prototype | temporal: reliable source sequence from \"work/wayfinding-study.md\" to \"work/prototype-review.md\" (14 days)",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "prototype"
+        ],
+        "similarity": 0.5031855604881886,
+        "timeDistanceDays": 14.0
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_bc417fa5c75474abef9e2cbe",
+      "source": "thought_990dd9102a5132d8696f4455",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.8282378202441707,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5082; mutual top-K neighbors | entity: shared entities weighted by rarity: prototype",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "prototype"
+        ],
+        "similarity": 0.5081974958843605,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.788354583158711,
+        "width": 2.0908280764395073
+      }
+    },
+    {
+      "id": "edge_06a1a8ffa88aaa10a99c6bfc",
+      "source": "thought_aae380b933bf466ac093a216",
+      "target": "thought_2ec1a78acc3d23cb6994d581",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Wayfinding Study\" | entity: shared entities weighted by rarity: navigation",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "navigation"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_44d65e5d43cf912d419fefeb",
+      "source": "thought_aae380b933bf466ac093a216",
+      "target": "thought_7a7f78d4434ff9e4d483fa41",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Quiet Constellations\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_4000fc7ec79b0072454a2158",
+      "source": "thought_aae380b933bf466ac093a216",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "semantic",
+      "weight": 0.8277674583719293,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5075; mutual top-K neighbors | entity: shared entities weighted by rarity: quiet constellations",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "quiet constellations"
+        ],
+        "similarity": 0.5075442155062475,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.7880488479417541,
+        "width": 2.089981425069473
+      }
+    },
+    {
+      "id": "edge_e1c98f8147f9c38f52a5077a",
+      "source": "thought_b18a520af42910a64fa6fc63",
+      "target": "thought_2ec1a78acc3d23cb6994d581",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Wayfinding Study\" | semantic: cosine similarity 0.5192; mutual top-K neighbors | entity: shared entities weighted by rarity: prototype",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "prototype"
+        ],
+        "similarity": 0.5191864632655528,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_7db45d319308a8d9a371c362",
+      "source": "thought_b18a520af42910a64fa6fc63",
+      "target": "thought_dd7f9d7a5cb031caa9e555a9",
+      "directed": false,
+      "type": "entity",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "semantic: cosine similarity 0.5309; mutual top-K neighbors | structural: same document \"work/prototype-review.md\"; adjacent source sections; shared heading \"Prototype Review\" | entity: shared entities weighted by rarity: evaluation, interaction, prototype",
+        "sharedTerms": [
+          "Prototype Review"
+        ],
+        "sharedEntities": [
+          "evaluation",
+          "interaction",
+          "prototype"
+        ],
+        "similarity": 0.5309008264485625,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_02a39e9f4cfd4c89ac4e4d44",
+      "source": "thought_dd7f9d7a5cb031caa9e555a9",
+      "target": "thought_4ca454464334662859844679",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Gesture Thresholds\" | entity: shared entities weighted by rarity: evaluation",
+        "sharedTerms": [],
+        "sharedEntities": [
+          "evaluation"
+        ],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
+      }
+    },
+    {
+      "id": "edge_9ac452f89778b47afca27b6e",
+      "source": "thought_dd7f9d7a5cb031caa9e555a9",
+      "target": "thought_7a7f78d4434ff9e4d483fa41",
+      "directed": true,
+      "type": "explicit",
+      "weight": 1.0,
+      "confidence": 1.0,
+      "evidence": {
+        "description": "explicit: wiki link to \"Quiet Constellations\"",
+        "sharedTerms": [],
+        "sharedEntities": [],
+        "similarity": null,
+        "timeDistanceDays": null
+      },
+      "visual": {
+        "opacity": 0.9,
+        "width": 2.4
       }
     }
   ]

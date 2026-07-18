@@ -24,6 +24,20 @@ import report from "../../public/data/pipeline-report.json";
 const model = buildGraphModel(
   parseArtifactBundle({ graph, layouts, manifest, report }),
 );
+const nodeIdByTitle = (title: string): string => {
+  const node = graph.nodes.find((candidate) => candidate.title === title);
+  if (!node) {
+    throw new Error(`expected generated thought titled ${title}`);
+  }
+  return node.id;
+};
+const selectedThoughtId = nodeIdByTitle("Constellations before filing");
+const hoverThoughtId = nodeIdByTitle("Orientation before action");
+const hiddenThoughtId = nodeIdByTitle("Continuity is the test");
+const semanticPosition = (nodeId: string): number[] | undefined =>
+  Object.entries(layouts.layouts.semantic).find(
+    ([candidateId]) => candidateId === nodeId,
+  )?.[1];
 
 describe("scene model", () => {
   it("defines explicit camera modes with stable poses", () => {
@@ -39,26 +53,22 @@ describe("scene model", () => {
 
   it("projects graph nodes into per-instance scene values", () => {
     const nodes = buildSceneNodes(model, "semantic", {
-      hoverNodeId: "thought-distributed-notes",
-      selectedNodeId: "thought-grounded-language",
-      hiddenNodeIds: new Set(["thought-debug-evidence"]),
+      hoverNodeId: hoverThoughtId,
+      selectedNodeId: selectedThoughtId,
+      hiddenNodeIds: new Set([hiddenThoughtId]),
     });
 
     expect(nodes).toHaveLength(graph.nodes.length);
-    expect(nodes[0]).toMatchObject({
-      id: "thought-grounded-language",
-      position: [-0.78, -0.18, 0.12],
+    expect(nodes.find((node) => node.id === selectedThoughtId)).toMatchObject({
+      id: selectedThoughtId,
+      position: semanticPosition(selectedThoughtId),
       selected: 1,
       visible: 1,
     });
-    expect(
-      nodes.find((node) => node.id === "thought-distributed-notes"),
-    ).toMatchObject({
+    expect(nodes.find((node) => node.id === hoverThoughtId)).toMatchObject({
       hovered: 1,
     });
-    expect(
-      nodes.find((node) => node.id === "thought-debug-evidence"),
-    ).toMatchObject({
+    expect(nodes.find((node) => node.id === hiddenThoughtId)).toMatchObject({
       visible: 0,
     });
     expect(nodes.every((node) => node.scale > 0 && node.opacity > 0)).toBe(
@@ -68,7 +78,7 @@ describe("scene model", () => {
 
   it("projects relationship edges with selected-neighborhood emphasis", () => {
     const edges = buildSceneEdges(model, "semantic", {
-      selectedNodeId: "thought-grounded-language",
+      selectedNodeId: selectedThoughtId,
     });
     const selected = edges.filter((edge) => edge.selected === 1);
     const unrelated = edges.filter((edge) => edge.selected === 0);
@@ -87,24 +97,21 @@ describe("scene model", () => {
   });
 
   it("creates a selected-node focus topology with ranked inner neighbors", () => {
-    const nodes = buildFocusSceneNodes(
-      model,
-      "semantic",
-      "thought-grounded-language",
-    );
-    const selected = nodes.find(
-      (node) => node.id === "thought-grounded-language",
-    );
+    const nodes = buildFocusSceneNodes(model, "semantic", selectedThoughtId);
+    const selected = nodes.find((node) => node.id === selectedThoughtId);
     const depthOne = nodes.filter((node) => node.focusDepth === 1);
     const pushed = nodes.filter((node) => node.focusDepth > 1);
+    const activeNeighborIds = rankTraversableNeighbors(model, selectedThoughtId)
+      .filter((neighbor) => neighbor.selectable)
+      .map((neighbor) => neighbor.nodeId);
 
     expect(selected?.position).toEqual([0, 0, 0]);
     expect(selected?.selected).toBe(1);
-    expect(depthOne.map((node) => node.id)).toEqual([
-      "thought-distributed-notes",
-      "thought-debug-evidence",
-    ]);
-    expect(depthOne.map((node) => node.focusRing)).toEqual(["inner", "outer"]);
+    expect(depthOne.map((node) => node.id).sort()).toEqual(
+      activeNeighborIds.sort(),
+    );
+    expect(depthOne.some((node) => node.focusRing === "inner")).toBe(true);
+    expect(depthOne.some((node) => node.focusRing === "outer")).toBe(true);
     expect(depthOne.every((node) => node.selectable === 1)).toBe(true);
     expect(depthOne.every((node) => node.hitRadius > node.scale * 3.4)).toBe(
       true,
@@ -165,44 +172,43 @@ describe("scene model", () => {
       model,
       buildSceneNodes(model, "semantic"),
       {
-        hoverNodeId: "thought-distributed-notes",
+        hoverNodeId: hoverThoughtId,
       },
     );
 
     expect(overviewLabels).toEqual([
       expect.objectContaining({
-        nodeId: "thought-distributed-notes",
+        nodeId: hoverThoughtId,
         kind: "hover",
-        title: "Distributed note topology",
+        title: "Orientation before action",
         excerpt: null,
       }),
     ]);
 
     const focusLabels = buildSceneThoughtLabels(
       model,
-      buildFocusSceneNodes(model, "semantic", "thought-grounded-language"),
+      buildFocusSceneNodes(model, "semantic", selectedThoughtId),
       {
-        hoverNodeId: "thought-distributed-notes",
-        selectedNodeId: "thought-grounded-language",
+        hoverNodeId: hoverThoughtId,
+        selectedNodeId: selectedThoughtId,
       },
     );
 
     expect(focusLabels).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          nodeId: "thought-grounded-language",
+          nodeId: selectedThoughtId,
           kind: "selected",
-          excerpt:
-            "Language invention starts from grounded perception and action.",
+          excerpt: expect.stringContaining("A memory observatory"),
         }),
         expect.objectContaining({
-          nodeId: "thought-debug-evidence",
+          nodeId: nodeIdByTitle("Topology without replacement"),
           kind: "neighbor",
           excerpt: null,
           opacity: 0.34,
         }),
         expect.objectContaining({
-          nodeId: "thought-distributed-notes",
+          nodeId: hoverThoughtId,
           kind: "hover",
           excerpt: null,
         }),

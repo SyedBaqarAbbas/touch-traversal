@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-13T09:10:00+00:00",
+  "generatedAt": "2026-07-18T05:44:02.541612Z",
   "corpusName": "sample-notes",
-  "nodeCount": 4,
-  "edgeCount": 4,
-  "embeddingModel": "fixture-model",
-  "pipelineConfigHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  "nodeCount": 16,
+  "edgeCount": 48,
+  "embeddingModel": "all-MiniLM-L6-v2",
+  "pipelineConfigHash": "ce69ec38e47317b5880ddef5159ca27cad216b6a3a0b00aaea78c1f365f430a0"
 }

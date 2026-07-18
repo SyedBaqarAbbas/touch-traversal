@@ -43,13 +43,15 @@ test("/demo reveals a title-only hover label after stable hover", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: "Graph artifact boundary" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /Distributed note topology/ }).hover();
+  await page
+    .getByRole("button", { name: /Constellations before filing/ })
+    .hover();
 
   const hoverLabel = page.locator(".scene-thought-label--hover");
-  await expect(hoverLabel).toContainText("Distributed note topology", {
+  await expect(hoverLabel).toContainText("Constellations before filing", {
     timeout: 1200,
   });
-  await expect(hoverLabel).not.toContainText("Thoughts become navigable");
+  await expect(hoverLabel).not.toContainText("A memory observatory");
 });
 
 test("/demo camera denial preserves mouse and keyboard access", async ({
@@ -77,9 +79,9 @@ test("/demo camera denial preserves mouse and keyboard access", async ({
 
   await page
     .getByRole("button", {
-      name: /Distributed note topology/,
+      name: /Constellations before filing/,
     })
-    .click();
+    .click({ force: true });
   await expect(page.getByText("focused / focus")).toBeVisible({
     timeout: focusSettleTimeoutMs,
   });
@@ -118,17 +120,17 @@ test("/demo focuses a node and returns by mouse or keyboard", async ({
   await page.goto("/demo");
 
   const nodeButton = page.getByRole("button", {
-    name: /Distributed note topology/,
+    name: /Constellations before filing/,
   });
   await nodeButton.click();
   await expect(page.getByText("focused / focus")).toBeVisible({
     timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Thoughts become navigable",
+    "A memory observatory",
   );
 
-  await page.getByRole("button", { name: "return" }).click();
+  await page.getByRole("button", { name: "return", exact: true }).click();
   await expect(page.getByText("idle / overview")).toBeVisible();
 
   await nodeButton.click();
@@ -144,7 +146,7 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
 
   await page
     .getByRole("button", {
-      name: /Distributed note topology/,
+      name: /Constellations before filing/,
     })
     .click();
   await expect(page.getByText("focused / focus")).toBeVisible({
@@ -153,12 +155,12 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
 
   await page
     .getByRole("button", {
-      name: /Gesture traversal/,
+      name: /Orientation before action/,
     })
     .click();
   await expect(page.getByText("traversing / focus")).toBeVisible();
   await expect(page.locator(".scene-traversal-status")).toContainText(
-    "Distributed note topology → Gesture traversal",
+    "Constellations before filing → Orientation before action",
   );
   await page.keyboard.press("2");
   await expect(page.locator(".scene-topology-hud")).toContainText(
@@ -168,19 +170,19 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
     timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Gestures turn the graph into a spatial traversal surface.",
+    "The first view should invite orientation before action.",
   );
   await expect(page.locator(".debug-history-breadcrumb")).toHaveCount(0);
 
   await page.keyboard.press("Backspace");
   await expect(page.getByText("focused / focus")).toBeVisible();
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Thoughts become navigable when notes are connected by typed edges.",
+    "A memory observatory is a place for looking across thoughts",
   );
 
   await page
     .getByRole("button", {
-      name: /Gesture traversal/,
+      name: /Orientation before action/,
     })
     .click();
   await expect(page.getByText("traversing / focus")).toBeVisible();
@@ -188,10 +190,10 @@ test("/demo traverses an active focused neighbor", async ({ page }) => {
     timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Gestures turn the graph into a spatial traversal surface.",
+    "The first view should invite orientation before action.",
   );
 
-  await page.getByRole("button", { name: "return" }).click();
+  await page.getByRole("button", { name: "return", exact: true }).click();
   await expect(page.getByText("idle / overview")).toBeVisible();
 });
 
@@ -228,11 +230,11 @@ test("/demo?input=mouse covers the repeatable mouse flow and label density", asy
   );
 
   const nodeButton = page.getByRole("button", {
-    name: /Distributed note topology/,
+    name: /Constellations before filing/,
   });
   await nodeButton.hover();
   await expect(page.locator(".scene-thought-label--hover")).toContainText(
-    "Distributed note topology",
+    "Constellations before filing",
   );
 
   await nodeButton.click();
@@ -240,11 +242,11 @@ test("/demo?input=mouse covers the repeatable mouse flow and label density", asy
     timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Thoughts become navigable",
+    "A memory observatory",
   );
   await expect(page.locator(".scene-thought-label")).toHaveCount(3);
 
-  await page.getByRole("button", { name: "return" }).click();
+  await page.getByRole("button", { name: "return", exact: true }).click();
   await expect(page.getByText("idle / overview")).toBeVisible();
   await expect(page.locator(".scene-thought-label")).toHaveCount(0);
 });
@@ -265,11 +267,11 @@ test("/demo visual states cover temporal mode, hover, focus, and HUD idle", asyn
   await attachVisual(page, testInfo, "temporal-topology");
 
   const nodeButton = page.getByRole("button", {
-    name: /Distributed note topology/,
+    name: /Constellations before filing/,
   });
   await nodeButton.hover();
   await expect(page.locator(".scene-thought-label--hover")).toContainText(
-    "Distributed note topology",
+    "Constellations before filing",
   );
   await attachVisual(page, testInfo, "hovered-node");
   await nodeButton.click();
@@ -277,7 +279,7 @@ test("/demo visual states cover temporal mode, hover, focus, and HUD idle", asyn
     timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Thoughts become navigable",
+    "A memory observatory",
   );
   await attachVisual(page, testInfo, "focused-node");
 
@@ -297,14 +299,14 @@ test("/demo respects reduced-motion media preferences", async ({
   await expect(scene).toHaveAttribute("data-motion", "reduced");
   await page
     .getByRole("button", {
-      name: /Distributed note topology/,
+      name: /Constellations before filing/,
     })
     .click();
   await expect(page.getByText("focused / focus")).toBeVisible({
     timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Thoughts become navigable",
+    "A memory observatory",
   );
   await attachVisual(page, testInfo, "reduced-motion");
 });
@@ -339,7 +341,7 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
     timeout: focusSettleTimeoutMs,
   });
   await expect(page.locator(".scene-selected-card")).toContainText(
-    "Gestures turn the graph into a spatial traversal surface.",
+    "The first view should invite orientation before action.",
   );
 
   await expect(page.locator(".scene-gesture-hint")).toContainText(
@@ -357,4 +359,46 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
   await expect(page.getByText("idle / overview")).toBeVisible({
     timeout: focusSettleTimeoutMs,
   });
+});
+
+test("/demo?recording=1 plays a clean deterministic showcase", async ({
+  page,
+}) => {
+  test.setTimeout(36_000);
+  await page.goto("/demo?recording=1");
+
+  const scene = page.locator(".scene-shell");
+  const cue = page.locator(".scene-recording-cue");
+  await expect(scene).toHaveAttribute("data-presentation", "recording");
+  await expect(cue).toContainText("constellation / reveal");
+  await expect(
+    page.getByRole("navigation", { name: "Prototype routes" }),
+  ).toHaveCount(0);
+  await expect(page.locator(".scene-node-list")).not.toBeVisible();
+  await expect(page.locator(".scene-performance-note")).not.toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Enable hand camera" }),
+  ).toBeVisible();
+
+  await expect(cue).toContainText("hand / acquiring locally", {
+    timeout: 5_500,
+  });
+  await expect(cue).toContainText("gesture / select", { timeout: 5_000 });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "Constellations before filing",
+  );
+
+  await expect(cue).toContainText("gesture / traverse", { timeout: 7_000 });
+  await expect(page.locator(".scene-traversal-status")).toBeVisible();
+  await expect(cue).toContainText("topology / communities", {
+    timeout: 10_000,
+  });
+  await expect(page.locator(".scene-topology-hud")).toContainText(
+    "community topology",
+  );
+
+  await expect(cue).toContainText("thoughts remain connected", {
+    timeout: 13_000,
+  });
+  await expect(page.locator(".scene-selected-card")).toHaveCount(0);
 });

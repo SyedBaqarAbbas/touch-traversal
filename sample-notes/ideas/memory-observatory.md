@@ -11,7 +11,7 @@ sample: true
 
 # Memory Observatory
 
-## Premise
+## Constellations before filing
 
 A memory observatory is a place for looking across thoughts rather than filing them away. Notes
 appear as a quiet constellation whose lines have inspectable reasons: an explicit reference, a
@@ -19,7 +19,7 @@ shared topic, a nearby date, or a structural relationship inside one document. T
 not claim to interpret a person's mind; it offers alternative arrangements of material they already
 wrote.
 
-## Experience
+## Orientation before action
 
 The first view should invite orientation before action. Pointing reveals a title, selection gathers
 related thoughts, and traversal carries the camera along one explainable edge. The restrained visual

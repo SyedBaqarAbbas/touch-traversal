@@ -11,14 +11,14 @@ sample: true
 
 # Wayfinding Study
 
-## Question
+## Returning to unfinished ideas
 
 A fictional design studio is testing whether a spatial map helps people return to an unfinished
 idea faster than a folder tree. The study begins with three ordinary tasks: locate an earlier
 decision, explain why two notes are related, and resume a thread after a short interruption. The
 map should reveal context gradually instead of presenting every label at once.
 
-## Trial shape
+## Observable wayfinding tasks
 
 Each participant first explores [[Memory Observatory]] with a mouse, then repeats the task while
 the graph changes between semantic and temporal arrangements. Observers record hesitation,

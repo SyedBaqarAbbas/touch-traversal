@@ -11,14 +11,14 @@ sample: true
 
 # Quiet Constellations
 
-## Visual language
+## Contrast without clutter
 
 The graph should feel spacious even when many relationships exist. Most edges begin thin and dim;
 labels wait until attention approaches; selected neighborhoods gain contrast without turning every
 other thought invisible. A dark field is useful only when it supports reading, so bloom, particles,
 and depth effects remain subordinate to node identity.
 
-## Topology changes
+## Topology without replacement
 
 Semantic, cluster, temporal, and force layouts are different explanations of the same material.
 Their transitions should behave like a change of viewpoint, not a replacement scene. The continuity

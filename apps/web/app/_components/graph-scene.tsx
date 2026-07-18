@@ -63,6 +63,11 @@ import {
   restorePreviousFocus,
   type TraversalHistoryEntry,
 } from "@/lib/traversal-history";
+import {
+  recordingBeats,
+  recordingModeTopology,
+  type RecordingBeat,
+} from "@/lib/recording-mode";
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
   buildSceneEdges,
@@ -153,9 +158,11 @@ type GestureActionRefs = {
 export function GraphScene({
   inputMode = "default",
   model,
+  recordingMode = false,
 }: {
   inputMode?: GraphInputMode;
   model: GraphModel;
+  recordingMode?: boolean;
 }) {
   const nodeSummaries = useMemo(() => selectNodeSummaries(model), [model]);
   const [{ hoverState, interaction }, dispatch] = useReducer(
@@ -170,6 +177,9 @@ export function GraphScene({
     TraversalHistoryEntry[]
   >([]);
   const [gestureHint, setGestureHint] = useState<GestureHint | null>(null);
+  const [recordingBeat, setRecordingBeat] = useState<RecordingBeat>(
+    recordingBeats[0],
+  );
   const [measuredFps, setMeasuredFps] = useState<number | undefined>();
   const [hudVisible, setHudVisible] = useState(true);
   const [hudActivityKey, setHudActivityKey] = useState(0);
@@ -179,6 +189,7 @@ export function GraphScene({
   const lastHudActivityAtRef = useRef(Number.NEGATIVE_INFINITY);
   const gestureActionsRef = useRef<GestureActionRefs | null>(null);
   const gestureFixtureStartedRef = useRef(false);
+  const recordingStartedRef = useRef(false);
   const cameraMode = cameraModeForInteraction(interaction);
   const activeTopology = topologyModesByLayout[layoutName];
   const canSwitchTopology =
@@ -196,6 +207,23 @@ export function GraphScene({
     selectedNodeId && model.graph.hasNode(selectedNodeId)
       ? model.graph.getNodeAttributes(selectedNodeId).thought
       : null;
+  const nodeRailSummaries = useMemo(() => {
+    if (!selectedNodeId) {
+      return nodeSummaries.slice(0, 5);
+    }
+    const summariesById = new Map(
+      nodeSummaries.map((summary) => [summary.id, summary]),
+    );
+    const selectedSummary = summariesById.get(selectedNodeId);
+    const neighborSummaries = rankTraversableNeighbors(model, selectedNodeId)
+      .filter((neighbor) => neighbor.selectable)
+      .map((neighbor) => summariesById.get(neighbor.nodeId))
+      .filter((summary) => summary != null);
+    return [
+      ...(selectedSummary ? [selectedSummary] : []),
+      ...neighborSummaries,
+    ].slice(0, 5);
+  }, [model, nodeSummaries, selectedNodeId]);
   const activeTraversalLabel = useMemo(() => {
     if (!activeTraversal) {
       return null;
@@ -583,12 +611,14 @@ export function GraphScene({
     }
 
     const firstNodeId =
-      nodeSummaries.find((node) => node.title === "Distributed note topology")
-        ?.id ??
+      nodeSummaries.find(
+        (node) => node.title === "Constellations before filing",
+      )?.id ??
       nodeSummaries[1]?.id ??
       nodeSummaries[0]?.id;
     const traversalNodeId =
-      nodeSummaries.find((node) => node.title === "Gesture traversal")?.id ??
+      nodeSummaries.find((node) => node.title === "Orientation before action")
+        ?.id ??
       nodeSummaries[2]?.id ??
       firstNodeId;
     if (!firstNodeId || !traversalNodeId) {
@@ -634,11 +664,74 @@ export function GraphScene({
     };
   }, [inputMode, nodeSummaries]);
 
+  useLayoutEffect(() => {
+    if (!recordingMode) {
+      recordingStartedRef.current = false;
+      return;
+    }
+    if (recordingStartedRef.current) {
+      return;
+    }
+
+    const firstNodeId =
+      nodeSummaries.find(
+        (node) => node.title === "Constellations before filing",
+      )?.id ?? nodeSummaries[0]?.id;
+    if (!firstNodeId) {
+      return;
+    }
+    const preferredTraversalId = nodeSummaries.find(
+      (node) => node.title === "Orientation before action",
+    )?.id;
+    const traversalNodeId =
+      rankTraversableNeighbors(model, firstNodeId).find(
+        (neighbor) =>
+          neighbor.selectable && neighbor.nodeId === preferredTraversalId,
+      )?.nodeId ??
+      rankTraversableNeighbors(model, firstNodeId).find(
+        (neighbor) => neighbor.selectable,
+      )?.nodeId;
+
+    recordingStartedRef.current = true;
+    const timers = [
+      window.setTimeout(() => {
+        setRecordingBeat(recordingBeats[1]);
+      }, recordingBeats[1].atMs),
+      window.setTimeout(() => {
+        const timestampMs = performance.now();
+        setRecordingBeat(recordingBeats[2]);
+        gestureActionsRef.current?.selectNode(firstNodeId, timestampMs);
+      }, recordingBeats[2].atMs),
+      window.setTimeout(() => {
+        setRecordingBeat(recordingBeats[3]);
+        if (traversalNodeId) {
+          gestureActionsRef.current?.selectNode(
+            traversalNodeId,
+            performance.now(),
+          );
+        }
+      }, recordingBeats[3].atMs),
+      window.setTimeout(() => {
+        setRecordingBeat(recordingBeats[4]);
+        gestureActionsRef.current?.returnOverview(performance.now());
+        gestureActionsRef.current?.switchTopology(recordingModeTopology);
+      }, recordingBeats[4].atMs),
+      window.setTimeout(() => {
+        setRecordingBeat(recordingBeats[5]);
+      }, recordingBeats[5].atMs),
+    ];
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      recordingStartedRef.current = false;
+    };
+  }, [model, nodeSummaries, recordingMode]);
+
   return (
     <main
       className="scene-shell"
       data-hud={hudVisible ? "visible" : "dimmed"}
       data-motion={reducedMotion ? "reduced" : "full"}
+      data-presentation={recordingMode ? "recording" : "interactive"}
       style={sceneIntroStyle()}
     >
       <Canvas
@@ -796,7 +889,7 @@ export function GraphScene({
       </section>
 
       <aside className="scene-node-list" aria-label="Thought nodes">
-        {nodeSummaries.slice(0, 5).map((node, index) => (
+        {nodeRailSummaries.map((node, index) => (
           <button
             aria-label={`Select ${node.title}`}
             aria-pressed={selectedNodeId === node.id}
@@ -876,6 +969,17 @@ export function GraphScene({
         </aside>
       ) : null}
 
+      {recordingMode ? (
+        <aside
+          aria-live="polite"
+          className="scene-recording-cue"
+          data-recording-beat={recordingBeat.name}
+        >
+          <span aria-hidden="true" />
+          {recordingBeat.label}
+        </aside>
+      ) : null}
+
       {sceneQualityNoticeCopy ? (
         <aside className="scene-performance-note" aria-live="polite">
           <span>{sceneQualityNoticeCopy.title}</span>
@@ -883,15 +987,20 @@ export function GraphScene({
         </aside>
       ) : null}
 
-      <CameraAccessPanel />
+      <CameraAccessPanel compact={recordingMode} />
 
-      <nav className="route-shell__nav scene-nav" aria-label="Prototype routes">
-        {routes.map((route) => (
-          <Link href={route.href} key={route.href}>
-            {route.label}
-          </Link>
-        ))}
-      </nav>
+      {!recordingMode ? (
+        <nav
+          className="route-shell__nav scene-nav"
+          aria-label="Prototype routes"
+        >
+          {routes.map((route) => (
+            <Link href={route.href} key={route.href}>
+              {route.label}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
     </main>
   );
 }

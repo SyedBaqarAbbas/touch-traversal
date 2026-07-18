@@ -16,6 +16,7 @@ import report from "../../public/data/pipeline-report.json";
 
 const buildModel = () =>
   buildGraphModel(parseArtifactBundle({ graph, layouts, manifest, report }));
+const firstNodeId = graph.nodes[0].id;
 
 describe("layout registry", () => {
   it("registers every persistent topology into index-stable buffers", () => {
@@ -33,24 +34,21 @@ describe("layout registry", () => {
     expect(registry.startPositions).toBeInstanceOf(Float32Array);
     expect(registry.targetPositions).toBeInstanceOf(Float32Array);
     expect(registry.layouts.semantic).toHaveLength(graph.nodes.length * 3);
-    expect(registry.indexByNodeId.get("thought-grounded-language")).toBe(0);
+    expect(registry.indexByNodeId.get(firstNodeId)).toBe(0);
   });
 
   it("starts transitions from current positions and interpolates target buffers", () => {
     const registry = createLayoutRegistry(buildModel());
-    const originalSemantic = readLayoutPosition(
-      registry,
-      "thought-grounded-language",
-    );
+    const originalSemantic = readLayoutPosition(registry, firstNodeId);
 
     startLayoutTransition(registry, "clusters");
     expect([...registry.startPositions.slice(0, 3)]).toEqual([
       ...registry.currentPositions.slice(0, 3),
     ]);
     updateLayoutProgress(registry, 0.5);
-    const halfway = readLayoutPosition(registry, "thought-grounded-language");
+    const halfway = readLayoutPosition(registry, firstNodeId);
     updateLayoutProgress(registry, 1);
-    const final = readLayoutPosition(registry, "thought-grounded-language");
+    const final = readLayoutPosition(registry, firstNodeId);
 
     expect(halfway).not.toEqual(originalSemantic);
     expect(final).toEqual([...registry.layouts.clusters.slice(0, 3)]);
@@ -60,13 +58,13 @@ describe("layout registry", () => {
   it("throws clear errors for incompatible layouts and unknown nodes", () => {
     const model = buildModel();
     Reflect.deleteProperty(
-      model.graph.getNodeAttributes("thought-grounded-language").layouts,
+      model.graph.getNodeAttributes(firstNodeId).layouts,
       "force",
     );
 
     expect(() => createLayoutRegistry(model)).toThrow(LayoutRegistryError);
     expect(() => createLayoutRegistry(model)).toThrow(
-      'Layout "force" is missing node "thought-grounded-language"',
+      `Layout "force" is missing node "${firstNodeId}"`,
     );
 
     const registry = createLayoutRegistry(buildModel());

@@ -22,6 +22,10 @@ import manifest from "../../public/data/manifest.json";
 import report from "../../public/data/pipeline-report.json";
 
 const validBundle = { graph, layouts, manifest, report };
+const firstNode = graph.nodes[0];
+const firstSemanticPosition = Object.entries(layouts.layouts.semantic).find(
+  ([nodeId]) => nodeId === firstNode.id,
+)?.[1];
 
 describe("artifact runtime boundary", () => {
   it("validates checked-in artifacts and builds a Graphology model", () => {
@@ -37,14 +41,16 @@ describe("artifact runtime boundary", () => {
       "temporal",
       "force",
     ]);
-    expect(selectNodeSummaries(model)[0]).toMatchObject({
-      id: "thought-grounded-language",
-      degree: 2,
-    });
+    expect(selectNodeSummaries(model)[0]).toMatchObject({ id: firstNode.id });
+    expect(selectNodeSummaries(model)[0]?.degree).toBe(
+      graph.edges.filter(
+        (edge) => edge.source === firstNode.id || edge.target === firstNode.id,
+      ).length,
+    );
     expect(selectEdgeSummaries(model)).toHaveLength(graph.edges.length);
-    expect(selectLayoutPositions(model, "semantic")[0]?.position).toEqual([
-      -0.78, -0.18, 0.12,
-    ]);
+    expect(selectLayoutPositions(model, "semantic")[0]?.position).toEqual(
+      firstSemanticPosition,
+    );
   });
 
   it("rejects malformed artifact payloads with useful paths", () => {
@@ -59,10 +65,7 @@ describe("artifact runtime boundary", () => {
 
   it("rejects mismatched graph and layout node sets", () => {
     const mismatched = structuredClone(validBundle);
-    Reflect.deleteProperty(
-      mismatched.layouts.layouts.semantic,
-      "thought-debug-evidence",
-    );
+    Reflect.deleteProperty(mismatched.layouts.layouts.semantic, firstNode.id);
 
     expect(() => parseArtifactBundle(mismatched)).toThrow(
       "layout node ids must match graph node ids",

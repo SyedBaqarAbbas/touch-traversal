@@ -783,6 +783,7 @@ a {
 .scene-pointer-cue,
 .hand-gesture-cursor,
 .scene-gesture-hint,
+.scene-recording-cue,
 .scene-performance-note,
 .camera-access-panel,
 .scene-nav {
@@ -1059,6 +1060,25 @@ a {
 
 .camera-access-panel[data-camera-status="active"] {
   border-color: rgba(242, 240, 234, 0.22);
+}
+
+.camera-access-panel[data-compact="true"] {
+  width: auto;
+  max-width: calc(100vw - 2.5rem);
+  padding: 0.42rem;
+  border-color: transparent;
+  background: transparent;
+}
+
+.camera-access-panel[data-compact="true"] .camera-access-panel__meta {
+  justify-content: flex-end;
+}
+
+.camera-access-panel[data-compact="true"] button {
+  min-height: 1.65rem;
+  margin-top: 0;
+  color: var(--secondary-text);
+  background: transparent;
 }
 
 .camera-access-panel__video {
@@ -1455,6 +1475,57 @@ a {
   text-transform: lowercase;
 }
 
+.scene-recording-cue {
+  position: absolute;
+  bottom: clamp(1.25rem, 3vw, 2.75rem);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  pointer-events: none;
+  text-transform: lowercase;
+  transform: translateX(-50%);
+}
+
+.scene-recording-cue span {
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0.65rem rgba(255, 253, 246, 0.2);
+}
+
+.scene-recording-cue[data-recording-beat="hand-acquisition"] span {
+  animation: recording-hand-acquisition 900ms ease-in-out infinite alternate;
+}
+
+.scene-shell[data-presentation="recording"] .scene-overlay,
+.scene-shell[data-presentation="recording"] .scene-node-list,
+.scene-shell[data-presentation="recording"] .scene-performance-note,
+.scene-shell[data-presentation="recording"] .scene-gesture-hint,
+.scene-shell[data-presentation="recording"] .scene-pointer-cue,
+.scene-shell[data-presentation="recording"] .scene-topology-hud dl,
+.scene-shell[data-presentation="recording"] .scene-topology-glyph,
+.scene-shell[data-presentation="recording"] .scene-topology-controls,
+.scene-shell[data-presentation="recording"] .scene-topology-note,
+.scene-shell[data-presentation="recording"] .scene-header .mode-label,
+.scene-shell[data-presentation="recording"] .scene-selected-card small,
+.scene-shell[data-presentation="recording"] .scene-traversal-status small {
+  display: none;
+}
+
+.scene-shell[data-presentation="recording"] .scene-topology-hud {
+  top: clamp(5.8rem, 12vh, 8.2rem);
+  right: clamp(1.25rem, 6vw, 6rem);
+  gap: 0.55rem;
+  width: min(14rem, calc(100vw - 2.5rem));
+}
+
 .scene-performance-note {
   position: absolute;
   right: clamp(19.5rem, 24vw, 23rem);
@@ -1682,10 +1753,23 @@ a {
   .scene-overlay,
   .scene-node-list,
   .scene-thought-label,
+  .scene-recording-cue,
   .camera-access-panel,
   .scene-nav {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
+  }
+}
+
+@keyframes recording-hand-acquisition {
+  from {
+    opacity: 0.28;
+    transform: scale(0.72);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

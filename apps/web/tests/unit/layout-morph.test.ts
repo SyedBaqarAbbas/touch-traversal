@@ -28,6 +28,7 @@ import report from "../../public/data/pipeline-report.json";
 
 const buildModel = () =>
   buildGraphModel(parseArtifactBundle({ graph, layouts, manifest, report }));
+const firstNodeId = graph.nodes[0].id;
 
 describe("layout morph controller", () => {
   it("uses a default duration inside the planned full-layout range", () => {
@@ -68,7 +69,7 @@ describe("layout morph controller", () => {
     expect([...registry.startPositions.slice(0, 3)]).toEqual(semanticStart);
 
     morph = updateLayoutMorph(registry, morph, 2100);
-    const halfway = readLayoutPosition(registry, "thought-grounded-language");
+    const halfway = readLayoutPosition(registry, firstNodeId);
     const clusterTarget = [...registry.layouts.clusters.slice(0, 3)];
     expect(halfway).not.toEqual(semanticStart);
     halfway.forEach((value, axis) => {
@@ -124,10 +125,7 @@ describe("layout morph controller", () => {
     const registry = createLayoutRegistry(buildModel());
     let morph = startLayoutMorph(registry, "clusters", 0);
     morph = updateLayoutMorph(registry, morph, 1100);
-    const interruptedPosition = readLayoutPosition(
-      registry,
-      "thought-grounded-language",
-    );
+    const interruptedPosition = readLayoutPosition(registry, firstNodeId);
 
     morph = interruptLayoutMorph(registry, morph, "force", 1100);
     expect([...registry.startPositions.slice(0, 3)]).toEqual(
@@ -151,9 +149,9 @@ describe("layout morph controller", () => {
       throw new Error("expected reduced-motion morph");
     }
     expect(morph.durationMs).toBe(REDUCED_MOTION_LAYOUT_MORPH_DURATION_MS);
-    expect(
-      preserveSelectedNodeForTopology("thought-grounded-language", registry),
-    ).toBe("thought-grounded-language");
+    expect(preserveSelectedNodeForTopology(firstNodeId, registry)).toBe(
+      firstNodeId,
+    );
     expect(
       preserveSelectedNodeForTopology("missing-node", registry),
     ).toBeNull();
