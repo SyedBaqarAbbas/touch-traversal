@@ -1,95 +1,121 @@
 # Touch Traversal
 
-*Explore the topologies of your thoughts.*
+_Explore the topologies of your thoughts._
 
-Touch Traversal transforms notes into an animated knowledge graph that you can explore with
-your hands. It is a local-first spatial interface for finding structural, semantic, and temporal
-relationships across a personal Markdown corpus without turning the experience into a generic
-dashboard.
+Touch Traversal is a local-first prototype that turns Markdown or plain-text notes into a static,
+explainable knowledge graph. A Next.js application renders that graph as a spatial field with
+mouse and keyboard navigation plus optional on-device hand tracking.
 
-The repository is currently at the foundation milestone. The web routes, offline pipeline package,
-sample corpus, quality gates, and continuous integration are in place; graph extraction, WebGL
-rendering, and hand tracking arrive in later milestones.
+The MVP has no application backend. Note processing is a local Python batch job; the browser reads
+four generated JSON files and performs rendering and hand inference on the device.
 
-## Architecture
+## Quick start
 
-```text
-Markdown notes
-     |
-     v
-Python pipeline: parse -> relate -> cluster -> lay out -> export static JSON
-     |
-     v
-Next.js experience: validate -> render -> navigate with mouse, keyboard, or gestures
-```
+Requirements: Node.js 22–24, pnpm 10.14.0 through Corepack, Python 3.11+, and
+[uv](https://docs.astral.sh/uv/).
 
-- `sample-notes/` contains a small, fictional corpus for development and demonstrations.
-- `pipeline/` contains the Python 3.11+ offline graph-building package.
-- `apps/web/` contains the strict-TypeScript Next.js application.
-- `implementation_plan.md` is the milestone-by-milestone product and engineering specification.
-
-There is no application backend in the MVP. Note processing and graph generation happen locally,
-then the web app reads static artifacts from `apps/web/public/data/`.
-
-## Local setup
-
-Requirements:
-
-- Node.js 22–24
-- pnpm 10.14.0 through Corepack
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/)
-
-Install and verify the workspace:
+Check the toolchain:
 
 ```bash
 make doctor
-make install
-make test
-make lint
-make typecheck
-make format-check
 ```
 
-Start the web application:
+Install both locked workspaces with the repository command:
 
 ```bash
+make install
+```
+
+The equivalent one-command setup for each workspace is:
+
+```bash
+# Web application (run from the repository root)
+pnpm install --frozen-lockfile --optimistic-repeat-install
+
+# Offline pipeline, including graph-build extras
+cd pipeline && uv sync --extra embeddings --extra layouts --all-groups --locked
+```
+
+Return to the repository root, build the sample graph, and start the app:
+
+```bash
+make build-graph
 make dev
 ```
 
-Then open `http://localhost:3000`. The current foundation routes are `/`, `/demo`,
-`/calibration`, and `/debug`. Browser smoke tests run separately with `make test-e2e`.
+Open `http://localhost:3000/demo`. The first graph build can download the configured local
+Sentence Transformers model; subsequent builds reuse `pipeline/.cache/embeddings/` and the model
+manager's cache.
 
-The pipeline CLI contract can be inspected now:
+## Exact development commands
+
+Run these from the repository root:
 
 ```bash
-cd pipeline
-uv run touch-traversal --help
+make dev           # Next.js development server at http://localhost:3000
+make build-graph   # rebuild all four public artifacts from sample-notes/
+make test          # root contract checks, Vitest, and pytest
+make test-e2e      # Playwright against a managed development server
+make lint          # ESLint and Ruff
+make typecheck     # TypeScript and strict mypy
+make format-check  # non-mutating Prettier and Ruff check
+make build         # production Next.js build
 ```
 
-The `inspect` command discovers and parses a note corpus, while `validate` and `stats` enforce the
-exported graph contracts. The `build` command parses, chunks, generates explainable relations,
-computes cached local semantic neighbors, builds a pruned weighted community graph, generates four
-deterministic layouts, validates the complete bundle, and exports `graph.json`, `layouts.json`,
-`manifest.json`, and `pipeline-report.json`.
+The routes are `/`, `/demo`, `/calibration`, and `/debug`. Camera access is optional and is only
+requested after pressing **Enable hand camera**; mouse and keyboard controls remain available if
+permission is denied or hand-model loading fails.
 
-## Sample data and privacy
+## How it works
 
-Every checked-in note under `sample-notes/` is fictional and marked `sample: true` in its front
-matter. The notes include dates, tags, headings, Markdown links, and Obsidian-style wiki links so
-future ingestion work has representative public inputs.
+```text
+local Markdown/text corpus
+  -> deterministic Python pipeline
+  -> graph.json + layouts.json + manifest.json + pipeline-report.json
+  -> browser validation and Graphology model
+  -> React Three Fiber scene
+  -> mouse/keyboard and optional local webcam/MediaPipe input
+```
 
-Personal note content should stay under `private-notes/`, which Git ignores. Pipeline caches and
-generated artifacts prefixed with `private-` under `apps/web/public/data/` are ignored as well.
-Environment files are not tracked, apart from an explicitly safe `.env.example` template.
+The editable Mermaid sources and accessible SVG exports for the
+[system architecture](docs/diagrams/system-architecture.svg),
+[offline pipeline](docs/diagrams/pipeline.svg), and
+[gesture input path](docs/diagrams/gesture-input.svg) live under [`docs/diagrams/`](docs/diagrams/).
 
-The intended product remains local-first: notes are processed on the developer's machine, note text
-is not sent to analytics, and future webcam input will remain on-device. Ignore rules are a safety
-net, not a substitute for checking `git status` before committing private data.
+- `pipeline/` discovers, parses, chunks, relates, clusters, lays out, validates, and exports graph
+  data. Relations retain their type, score, and evidence.
+- `apps/web/public/data/` holds the checked-in sample artifact bundle. The frontend validates all
+  four files before constructing the graph.
+- `apps/web/public/models/` and `apps/web/public/vendor/` hold the same-origin MediaPipe model and
+  WASM runtime. Camera frames are downscaled and transferred to a browser worker; they are not sent
+  to an application server.
+- `sample-notes/` is a fictional public corpus; every checked-in note declares `sample: true`.
+  There is no API route, database, account system, cloud sync, or server-side note ingestion in the
+  MVP.
 
-## Current limitations
+## Privacy and current scope
 
-- The graph pipeline commands are scaffolded but do not process notes yet.
-- The web routes are accessible placeholders rather than the final WebGL experience.
-- Hand tracking and webcam permission flows are not implemented.
-- Performance targets in the implementation plan have not been measured yet.
+Put personal source files under the ignored `private-notes/` directory, and inspect `git status`
+before every commit. `pipeline/.cache/` and `apps/web/public/data/private-*` are also ignored.
+Generated JSON can contain source titles, excerpts, links, and provenance, so never overwrite the
+tracked public sample bundle with personal output and never publish a private bundle.
+
+The pipeline computes embeddings locally and does not call a hosted embedding API. Its first use
+may contact the model host to download model files. Webcam permission is explicit; disabling the
+camera stops its media tracks, and calibration stores only versioned numeric settings in browser
+local storage.
+
+This is a measured prototype, not a finished personal-knowledge platform. The checked-in sample is
+small at 16 thoughts and 48 relationships, graph generation is a manual batch step, and
+private-bundle selection is not integrated into the UI. Live landmark frames drive the same guarded
+select, traverse, return, and topology actions as mouse input; accuracy still depends on camera,
+lighting, framing, and calibration, so mouse and keyboard remain complete fallbacks.
+
+Performance results are hardware- and browser-specific. Read the
+[`performance report`](docs/performance-report.md) and its
+[`raw measurement record`](docs/performance-measurements/2026-07-18-m2-pro-chromium.json) rather
+than treating the measured host as a universal guarantee. Licensing and asset provenance are
+recorded in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+For the full runbook, architecture, controls, privacy boundaries, limitations, and recovery steps,
+read [`docs/project-guide.md`](docs/project-guide.md).

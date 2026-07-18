@@ -38,7 +38,7 @@ check-pipeline:
 
 install: check-pnpm check-uv check-pipeline ## Install JavaScript and Python dependencies.
 	$(PNPM) install --frozen-lockfile --optimistic-repeat-install
-	cd $(PIPELINE_DIR) && $(UV) sync --all-groups --locked
+	cd $(PIPELINE_DIR) && $(UV) sync --extra embeddings --extra layouts --all-groups --locked
 
 dev: check-pnpm check-web ## Start the Next.js development server.
 	$(PNPM) --filter $(WEB_PACKAGE) dev

@@ -179,10 +179,10 @@ describe("web application contract", () => {
   it("documents topology keyboard controls", () => {
     const controls = readRoot("docs/interaction-controls.md");
 
-    expect(controls).toContain("| `1` | semantic |");
-    expect(controls).toContain("| `2` | communities |");
-    expect(controls).toContain("| `3` | temporal |");
-    expect(controls).toContain("| `4` | force |");
+    expect(controls).toMatch(/\| `1` \| semantic\s+\|/);
+    expect(controls).toMatch(/\| `2` \| communities\s+\|/);
+    expect(controls).toMatch(/\| `3` \| temporal\s+\|/);
+    expect(controls).toMatch(/\| `4` \| force\s+\|/);
     expect(controls).toContain("`Escape`");
   });
 
@@ -193,6 +193,44 @@ describe("web application contract", () => {
     expect(workerContract).toContain("/models/hand_landmarker");
     expect(workerContract).toContain("15–30 FPS");
     expect(workerContract).toContain("never uploaded");
+  });
+
+  it("keeps the complete setup, privacy, architecture, and recovery guide current", () => {
+    const guide = readRoot("docs/project-guide.md");
+    const makefile = readRoot("Makefile");
+    const readme = readRoot("README.md");
+
+    for (const command of [
+      "make install",
+      "make build-graph",
+      "make dev",
+      "make test",
+      "make test-e2e",
+      "make lint",
+      "make typecheck",
+      "make format-check",
+      "make build",
+    ]) {
+      expect(`${readme}\n${guide}`).toContain(command);
+    }
+
+    expect(makefile).toContain(
+      "sync --extra embeddings --extra layouts --all-groups --locked",
+    );
+    expect(guide).toContain("There is no application backend in the MVP");
+    expect(guide).toContain(
+      "live hand input share the graph interaction state",
+    );
+    expect(guide).toContain("private-notes/");
+    expect(guide).toContain("Camera permission or device failure");
+    expect(guide).toContain("Hand model or WASM fails to load");
+    expect(guide).toContain("The scene reports medium or low quality");
+    expect(guide).toContain("diagrams/gesture-input.svg");
+    expect(readme).toContain(
+      "performance-measurements/2026-07-18-m2-pro-chromium.json",
+    );
+    expect(guide).not.toContain("live landmark frames are not yet connected");
+    expect(guide).not.toContain("live classified gestures do not yet dispatch");
   });
 
   it("exposes development and verification scripts", () => {
