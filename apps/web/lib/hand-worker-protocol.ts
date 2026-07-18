@@ -1,10 +1,15 @@
 import type { HandLandmarkerResult } from "@mediapipe/tasks-vision";
 
-export const HAND_LANDMARKER_MODEL_URL =
+import { PUBLIC_BASE_PATH, publicAssetUrl } from "@/lib/public-url";
+
+const HAND_LANDMARKER_MODEL_PATH =
   "/models/hand_landmarker/hand_landmarker.task";
+const MEDIAPIPE_WASM_BASE_PATH = "/vendor/mediapipe/tasks-vision/wasm";
+
+export const HAND_LANDMARKER_MODEL_URL = handLandmarkerModelUrl();
 export const HAND_LANDMARKER_MODEL_SHA256 =
   "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1";
-export const MEDIAPIPE_WASM_BASE_URL = "/vendor/mediapipe/tasks-vision/wasm";
+export const MEDIAPIPE_WASM_BASE_URL = mediapipeWasmBaseUrl();
 export const HAND_WORKER_TARGET_FPS = 24;
 export const HAND_WORKER_MIN_FPS = 15;
 export const HAND_WORKER_MAX_FPS = 30;
@@ -79,6 +84,18 @@ export type HandWorkerResponsiveness = {
   renderFps: number;
   targetSatisfied: boolean;
 };
+
+export function handLandmarkerModelUrl(
+  basePath: string = PUBLIC_BASE_PATH,
+): string {
+  return publicAssetUrl(HAND_LANDMARKER_MODEL_PATH, basePath);
+}
+
+export function mediapipeWasmBaseUrl(
+  basePath: string = PUBLIC_BASE_PATH,
+): string {
+  return publicAssetUrl(MEDIAPIPE_WASM_BASE_PATH, basePath);
+}
 
 export function normalizeHandLandmarkerResult(
   result: HandLandmarkerResult,

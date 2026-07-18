@@ -8,6 +8,7 @@ import {
   parseArtifactBundle,
 } from "@/lib/artifacts/schema";
 import { buildGraphModel, type GraphModel } from "@/lib/graph-model";
+import { publicAssetUrl } from "@/lib/public-url";
 import { recordingModeEnabled } from "@/lib/recording-mode";
 
 type ArtifactLoadState =
@@ -43,10 +44,10 @@ export type ArtifactViewState =
   | { kind: "ready"; model: GraphModel };
 
 const artifactPaths = {
-  graph: "/data/graph.json",
-  layouts: "/data/layouts.json",
-  manifest: "/data/manifest.json",
-  report: "/data/pipeline-report.json",
+  graph: publicAssetUrl("/data/graph.json"),
+  layouts: publicAssetUrl("/data/layouts.json"),
+  manifest: publicAssetUrl("/data/manifest.json"),
+  report: publicAssetUrl("/data/pipeline-report.json"),
 } as const;
 
 export async function loadArtifactModel(

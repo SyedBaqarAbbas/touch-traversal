@@ -6,6 +6,8 @@ import {
   HAND_LANDMARKER_MODEL_SHA256,
   HAND_LANDMARKER_MODEL_URL,
   MEDIAPIPE_WASM_BASE_URL,
+  handLandmarkerModelUrl,
+  mediapipeWasmBaseUrl,
   normalizeHandLandmarkerResult,
   shouldSubmitHandFrame,
   summarizeHandWorkerResponsiveness,
@@ -18,6 +20,12 @@ describe("hand worker protocol", () => {
     );
     expect(HAND_LANDMARKER_MODEL_SHA256).toHaveLength(64);
     expect(MEDIAPIPE_WASM_BASE_URL).toBe("/vendor/mediapipe/tasks-vision/wasm");
+    expect(handLandmarkerModelUrl("/touch-traversal")).toBe(
+      "/touch-traversal/models/hand_landmarker/hand_landmarker.task",
+    );
+    expect(mediapipeWasmBaseUrl("/touch-traversal")).toBe(
+      "/touch-traversal/vendor/mediapipe/tasks-vision/wasm",
+    );
     expect(
       statSync(
         new URL(
