@@ -70,6 +70,7 @@ content must be re-audited before publishing a cache or embedding model snapshot
 ## Fonts and media
 
 The web application bundles no font files. Its CSS uses system font stacks, so no font license is
-redistributed. The tracked PNGs are screenshots of this project, the SVGs are generated from
-project-authored Mermaid sources, and the sample Markdown is fictional project content; no
-third-party stock imagery, video, audio, or camera capture is included in the release.
+redistributed. Tracked PNG, WebP, GIF, and WebM files are captures of this project made with the
+fictional sample and no camera background; the SVGs are generated from project-authored Mermaid
+sources, and the sample Markdown is fictional project content. No third-party stock imagery,
+audio, or camera capture is included in the release.

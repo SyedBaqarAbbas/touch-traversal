@@ -233,6 +233,40 @@ describe("web application contract", () => {
     expect(guide).not.toContain("live classified gestures do not yet dispatch");
   });
 
+  it("publishes a sanitized, captioned portfolio media set", () => {
+    const mediaGuide = readRoot("docs/portfolio-media.md");
+    const readme = readRoot("README.md");
+    const stills = [
+      "overview.webp",
+      "focused-thought.webp",
+      "traversal.webp",
+      "temporal-topology.webp",
+      "calibration.webp",
+    ];
+
+    for (const filename of stills) {
+      expect(mediaGuide).toContain(`assets/portfolio/${filename}`);
+      expect(
+        statRoot(`docs/assets/portfolio/${filename}`).size,
+      ).toBeGreaterThan(20_000);
+      expect(statRoot(`docs/assets/portfolio/${filename}`).size).toBeLessThan(
+        150_000,
+      );
+    }
+
+    expect(mediaGuide).toMatch(/Camera\s+permission stayed off/);
+    expect(mediaGuide).toContain("fictional public sample");
+    expect(mediaGuide).toContain("silent 26.52-second WebM");
+    expect(readme).toContain("touch-traversal-demo.gif");
+    expect(readme).toContain("touch-traversal-demo.webm");
+    expect(
+      statRoot("docs/assets/portfolio/touch-traversal-demo.gif").size,
+    ).toBeLessThan(500_000);
+    expect(
+      statRoot("docs/assets/portfolio/touch-traversal-demo.webm").size,
+    ).toBeLessThan(5_000_000);
+  });
+
   it("exposes development and verification scripts", () => {
     const packageJson = JSON.parse(read("package.json"));
 

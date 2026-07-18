@@ -93,6 +93,14 @@ The editable Mermaid sources and accessible SVG exports for the
   There is no API route, database, account system, cloud sync, or server-side note ingestion in the
   MVP.
 
+## Portfolio preview
+
+![Touch Traversal reveals a fictional thought constellation, focuses and traverses connected thoughts, changes topology, and returns to overview.](docs/assets/portfolio/touch-traversal-demo.gif)
+
+The [full media gallery](docs/portfolio-media.md) includes overview, focus, traversal, temporal, and
+camera-free calibration stills. The authored sequence is also available as a
+[silent 26.52-second WebM](docs/assets/portfolio/touch-traversal-demo.webm).
+
 ## Privacy and current scope
 
 Put personal source files under the ignored `private-notes/` directory, and inspect `git status`
