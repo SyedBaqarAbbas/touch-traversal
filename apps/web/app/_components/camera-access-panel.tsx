@@ -24,12 +24,12 @@ import {
   type HandCursorFrame,
   type HandCursorStatus,
 } from "@/lib/hand-cursor";
+import type { TimestampedLandmarkFrame } from "@/lib/gesture-classifier";
 import {
-  extractHandSignal,
-  fadeHandSignal,
-  smoothHandSignal,
-  type HandSignal,
-} from "@/lib/hand-signals";
+  createHandInputBridgeState,
+  updateHandInputBridge,
+  type HandInputBridgeState,
+} from "@/lib/hand-input-bridge";
 import {
   createHandTrackingWorkerController,
   type HandTrackingWorkerController,
@@ -41,7 +41,17 @@ import type {
 
 type HandWorkerPhase = "idle" | "loading" | "ready" | "error";
 
-export function CameraAccessPanel() {
+export type CameraAccessPanelProps = {
+  compact?: boolean;
+  onCursorFrame?: (frame: HandCursorFrame | null) => void;
+  onLandmarkFrame?: (frame: TimestampedLandmarkFrame) => void;
+};
+
+export function CameraAccessPanel({
+  compact = false,
+  onCursorFrame,
+  onLandmarkFrame,
+}: CameraAccessPanelProps = {}) {
   const [state, dispatch] = useReducer(
     reduceCameraAccess,
     initialCameraAccessState,
@@ -53,9 +63,12 @@ export function CameraAccessPanel() {
   const workerRef = useRef<HandTrackingWorkerController | null>(null);
   const frameLoopRef = useRef<number | null>(null);
   const cursorLoopRef = useRef<number | null>(null);
-  const signalRef = useRef<HandSignal | null>(null);
-  const lastSeenAtRef = useRef<number | null>(null);
+  const handInputRef = useRef<HandInputBridgeState>(
+    createHandInputBridgeState(),
+  );
   const displayFrameRef = useRef<HandCursorFrame | null>(null);
+  const onCursorFrameRef = useRef(onCursorFrame);
+  const onLandmarkFrameRef = useRef(onLandmarkFrame);
   const copy = cameraAccessCopy(state);
   const handStatus = resolveHandStatus(state.status, cursorFrame);
   const handCopy = handCursorCopy(handStatus);
@@ -64,6 +77,11 @@ export function CameraAccessPanel() {
     workerPhase,
     handCopy.label,
   );
+
+  useEffect(() => {
+    onCursorFrameRef.current = onCursorFrame;
+    onLandmarkFrameRef.current = onLandmarkFrame;
+  }, [onCursorFrame, onLandmarkFrame]);
 
   useEffect(() => {
     return () => {
@@ -86,9 +104,9 @@ export function CameraAccessPanel() {
     const tick = (nowMs: number) => {
       const targetFrame = handCursorFrameFromSignal({
         cameraActive: true,
-        lastSeenAtMs: lastSeenAtRef.current,
+        lastSeenAtMs: handInputRef.current.lastSeenAtMs,
         nowMs,
-        signal: signalRef.current,
+        signal: handInputRef.current.signal,
       });
 
       if (targetFrame) {
@@ -99,9 +117,14 @@ export function CameraAccessPanel() {
         });
         displayFrameRef.current = displayFrame;
         setCursorFrame(displayFrame);
+        onCursorFrameRef.current?.(displayFrame);
       } else {
+        const hadDisplayFrame = displayFrameRef.current !== null;
         displayFrameRef.current = null;
         setCursorFrame(null);
+        if (hadDisplayFrame) {
+          onCursorFrameRef.current?.(null);
+        }
       }
 
       cursorLoopRef.current = window.requestAnimationFrame(tick);
@@ -122,9 +145,10 @@ export function CameraAccessPanel() {
 
     resetHandTrackingState({
       displayFrameRef,
-      lastSeenAtRef,
+      handInputRef,
+      onCursorFrame: onCursorFrameRef.current,
+      onLandmarkFrame: onLandmarkFrameRef.current,
       setCursorFrame,
-      signalRef,
     });
     setWorkerPhase("loading");
     dispatch({ type: "REQUEST" });
@@ -160,9 +184,10 @@ export function CameraAccessPanel() {
     workerRef.current = null;
     resetHandTrackingState({
       displayFrameRef,
-      lastSeenAtRef,
+      handInputRef,
+      onCursorFrame: onCursorFrameRef.current,
+      onLandmarkFrame: onLandmarkFrameRef.current,
       setCursorFrame,
-      signalRef,
     });
     setWorkerPhase("idle");
     stopStream(streamRef.current);
@@ -188,9 +213,10 @@ export function CameraAccessPanel() {
             onError: () => {
               resetHandTrackingState({
                 displayFrameRef,
-                lastSeenAtRef,
+                handInputRef,
+                onCursorFrame: onCursorFrameRef.current,
+                onLandmarkFrame: onLandmarkFrameRef.current,
                 setCursorFrame,
-                signalRef,
               });
               setWorkerPhase("error");
               dispatch({
@@ -207,9 +233,10 @@ export function CameraAccessPanel() {
           .catch((error: unknown) => {
             resetHandTrackingState({
               displayFrameRef,
-              lastSeenAtRef,
+              handInputRef,
+              onCursorFrame: onCursorFrameRef.current,
+              onLandmarkFrame: onLandmarkFrameRef.current,
               setCursorFrame,
-              signalRef,
             });
             setWorkerPhase("error");
             dispatch(classifyCameraAccessError(error));
@@ -240,21 +267,9 @@ export function CameraAccessPanel() {
   };
 
   const handleWorkerResult = (message: HandWorkerResultMessage) => {
-    const previous = signalRef.current;
-    const hand = message.hands[0] ?? null;
-    const nextRaw = hand
-      ? extractHandSignal(hand, message.timestampMs, previous)
-      : null;
-
-    if (!nextRaw) {
-      if (previous) {
-        signalRef.current = fadeHandSignal(previous, message.timestampMs);
-      }
-      return;
-    }
-
-    signalRef.current = smoothHandSignal(previous, nextRaw);
-    lastSeenAtRef.current = message.timestampMs;
+    const update = updateHandInputBridge(handInputRef.current, message);
+    handInputRef.current = update.state;
+    onLandmarkFrameRef.current?.(update.landmarkFrame);
   };
 
   return (
@@ -274,6 +289,7 @@ export function CameraAccessPanel() {
         aria-live="polite"
         className="camera-access-panel"
         data-camera-status={state.status}
+        data-compact={compact ? "true" : "false"}
       >
         <div className="camera-access-panel__meta">
           <span className="camera-access-panel__status">
@@ -287,8 +303,8 @@ export function CameraAccessPanel() {
             {handStatusLabel}
           </span>
         </div>
-        <strong>{copy.title}</strong>
-        <p>{copy.description}</p>
+        {!compact ? <strong>{copy.title}</strong> : null}
+        {!compact ? <p>{copy.description}</p> : null}
         {copy.actionLabel ? (
           <button
             disabled={state.status === "requesting"}
@@ -348,19 +364,26 @@ function handCursorVisualStyle(frame: HandCursorFrame): CSSProperties {
 
 function resetHandTrackingState({
   displayFrameRef,
-  lastSeenAtRef,
+  handInputRef,
+  onCursorFrame,
+  onLandmarkFrame,
   setCursorFrame,
-  signalRef,
 }: {
   displayFrameRef: MutableRefObject<HandCursorFrame | null>;
-  lastSeenAtRef: MutableRefObject<number | null>;
+  handInputRef: MutableRefObject<HandInputBridgeState>;
+  onCursorFrame: CameraAccessPanelProps["onCursorFrame"];
+  onLandmarkFrame: CameraAccessPanelProps["onLandmarkFrame"];
   setCursorFrame: (frame: HandCursorFrame | null) => void;
-  signalRef: MutableRefObject<HandSignal | null>;
 }) {
-  signalRef.current = null;
-  lastSeenAtRef.current = null;
+  const timestampMs =
+    handInputRef.current.signal?.timestampMs ??
+    displayFrameRef.current?.timestampMs ??
+    0;
+  handInputRef.current = createHandInputBridgeState();
   displayFrameRef.current = null;
   setCursorFrame(null);
+  onCursorFrame?.(null);
+  onLandmarkFrame?.({ hand: null, timestampMs });
 }
 
 async function attachStream(
