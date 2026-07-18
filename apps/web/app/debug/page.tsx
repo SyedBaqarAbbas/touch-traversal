@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 const routes = [
   { href: "/", label: "home" },
   { href: "/demo", label: "demo" },
+  { href: "/perform", label: "perform" },
   { href: "/calibration", label: "calibration" },
   { href: "/debug", label: "debug" },
 ] as const;

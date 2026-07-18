@@ -65,9 +65,9 @@ make format-check  # non-mutating Prettier and Ruff check
 make build         # production Next.js build
 ```
 
-The routes are `/`, `/demo`, `/calibration`, and `/debug`. Camera access is optional and is only
-requested after pressing **Enable hand camera**; mouse and keyboard controls remain available if
-permission is denied or hand-model loading fails.
+The routes are `/`, `/demo`, `/perform`, `/calibration`, and `/debug`. `/perform` is an opt-in
+full-viewport camera composition; the camera stays off until **Enable hand camera** is pressed.
+Mouse and keyboard controls remain available if permission is denied or hand-model loading fails.
 
 ## How it works
 
@@ -112,9 +112,10 @@ Generated JSON can contain source titles, excerpts, links, and provenance, so ne
 tracked public sample bundle with personal output and never publish a private bundle.
 
 The pipeline computes embeddings locally and does not call a hosted embedding API. Its first use
-may contact the model host to download model files. Webcam permission is explicit; disabling the
-camera stops its media tracks, and calibration stores only versioned numeric settings in browser
-local storage.
+may contact the model host to download model files. Webcam permission is explicit. Performance mode
+reuses one silent stream for its mirrored video layer and hand inference; hiding the video layer
+does not request another stream. Disabling the camera or exiting performance mode stops its media
+tracks, and calibration stores only versioned numeric settings in browser local storage.
 
 This is a measured prototype, not a finished personal-knowledge platform. The checked-in sample is
 small at 16 thoughts and 48 relationships, graph generation is a manual batch step, and

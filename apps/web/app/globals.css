@@ -760,6 +760,7 @@ a {
   min-height: 100svh;
   overflow: hidden;
   background: var(--background);
+  isolation: isolate;
 }
 
 .scene-canvas {
@@ -776,6 +777,7 @@ a {
 .scene-header,
 .scene-topology-hud,
 .scene-overlay,
+.scene-view-controls,
 .scene-node-list,
 .scene-label-layer,
 .scene-selected-card,
@@ -803,6 +805,7 @@ a {
 }
 
 .scene-overlay,
+.scene-view-controls,
 .scene-topology-controls,
 .scene-node-list,
 .scene-nav {
@@ -812,6 +815,7 @@ a {
 }
 
 .scene-shell[data-hud="dimmed"] .scene-overlay,
+.scene-shell[data-hud="dimmed"] .scene-view-controls,
 .scene-shell[data-hud="dimmed"] .scene-topology-controls,
 .scene-shell[data-hud="dimmed"] .scene-node-list,
 .scene-shell[data-hud="dimmed"] .scene-nav {
@@ -826,6 +830,10 @@ a {
 
 .scene-overlay {
   animation-delay: 520ms;
+}
+
+.scene-view-controls {
+  animation-delay: 680ms;
 }
 
 .scene-topology-hud {
@@ -893,6 +901,50 @@ a {
   border: 1px solid var(--subtle-line);
   background: var(--subtle-line);
   pointer-events: auto;
+}
+
+.scene-view-controls {
+  position: absolute;
+  top: clamp(5.8rem, 12vh, 8.2rem);
+  left: clamp(1.25rem, 3vw, 2.75rem);
+  display: grid;
+  gap: 0.38rem;
+  pointer-events: auto;
+}
+
+.scene-view-controls > span {
+  color: var(--secondary-text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.scene-view-controls > div {
+  display: grid;
+  grid-template-columns: repeat(5, 1.9rem);
+  gap: 1px;
+  border: 1px solid var(--subtle-line);
+  background: var(--subtle-line);
+}
+
+.scene-view-controls button {
+  width: 1.9rem;
+  min-height: 1.9rem;
+  padding: 0;
+  border: 0;
+  color: var(--secondary-text);
+  background: rgba(5, 5, 5, 0.76);
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.7rem;
+}
+
+.scene-view-controls button:hover,
+.scene-view-controls button:focus-visible {
+  color: var(--primary-text);
+  background: var(--quiet-fill-strong);
 }
 
 .scene-topology-hud {
@@ -1087,6 +1139,168 @@ a {
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+.performance-camera-layer {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  background: #050505;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.performance-camera-layer[data-active="true"][data-visible="true"] {
+  opacity: 1;
+}
+
+.performance-camera-layer__video,
+.performance-camera-layer__fixture,
+.performance-camera-layer__contrast {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.performance-camera-layer__video {
+  object-fit: cover;
+  object-position: 50% 50%;
+  opacity: var(--performance-video-opacity);
+  filter: saturate(0.7) contrast(1.04) brightness(0.74);
+  transform-origin: center;
+}
+
+.performance-camera-layer[data-mirrored="true"]
+  .performance-camera-layer__video,
+.performance-camera-layer[data-mirrored="true"]
+  .performance-camera-layer__fixture {
+  transform: scaleX(-1);
+}
+
+.performance-camera-layer__fixture {
+  background:
+    radial-gradient(
+      circle at 50% 39%,
+      rgba(169, 158, 154, 0.46) 0 8%,
+      transparent 8.5%
+    ),
+    radial-gradient(
+      ellipse at 50% 104%,
+      rgba(114, 105, 104, 0.62) 0 34%,
+      transparent 34.5%
+    ),
+    linear-gradient(110deg, #0c0b0e 0 43%, #38343a 43% 75%, #17161a 75%);
+  opacity: var(--performance-video-opacity);
+}
+
+.performance-camera-layer__fixture span {
+  position: absolute;
+  top: 32%;
+  left: 53%;
+  width: 7.5rem;
+  height: 7.5rem;
+  border: 1px solid rgba(242, 240, 234, 0.14);
+  border-radius: 48% 52% 46% 54%;
+  box-shadow: 0 16rem 0 7rem rgba(12, 11, 14, 0.46);
+}
+
+.performance-camera-layer__contrast {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(5, 5, 5, 0.58),
+      transparent 34% 62%,
+      rgba(5, 5, 5, 0.28)
+    ),
+    linear-gradient(
+      0deg,
+      rgba(5, 5, 5, 0.64),
+      transparent 28% 76%,
+      rgba(5, 5, 5, 0.32)
+    );
+}
+
+.scene-shell[data-presentation="performance"] .scene-canvas {
+  z-index: 1;
+}
+
+.scene-shell[data-presentation="performance"] .scene-header,
+.scene-shell[data-presentation="performance"] .scene-topology-hud,
+.scene-shell[data-presentation="performance"] .scene-overlay,
+.scene-shell[data-presentation="performance"] .scene-view-controls,
+.scene-shell[data-presentation="performance"] .scene-node-list,
+.scene-shell[data-presentation="performance"] .scene-label-layer,
+.scene-shell[data-presentation="performance"] .scene-selected-card,
+.scene-shell[data-presentation="performance"] .scene-traversal-status,
+.scene-shell[data-presentation="performance"] .scene-pointer-cue,
+.scene-shell[data-presentation="performance"] .hand-gesture-cursor,
+.scene-shell[data-presentation="performance"] .scene-gesture-hint,
+.scene-shell[data-presentation="performance"] .scene-performance-note,
+.scene-shell[data-presentation="performance"] .scene-nav {
+  z-index: 2;
+}
+
+.scene-shell[data-presentation="performance"] .camera-access-panel {
+  z-index: 3;
+  width: min(22rem, calc(100vw - 2.5rem));
+  border-color: rgba(242, 240, 234, 0.2);
+  background: rgba(5, 5, 5, 0.86);
+}
+
+.scene-shell[data-presentation="performance"] .scene-topology-hud,
+.scene-shell[data-presentation="performance"] .scene-overlay,
+.scene-shell[data-presentation="performance"] .scene-thought-label,
+.scene-shell[data-presentation="performance"] .scene-selected-card {
+  text-shadow: 0 1px 0.85rem rgba(0, 0, 0, 0.95);
+}
+
+.scene-shell[data-presentation="performance"] .scene-topology-hud::before {
+  position: absolute;
+  z-index: -1;
+  inset: -1.2rem -1.4rem;
+  background: linear-gradient(110deg, rgba(5, 5, 5, 0.72), rgba(5, 5, 5, 0.08));
+  content: "";
+}
+
+.scene-shell[data-presentation="performance"] .scene-node-list {
+  right: auto;
+  left: clamp(18rem, 28vw, 26rem);
+}
+
+.scene-shell[data-presentation="performance"][data-quality="medium"]
+  .performance-camera-layer__video,
+.scene-shell[data-presentation="performance"][data-quality="low"]
+  .performance-camera-layer__video {
+  filter: none;
+}
+
+.performance-presentation-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 0.38rem;
+  border: 1px solid var(--subtle-line);
+  background: var(--subtle-line);
+  pointer-events: auto;
+}
+
+.camera-access-panel .performance-presentation-controls button {
+  width: 100%;
+  min-height: 2.15rem;
+  margin: 0;
+  border: 0;
+  text-align: left;
+}
+
+.camera-access-panel .performance-presentation-controls button:last-child {
+  grid-column: 1 / -1;
+}
+
+.performance-camera-consent {
+  color: var(--primary-text) !important;
 }
 
 .camera-access-panel__hand {
@@ -1725,6 +1939,35 @@ a {
     width: min(18rem, calc(100vw - 2.5rem));
   }
 
+  .scene-shell[data-presentation="performance"] .scene-topology-hud {
+    top: 4.75rem;
+    right: 1.25rem;
+    width: min(11rem, calc(100vw - 2.5rem));
+  }
+
+  .scene-shell[data-presentation="performance"] .scene-topology-hud dl,
+  .scene-shell[data-presentation="performance"] .scene-topology-controls,
+  .scene-shell[data-presentation="performance"] .scene-overlay .description {
+    display: none;
+  }
+
+  .scene-shell[data-presentation="performance"] .scene-node-list {
+    right: 1.25rem;
+    bottom: 12rem;
+    left: 1.25rem;
+  }
+
+  .scene-shell[data-presentation="performance"] .camera-access-panel {
+    right: 1.25rem;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    width: auto;
+  }
+
+  .scene-shell[data-presentation="performance"] .scene-nav {
+    display: none;
+  }
+
   .scene-nav {
     right: 1.25rem;
     bottom: 1.25rem;
@@ -1755,6 +1998,7 @@ a {
   .scene-thought-label,
   .scene-recording-cue,
   .camera-access-panel,
+  .performance-camera-layer,
   .scene-nav {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;

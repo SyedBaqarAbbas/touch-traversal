@@ -17,6 +17,7 @@ export type HandTrackingWorkerHandlers = {
 
 export type HandTrackingWorkerController = {
   dispose: () => void;
+  setTargetFps: (targetFps: number) => void;
   submitVideoFrame: (
     video: HTMLVideoElement,
     timestampMs: number,
@@ -31,6 +32,7 @@ export function createHandTrackingWorkerController(
   });
   let disposed = false;
   let lastSubmittedAtMs: number | null = null;
+  let targetFps = HAND_WORKER_TARGET_FPS;
 
   worker.onmessage = (event: MessageEvent<HandWorkerOutboundMessage>) => {
     handlers.onMessage?.(event.data);
@@ -52,6 +54,9 @@ export function createHandTrackingWorkerController(
       post(worker, { type: "DISPOSE" });
       worker.terminate();
     },
+    setTargetFps: (nextTargetFps: number) => {
+      targetFps = nextTargetFps;
+    },
     submitVideoFrame: async (
       video: HTMLVideoElement,
       timestampMs: number,
@@ -64,7 +69,7 @@ export function createHandTrackingWorkerController(
         !shouldSubmitHandFrame({
           lastSubmittedAtMs,
           nowMs: timestampMs,
-          targetFps: HAND_WORKER_TARGET_FPS,
+          targetFps,
         })
       ) {
         return false;

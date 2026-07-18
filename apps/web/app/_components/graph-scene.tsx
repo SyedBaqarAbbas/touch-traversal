@@ -18,7 +18,15 @@ import {
 import * as THREE from "three";
 
 import { CameraAccessPanel } from "@/app/_components/camera-access-panel";
+import { SceneViewControls } from "@/app/_components/scene-view-controls";
 import type { LayoutName, Vec3 } from "@/lib/artifacts/schema";
+import {
+  applyHandManipulationDelta,
+  cameraPoseWithManipulation,
+  createCameraManipulationState,
+  type CameraManipulationState,
+  type CameraViewControl,
+} from "@/lib/camera-manipulation";
 import {
   cameraModeForInteraction,
   createInteractionState,
@@ -29,10 +37,16 @@ import { layoutMorphDuration } from "@/lib/layout-morph";
 import type { HandCursorFrame } from "@/lib/hand-cursor";
 import type { TimestampedLandmarkFrame } from "@/lib/gesture-classifier";
 import {
+  cancelGestureControllerManipulation,
   createGestureControllerState,
   updateGestureController,
   type GestureControllerState,
 } from "@/lib/gesture-controller";
+import {
+  defaultHandCalibrationSettings,
+  loadHandCalibrationSettings,
+  manipulationConfigFromCalibration,
+} from "@/lib/hand-calibration";
 import {
   advanceHoverState,
   createIdleHoverState,
@@ -53,6 +67,10 @@ import {
   summarizeFrameDurations,
   type SceneDecorationPreset,
 } from "@/lib/performance-policy";
+import {
+  initialPerformancePresentationState,
+  reducePerformancePresentation,
+} from "@/lib/performance-presentation";
 import {
   isEditableKeyboardTarget,
   isTopologyAvailable,
@@ -98,6 +116,7 @@ import {
 const routes = [
   { href: "/", label: "home" },
   { href: "/demo", label: "demo" },
+  { href: "/perform", label: "perform" },
   { href: "/calibration", label: "calibration" },
   { href: "/debug", label: "debug" },
 ] as const;
@@ -175,8 +194,10 @@ type GestureSceneContext = {
   hoverNodeId: string | null;
   interactionMode: InteractionState["mode"];
   layoutName: LayoutName;
+  manipulationAllowed: boolean;
   selectedNodeId: string | null;
   temporalAvailable: boolean;
+  topologyMorphingUntilMs: number;
 };
 
 type HandRaycastRequest = {
@@ -187,10 +208,14 @@ type HandRaycastRequest = {
 export function GraphScene({
   inputMode = "default",
   model,
+  performanceFixture = false,
+  performanceMode = false,
   recordingMode = false,
 }: {
   inputMode?: GraphInputMode;
   model: GraphModel;
+  performanceFixture?: boolean;
+  performanceMode?: boolean;
   recordingMode?: boolean;
 }) {
   const nodeSummaries = useMemo(() => selectNodeSummaries(model), [model]);
@@ -214,6 +239,10 @@ export function GraphScene({
   const [hudActivityKey, setHudActivityKey] = useState(0);
   const [sceneTransitionMs, setSceneTransitionMs] =
     useState(FOCUS_TRANSITION_MS);
+  const [performancePresentation, dispatchPerformancePresentation] = useReducer(
+    reducePerformancePresentation,
+    initialPerformancePresentationState,
+  );
   const reducedMotion = usePrefersReducedMotion();
   const lastHudActivityAtRef = useRef(Number.NEGATIVE_INFINITY);
   const lastMouseActivityAtRef = useRef(Number.NEGATIVE_INFINITY);
@@ -222,10 +251,18 @@ export function GraphScene({
   const gestureControllerRef = useRef<GestureControllerState>(
     createGestureControllerState(),
   );
+  const cameraManipulationRef = useRef<CameraManipulationState>(
+    createCameraManipulationState(),
+  );
+  const cameraResetRevisionRef = useRef(0);
+  const manipulationConfigRef = useRef(
+    manipulationConfigFromCalibration(defaultHandCalibrationSettings),
+  );
   const handCursorFrameRef = useRef<HandCursorFrame | null>(null);
   const handPointerActiveRef = useRef(false);
   const handRaycastRequestRef = useRef<HandRaycastRequest | null>(null);
   const handRaycastSequenceRef = useRef(0);
+  const topologyMorphingUntilRef = useRef(0);
   const recordingStartedRef = useRef(false);
   const sceneShellRef = useRef<HTMLElement>(null);
   const cameraMode = cameraModeForInteraction(interaction);
@@ -244,15 +281,20 @@ export function GraphScene({
       hoverNodeId,
       interactionMode: interaction.mode,
       layoutName,
+      manipulationAllowed:
+        canSwitchTopology && activeTraversal === null && !recordingMode,
       selectedNodeId,
       temporalAvailable: model.temporal.available,
+      topologyMorphingUntilMs: topologyMorphingUntilRef.current,
     };
   }, [
     canSwitchTopology,
+    activeTraversal,
     hoverNodeId,
     interaction.mode,
     layoutName,
     model.temporal.available,
+    recordingMode,
     selectedNodeId,
   ]);
   const labelHoverNodeId = selectedNodeId
@@ -433,6 +475,29 @@ export function GraphScene({
   }, [hudActivityKey]);
 
   useEffect(() => {
+    if (!performanceMode) {
+      return;
+    }
+    const resetFraming = () => {
+      dispatchPerformancePresentation({ type: "RESET_FRAMING" });
+    };
+    window.addEventListener("orientationchange", resetFraming);
+    return () => window.removeEventListener("orientationchange", resetFraming);
+  }, [performanceMode]);
+
+  useEffect(() => {
+    try {
+      manipulationConfigRef.current = manipulationConfigFromCalibration(
+        loadHandCalibrationSettings(window.localStorage),
+      );
+    } catch {
+      manipulationConfigRef.current = manipulationConfigFromCalibration(
+        defaultHandCalibrationSettings,
+      );
+    }
+  }, []);
+
+  useEffect(() => {
     const restoreHud = () => noteHudActivity();
     const trackPointerActivity = (event: PointerEvent) => {
       if (event.pointerType === "mouse") {
@@ -535,7 +600,12 @@ export function GraphScene({
         isTopologyAvailable(nextLayoutName, model.temporal.available)
       ) {
         event.preventDefault();
-        setSceneTransitionMs(layoutMorphDuration(reducedMotion));
+        const durationMs = layoutMorphDuration(reducedMotion);
+        topologyMorphingUntilRef.current = performance.now() + durationMs;
+        gestureControllerRef.current = cancelGestureControllerManipulation(
+          gestureControllerRef.current,
+        );
+        setSceneTransitionMs(durationMs);
         setLayoutName(nextLayoutName);
       }
     };
@@ -617,6 +687,9 @@ export function GraphScene({
   };
 
   const selectNode = (nodeId: string, timestampMs: number) => {
+    gestureControllerRef.current = cancelGestureControllerManipulation(
+      gestureControllerRef.current,
+    );
     if (
       selectedNodeId &&
       selectedNodeId !== nodeId &&
@@ -635,6 +708,9 @@ export function GraphScene({
   };
 
   const returnOverview = (timestampMs: number) => {
+    gestureControllerRef.current = cancelGestureControllerManipulation(
+      gestureControllerRef.current,
+    );
     setActiveTraversal(null);
     setSceneTransitionMs(
       reducedMotion
@@ -654,7 +730,12 @@ export function GraphScene({
     ) {
       return;
     }
-    setSceneTransitionMs(layoutMorphDuration(reducedMotion));
+    const durationMs = layoutMorphDuration(reducedMotion);
+    topologyMorphingUntilRef.current = performance.now() + durationMs;
+    gestureControllerRef.current = cancelGestureControllerManipulation(
+      gestureControllerRef.current,
+    );
+    setSceneTransitionMs(durationMs);
     setLayoutName(nextLayoutName);
   };
 
@@ -734,13 +815,19 @@ export function GraphScene({
         gestureControllerRef.current,
         frame,
         {
+          manipulationAllowed:
+            context.manipulationAllowed &&
+            frame.timestampMs >= context.topologyMorphingUntilMs,
+          manipulationConfig: manipulationConfigRef.current,
           mouseSuppressionUntilMs:
             lastMouseActivityAtRef.current + MOUSE_HAND_SUPPRESSION_MS,
           safeToReturn:
             context.selectedNodeId !== null &&
             context.interactionMode === "FOCUSED",
           targetNodeId: context.hoverNodeId,
-          topologyMorphing: !context.canSwitchTopology,
+          topologyMorphing:
+            !context.canSwitchTopology ||
+            frame.timestampMs < context.topologyMorphingUntilMs,
         },
       );
       gestureControllerRef.current = update.state;
@@ -767,6 +854,14 @@ export function GraphScene({
             actions.selectNode(action.nodeId, action.timestampMs);
             break;
           }
+          case "manipulation":
+            if (action.event.phase === "update") {
+              cameraManipulationRef.current = applyHandManipulationDelta(
+                cameraManipulationRef.current,
+                action.event.delta,
+              );
+            }
+            break;
           case "return":
             actions.returnOverview(action.timestampMs);
             break;
@@ -788,6 +883,21 @@ export function GraphScene({
       }
     },
     [routeHandPointer],
+  );
+
+  const handleViewControl = useCallback(
+    (control: CameraViewControl) => {
+      lastMouseActivityAtRef.current = performance.now();
+      gestureControllerRef.current = cancelGestureControllerManipulation(
+        gestureControllerRef.current,
+      );
+      noteHudActivity();
+      if (control === "reset") {
+        cameraResetRevisionRef.current += 1;
+        gestureActionsRef.current?.showGestureHint("view / reset");
+      }
+    },
+    [noteHudActivity],
   );
 
   useEffect(() => {
@@ -886,7 +996,21 @@ export function GraphScene({
       data-hud={hudVisible ? "visible" : "dimmed"}
       data-input-mode={inputMode}
       data-motion={reducedMotion ? "reduced" : "full"}
-      data-presentation={recordingMode ? "recording" : "interactive"}
+      data-performance-emphasis={performancePresentation.emphasis}
+      data-performance-layer={
+        performancePresentation.layerVisible ? "video" : "graph-only"
+      }
+      data-performance-mirrored={
+        performancePresentation.mirrored ? "true" : "false"
+      }
+      data-presentation={
+        recordingMode
+          ? "recording"
+          : performanceMode
+            ? "performance"
+            : "interactive"
+      }
+      data-quality={sceneQuality.name}
       ref={sceneShellRef}
       style={sceneIntroStyle()}
     >
@@ -894,14 +1018,18 @@ export function GraphScene({
         className="scene-canvas"
         dpr={sceneQuality.dpr}
         gl={{
-          alpha: false,
+          alpha: performanceMode,
           antialias: true,
           powerPreference: "high-performance",
         }}
-        onCreated={({ gl }) => configureSceneRenderer(gl)}
+        onCreated={({ gl }) => configureSceneRenderer(gl, performanceMode)}
       >
-        <color attach="background" args={["#050505"]} />
+        {!performanceMode ? (
+          <color attach="background" args={["#050505"]} />
+        ) : null}
         <CameraRig
+          manipulationRef={cameraManipulationRef}
+          resetRevisionRef={cameraResetRevisionRef}
           driftAmplitude={decorationPreset.cameraDriftAmplitude}
           mode={cameraMode}
           reducedMotion={reducedMotion}
@@ -1005,17 +1133,21 @@ export function GraphScene({
       </aside>
 
       <section className="scene-overlay" aria-labelledby="scene-title">
-        <p className="eyebrow">demo</p>
-        <h1 id="scene-title">Graph artifact boundary</h1>
+        <p className="eyebrow">{performanceMode ? "live mode" : "demo"}</p>
+        <h1 id="scene-title">
+          {performanceMode
+            ? "Webcam graph performance"
+            : "Graph artifact boundary"}
+        </h1>
         {inputMode !== "default" ? (
           <p className="scene-input-mode">
             input / {inputMode === "mouse" ? "mouse" : "gesture fixture"}
           </p>
         ) : null}
         <p className="description">
-          {model.graph.order} thoughts and {model.graph.size} relationships
-          rendered as shared-buffer geometry from the {activeTopology.label}{" "}
-          layout at {sceneQuality.name} quality.
+          {performanceMode
+            ? `Camera remains off until enabled. Then one local, silent stream drives both the mirrored backdrop and hand traversal behind ${model.graph.order} thoughts and ${model.graph.size} relationships.`
+            : `${model.graph.order} thoughts and ${model.graph.size} relationships rendered as shared-buffer geometry from the ${activeTopology.label} layout at ${sceneQuality.name} quality.`}
         </p>
 
         <div className="scene-controls" aria-label="Camera modes">
@@ -1044,6 +1176,13 @@ export function GraphScene({
           </button>
         </div>
       </section>
+
+      {!recordingMode ? (
+        <SceneViewControls
+          manipulationRef={cameraManipulationRef}
+          onControl={handleViewControl}
+        />
+      ) : null}
 
       <aside className="scene-node-list" aria-label="Thought nodes">
         {nodeRailSummaries.map((node, index) => (
@@ -1149,6 +1288,32 @@ export function GraphScene({
         compact={recordingMode}
         onCursorFrame={recordingMode ? undefined : handleHandCursorFrame}
         onLandmarkFrame={recordingMode ? undefined : handleLandmarkFrame}
+        performance={
+          performanceMode
+            ? {
+                emphasis: performancePresentation.emphasis,
+                fixture: performanceFixture,
+                framingRevision: performancePresentation.framingRevision,
+                layerVisible: performancePresentation.layerVisible,
+                mirrored: performancePresentation.mirrored,
+                onCycleEmphasis: () =>
+                  dispatchPerformancePresentation({
+                    type: "CYCLE_EMPHASIS",
+                  }),
+                onResetFraming: () => {
+                  cameraManipulationRef.current =
+                    createCameraManipulationState();
+                  cameraResetRevisionRef.current += 1;
+                  dispatchPerformancePresentation({ type: "RESET_FRAMING" });
+                },
+                onToggleLayer: () =>
+                  dispatchPerformancePresentation({ type: "TOGGLE_LAYER" }),
+                onToggleMirror: () =>
+                  dispatchPerformancePresentation({ type: "TOGGLE_MIRROR" }),
+                quality: sceneQuality.name,
+              }
+            : undefined
+        }
       />
 
       {!recordingMode ? (
@@ -1353,19 +1518,24 @@ function persistTraversalHistory(history: readonly TraversalHistoryEntry[]) {
 
 function CameraRig({
   driftAmplitude,
+  manipulationRef,
   mode,
   reducedMotion,
+  resetRevisionRef,
   traversal,
 }: {
   driftAmplitude: number;
+  manipulationRef: MutableRefObject<CameraManipulationState>;
   mode: CameraMode;
   reducedMotion: boolean;
+  resetRevisionRef: MutableRefObject<number>;
   traversal: ActiveTraversal | null;
 }) {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const target = useRef(new THREE.Vector3());
   const desiredPosition = useRef(new THREE.Vector3());
   const desiredTarget = useRef(new THREE.Vector3());
+  const consumedResetRevisionRef = useRef(0);
   const overview = getCameraPose("overview");
 
   useFrame((state, delta) => {
@@ -1384,8 +1554,12 @@ function CameraRig({
       setVector(desiredPosition.current, sample.cameraPosition);
       setVector(desiredTarget.current, sample.cameraTarget);
     } else {
-      setVector(desiredPosition.current, pose.position);
-      setVector(desiredTarget.current, pose.target);
+      const manipulatedPose = cameraPoseWithManipulation(
+        pose,
+        manipulationRef.current,
+      );
+      setVector(desiredPosition.current, manipulatedPose.position);
+      setVector(desiredTarget.current, manipulatedPose.target);
       if (driftAmplitude > 0) {
         const elapsed = state.clock.elapsedTime;
         desiredPosition.current.x += Math.sin(elapsed * 0.11) * driftAmplitude;
@@ -1398,7 +1572,12 @@ function CameraRig({
       }
     }
 
-    const alpha = 1 - Math.exp(-delta * (reducedMotion ? 12 : 3.2));
+    const resetRequested =
+      consumedResetRevisionRef.current !== resetRevisionRef.current;
+    consumedResetRevisionRef.current = resetRevisionRef.current;
+    const alpha = resetRequested
+      ? 1
+      : 1 - Math.exp(-delta * (reducedMotion ? 12 : 3.2));
     camera.position.lerp(desiredPosition.current, alpha);
     target.current.lerp(desiredTarget.current, alpha);
     camera.lookAt(target.current);
@@ -1557,10 +1736,13 @@ function ScenePostProcessing({ preset }: { preset: SceneDecorationPreset }) {
   );
 }
 
-function configureSceneRenderer(gl: THREE.WebGLRenderer) {
+function configureSceneRenderer(gl: THREE.WebGLRenderer, transparent = false) {
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.toneMapping = THREE.ACESFilmicToneMapping;
   gl.toneMappingExposure = 0.82;
+  if (transparent) {
+    gl.setClearColor(0x050505, 0);
+  }
 }
 
 function createDustGeometry(count: number): THREE.BufferGeometry {

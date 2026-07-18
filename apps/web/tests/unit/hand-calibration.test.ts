@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   HAND_CALIBRATION_STORAGE_KEY,
+  adjustDepthRange,
   buildHandCalibrationSteps,
+  captureNeutralPalmScale,
   createInjectedCalibrationHand,
   defaultHandCalibrationSettings,
   loadHandCalibrationSettings,
+  manipulationConfigFromCalibration,
   resetHandCalibrationSettings,
   saveHandCalibrationSettings,
   summarizeCalibrationHand,
@@ -19,20 +22,26 @@ describe("hand calibration", () => {
       JSON.stringify({
         confidenceFloor: 0.62,
         cursorSmoothingMs: 64,
+        depthDeadZoneRatio: 0.06,
+        depthNeutralPalmScale: 0.24,
+        depthRangeRatio: 0.5,
         mirrored: false,
         pinchClosedDistance: 0.34,
         pinchOpenDistance: 0.86,
-        version: 1,
+        version: 2,
       }),
     );
 
     expect(loadHandCalibrationSettings(storage)).toMatchObject({
       confidenceFloor: 0.62,
       cursorSmoothingMs: 64,
+      depthDeadZoneRatio: 0.06,
+      depthNeutralPalmScale: 0.24,
+      depthRangeRatio: 0.5,
       mirrored: false,
       pinchClosedDistance: 0.34,
       pinchOpenDistance: 0.86,
-      version: 1,
+      version: 2,
     });
   });
 
@@ -68,6 +77,39 @@ describe("hand calibration", () => {
     expect(storage.getItem(HAND_CALIBRATION_STORAGE_KEY)).toBeNull();
   });
 
+  it("migrates v1 settings and persists only the v2 numeric depth calibration", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      "touch-traversal.hand-calibration.v1",
+      JSON.stringify({
+        confidenceFloor: 0.61,
+        cursorSmoothingMs: 54,
+        mirrored: true,
+        pinchClosedDistance: 0.3,
+        pinchOpenDistance: 0.8,
+        version: 1,
+      }),
+    );
+
+    const migrated = loadHandCalibrationSettings(storage);
+    expect(migrated).toMatchObject({
+      confidenceFloor: 0.61,
+      depthDeadZoneRatio: 0.045,
+      depthNeutralPalmScale: 0.22,
+      depthRangeRatio: 0.45,
+      version: 2,
+    });
+
+    const captured = captureNeutralPalmScale(migrated, 0.27);
+    const sensitive = adjustDepthRange(captured, "more-sensitive");
+    expect(sensitive.depthNeutralPalmScale).toBe(0.27);
+    expect(sensitive.depthRangeRatio).toBe(0.4);
+    expect(manipulationConfigFromCalibration(sensitive)).toMatchObject({
+      depthDeadZoneRatio: 0.045,
+      depthRangeRatio: 0.4,
+    });
+  });
+
   it("blocks calibration steps after denied camera access", () => {
     expect(
       buildHandCalibrationSteps({
@@ -75,7 +117,7 @@ describe("hand calibration", () => {
         settings: defaultHandCalibrationSettings,
         signal: null,
       }).map((step) => step.state),
-    ).toEqual(["blocked", "blocked", "blocked"]);
+    ).toEqual(["blocked", "blocked", "blocked", "blocked"]);
   });
 
   it("summarizes injected landmark data for debug and calibration routes", () => {

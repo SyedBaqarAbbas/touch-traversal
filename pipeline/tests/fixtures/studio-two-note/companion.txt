@@ -1,0 +1,5 @@
+The companion thought stays deliberately plain text so local intake covers both supported source
+formats. It describes a second idea about returning from detail to context, keeping graph output in
+memory, and making export an explicit choice. These sentences are fictional public test data. They
+contain enough words for deterministic chunking while avoiding personal content, network access,
+camera data, and any dependency on a developer cache.

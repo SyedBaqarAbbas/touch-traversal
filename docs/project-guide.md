@@ -58,6 +58,7 @@ complete bundle, and atomically replaces these files together:
 Open `http://localhost:3000/demo`. Other implemented routes are:
 
 - `/`: product entry and route navigation.
+- `/perform`: opt-in mirrored webcam composition with the same graph and hand worker.
 - `/calibration`: explicit camera setup, mirrored preview, landmarks, and pinch-threshold controls.
 - `/debug`: artifact statistics, raw sample payload, traversal history, and hand diagnostics.
 
@@ -125,7 +126,8 @@ Editable Mermaid sources and accessible SVG exports document the
 Hand input is optional and browser-local:
 
 1. The app calls `getUserMedia` only after the user activates a camera button. Audio is disabled.
-2. A hidden video element or the visible calibration preview holds the local stream.
+2. One video element holds the local stream. It is hidden in `/demo`, visible and mirrored behind
+   the graph in `/perform`, and never duplicated for inference.
 3. Frames are resized to at most 320 pixels wide and transferred as `ImageBitmap` objects to a Web
    Worker at a target cadence of 24 FPS.
 4. The worker loads the checked-in same-origin MediaPipe model and WASM runtime, runs one-hand
@@ -139,6 +141,12 @@ Hand input is optional and browser-local:
 The implementation does not upload camera frames, store recordings, or send landmarks to an
 application server. Disabling the camera, leaving the component, or disposing the worker stops all
 media tracks and terminates the worker.
+
+Performance presentation keeps the scene component mounted when its video layer is hidden, so the
+selected thought, topology, traversal history, camera permission, stream, and worker are preserved.
+Disabling or exiting owns the opposite lifecycle: ended-track listeners detach, every media track
+stops, the worker is disposed, and the graph falls back to mouse/keyboard input. Background tabs
+skip frame submission, while resize and orientation changes retain cover-fit framing.
 
 Classifier/controller modules use hysteresis, holds, cooldowns, and transition guards rather than
 single-frame activation. Recorded privacy-safe fixtures exercise the same runtime cursor and
@@ -160,6 +168,10 @@ is never required.
 | Click a topology button            | Select the same topology without a keyboard shortcut.            |
 | Click **Enable hand camera**       | Request optional local camera access and start the hand worker.  |
 | Click **Disable camera**           | Stop the tracks and return to mouse/keyboard-only use.           |
+| Open `/perform`                    | Enter camera-off performance presentation without a prompt.      |
+| Click **Graph only**               | Hide video but keep the scene, stream, and hand input mounted.   |
+| Change emphasis or mirror          | Adjust only the visible composition; graph state stays intact.   |
+| Click **exit performance**         | Stop owned tracks and return to `/demo`.                         |
 | Point at a node                    | Move the live hand cursor and establish the hover target.        |
 | Pinch over a target                | Focus it, or traverse to it when it is an active neighbor.       |
 | Hold an open palm                  | Return from a focused thought to the overview.                   |
@@ -215,6 +227,12 @@ The camera is idle on page load. The app explains the purpose before asking, req
 audio, and leaves the rest of the product available after denial, dismissal, unsupported-browser,
 device-not-found, worker, or model errors. **Disable camera** stops the active media tracks.
 
+`/perform` uses that same explicit permission flow. Its visible video is mirrored and cover-fit,
+has no audio, and shares the stream already feeding the worker. A persistent local-camera indicator
+and disable action stay above the composition. Track end, worker failure, disable, exit, and route
+unmount all return to the graph-only fallback and release owned resources. Deterministic browser
+fixtures use a CSS camera-free stand-in rather than captured or prerecorded frames.
+
 The pinned hand model and MediaPipe WASM files are served from the same local Next.js origin. No
 camera frames are written to disk or included in test fixtures. Browser permission state remains
 under browser and operating-system control.
@@ -231,6 +249,8 @@ Implemented and directly exercised today:
   calibration, cursor smoothing, live gesture routing, recoverable errors, and deterministic
   injected-landmark fixtures.
 - Adaptive high/medium/low scene presets based on graph size and sustained measured FPS.
+- Opt-in full-viewport performance presentation with single-stream video/hand reuse, adaptive
+  inference cadence, deterministic camera-free fixtures, and lifecycle cleanup coverage.
 
 Current limits, stated without product claims beyond the code:
 
@@ -293,6 +313,10 @@ populate the model cache, then retry. Note text is embedded by the local Python 
 
 Use **Disable camera** before changing devices or when camera input is no longer wanted. A camera
 permission error and a hand-model error are distinct states in the UI.
+
+If a live performance stream ends after permission was granted, `/perform` removes the video layer,
+stops remaining tracks, and shows **Retry camera**. Graph controls remain usable. **Graph only** is
+not a failure state: it deliberately hides the video without stopping the shared hand-input stream.
 
 ### Hand model or WASM fails to load
 

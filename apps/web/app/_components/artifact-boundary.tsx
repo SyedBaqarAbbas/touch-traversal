@@ -110,9 +110,13 @@ export function resolveArtifactViewState(
   return { kind: "ready", model: state.model };
 }
 
-export function ArtifactBoundary() {
+export function ArtifactBoundary({
+  performanceMode = false,
+}: {
+  performanceMode?: boolean;
+} = {}) {
   const [state, setState] = useState<ArtifactLoadState>({ status: "loading" });
-  const { inputMode, recordingMode } = useDemoOptions();
+  const { inputMode, performanceFixture, recordingMode } = useDemoOptions();
 
   useEffect(() => {
     let active = true;
@@ -142,6 +146,8 @@ export function ArtifactBoundary() {
     <GraphScene
       inputMode={inputMode}
       model={viewState.model}
+      performanceFixture={performanceMode && performanceFixture}
+      performanceMode={performanceMode}
       recordingMode={recordingMode}
     />
   );
@@ -149,6 +155,7 @@ export function ArtifactBoundary() {
 
 function useDemoOptions(): {
   inputMode: GraphInputMode;
+  performanceFixture: boolean;
   recordingMode: boolean;
 } {
   const search = useSyncExternalStore(
@@ -157,14 +164,20 @@ function useDemoOptions(): {
     getServerLocationSearch,
   );
   const input = new URLSearchParams(search).get("input");
+  const performanceFixture =
+    new URLSearchParams(search).get("fixture") === "camera-free";
   const recordingMode = recordingModeEnabled(search);
   if (input === "mouse") {
-    return { inputMode: "mouse", recordingMode };
+    return { inputMode: "mouse", performanceFixture, recordingMode };
   }
   if (input === "gesture-fixture") {
-    return { inputMode: "gesture-fixture", recordingMode };
+    return {
+      inputMode: "gesture-fixture",
+      performanceFixture,
+      recordingMode,
+    };
   }
-  return { inputMode: "default", recordingMode };
+  return { inputMode: "default", performanceFixture, recordingMode };
 }
 
 function subscribeToLocationSearch(onChange: () => void) {

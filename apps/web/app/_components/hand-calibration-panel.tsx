@@ -9,8 +9,10 @@ import {
   reduceCameraAccess,
 } from "@/lib/camera-access";
 import {
+  adjustDepthRange,
   adjustPinchThresholds,
   buildHandCalibrationSteps,
+  captureNeutralPalmScale,
   createInjectedCalibrationHand,
   defaultHandCalibrationSettings,
   loadHandCalibrationSettings,
@@ -242,8 +244,9 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
         </p>
         <h2 id={`${mode}-hand-calibration-title`}>{heading}</h2>
         <p>
-          Verify framing, fingertip mapping, and pinch thresholds locally. Video
-          frames stay in this browser and are never uploaded.
+          Verify framing, fingertip mapping, pinch thresholds, and a comfortable
+          depth range locally. Video frames stay in this browser and are never
+          uploaded.
         </p>
       </div>
 
@@ -328,6 +331,18 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
                 summary ? `${Math.round(summary.pinchProgress * 100)}%` : "—"
               }
             />
+            <Metric
+              label="palm scale"
+              value={summary ? summary.signal.palmSize.toFixed(3) : "—"}
+            />
+            <Metric
+              label="depth dead zone"
+              value={settings.depthDeadZoneRatio.toFixed(3)}
+            />
+            <Metric
+              label="depth range"
+              value={settings.depthRangeRatio.toFixed(2)}
+            />
             <Metric label="mirrored" value={settings.mirrored ? "yes" : "no"} />
           </dl>
 
@@ -347,6 +362,35 @@ export function HandCalibrationPanel({ mode }: HandCalibrationPanelProps) {
               type="button"
             >
               loosen pinch
+            </button>
+            <button
+              disabled={!summary}
+              onClick={() => {
+                if (summary) {
+                  persistSettings(
+                    captureNeutralPalmScale(settings, summary.signal.palmSize),
+                  );
+                }
+              }}
+              type="button"
+            >
+              use current depth
+            </button>
+            <button
+              onClick={() =>
+                persistSettings(adjustDepthRange(settings, "more-sensitive"))
+              }
+              type="button"
+            >
+              depth more sensitive
+            </button>
+            <button
+              onClick={() =>
+                persistSettings(adjustDepthRange(settings, "less-sensitive"))
+              }
+              type="button"
+            >
+              depth less sensitive
             </button>
             <button onClick={resetSettings} type="button">
               reset calibration

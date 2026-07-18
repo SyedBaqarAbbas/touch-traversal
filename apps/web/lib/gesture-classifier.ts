@@ -5,14 +5,23 @@ import type {
 } from "@/lib/hand-worker-protocol";
 
 export type GestureFixtureName =
+  | "conflicting-gesture"
+  | "empty-space-grab"
+  | "grab-release"
+  | "hand-loss-mid-grab"
   | "idle"
   | "pointing"
   | "stable-pinch"
   | "noisy-pinch"
+  | "noisy-depth"
   | "open-palm"
+  | "orbit"
+  | "pan"
   | "left-swipe"
   | "right-swipe"
-  | "hand-loss";
+  | "hand-loss"
+  | "zoom-in"
+  | "zoom-out";
 
 export type TimestampedLandmarkFrame = {
   hand: NormalizedHand | null;
@@ -46,6 +55,7 @@ export type CompactGestureFrame = {
   handedness?: string | null;
   label?: string;
   offset?: [number, number];
+  scale?: number;
   score?: number;
   t: number;
   template?: string;
@@ -339,13 +349,16 @@ function expandGestureFrame(
   }
 
   const [offsetX, offsetY] = frame.offset ?? [0, 0];
+  const scale = frame.scale ?? 1;
+  const anchorX = 0.5;
+  const anchorY = 0.6;
   return {
     hand: {
       handedness: frame.handedness ?? "Right",
       landmarks: templates[frame.template].map(([x, y, z = 0]) => ({
         visibility: null,
-        x: clamp(x + offsetX, 0, 1),
-        y: clamp(y + offsetY, 0, 1),
+        x: clamp(anchorX + (x - anchorX) * scale + offsetX, 0, 1),
+        y: clamp(anchorY + (y - anchorY) * scale + offsetY, 0, 1),
         z,
       })),
       score: frame.score ?? 0.9,

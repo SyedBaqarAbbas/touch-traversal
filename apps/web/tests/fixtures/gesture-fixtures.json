@@ -227,6 +227,94 @@
         },
         { "t": 240, "hand": null, "label": "hand left frame" }
       ]
+    },
+    {
+      "name": "empty-space-grab",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 }
+      ]
+    },
+    {
+      "name": "orbit",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "template": "pinch", "offset": [0.08, 0] },
+        { "t": 320, "template": "pinch", "offset": [0.16, 0] }
+      ]
+    },
+    {
+      "name": "pan",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "template": "pinch", "offset": [0, -0.07] },
+        { "t": 320, "template": "pinch", "offset": [0, -0.14] }
+      ]
+    },
+    {
+      "name": "zoom-in",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "template": "pinch", "scale": 1.18 },
+        { "t": 320, "template": "pinch", "scale": 1.34 }
+      ]
+    },
+    {
+      "name": "zoom-out",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "template": "pinch", "scale": 0.84 },
+        { "t": 320, "template": "pinch", "scale": 0.72 }
+      ]
+    },
+    {
+      "name": "grab-release",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "template": "idle", "score": 0.9 },
+        { "t": 400, "template": "idle", "score": 0.9 }
+      ]
+    },
+    {
+      "name": "hand-loss-mid-grab",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "hand": null, "label": "hand lost during grab" }
+      ]
+    },
+    {
+      "name": "noisy-depth",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "template": "pinch", "scale": 1.015 },
+        { "t": 320, "template": "pinch", "scale": 0.985 },
+        { "t": 400, "template": "pinch", "scale": 1.02 }
+      ]
+    },
+    {
+      "name": "conflicting-gesture",
+      "frames": [
+        { "t": 0, "template": "pinch", "score": 0.91 },
+        { "t": 80, "template": "pinch", "score": 0.92 },
+        { "t": 160, "template": "pinch", "score": 0.93 },
+        { "t": 240, "template": "openPalm", "score": 0.92 },
+        { "t": 400, "template": "openPalm", "score": 0.92 }
+      ]
     }
   ]
 }

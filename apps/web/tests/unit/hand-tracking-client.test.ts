@@ -16,4 +16,17 @@ describe("hand tracking client", () => {
       width: 320,
     });
   });
+
+  it("exposes adaptive target cadence without allocating a second stream", async () => {
+    const source = await import("node:fs").then(({ readFileSync }) =>
+      readFileSync(
+        new URL("../../lib/hand-tracking-client.ts", import.meta.url),
+        "utf8",
+      ),
+    );
+
+    expect(source).toContain("setTargetFps: (targetFps: number) => void");
+    expect(source).toContain("targetFps = nextTargetFps");
+    expect(source).toContain("const worker = new Worker");
+  });
 });

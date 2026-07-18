@@ -21,6 +21,7 @@ describe("web application contract", () => {
   it.each([
     ["app/page.tsx", "Explore the topologies of your thoughts."],
     ["app/_components/graph-scene.tsx", "Graph artifact boundary"],
+    ["app/perform/page.tsx", "performanceMode"],
     ["app/calibration/page.tsx", "Calibrate hand traversal."],
     ["app/debug/page.tsx", "Graph diagnostics"],
   ])("keeps the route shell at %s", (path, marker) => {
@@ -49,7 +50,8 @@ describe("web application contract", () => {
     expect(visualLanguage).toContain("Hover labels are title-only");
     expect(visualLanguage).toContain("Background: `#050505`");
     expect(visualLanguage).toContain("dot rail");
-    expect(visualLanguage).toContain("does not recreate the camera pane");
+    expect(visualLanguage).toContain("default `/demo` route");
+    expect(visualLanguage).toContain("still has no visible camera pane");
     expect(visualLanguage).toContain("No neon cyberpunk palette");
     expect(visualLanguage).toContain("visual-language-overview.png");
     expect(
@@ -160,6 +162,8 @@ describe("web application contract", () => {
     expect(performanceReport).toContain("not a WebGL draw benchmark");
     expect(performanceReport).toContain("Minimum acceptable threshold: 45 FPS");
     expect(performanceReport).toContain("cap visible edges at 900");
+    expect(performanceReport).toContain("Visible performance presentation");
+    expect(rawMeasurement.schemaVersion).toBe(2);
     expect(rawMeasurement.environment.sampleGraph).toEqual({
       edgeCount: 48,
       nodeCount: 16,
@@ -174,6 +178,45 @@ describe("web application contract", () => {
     expect(rawMeasurement.handWorker.inference.rateFps).toBeGreaterThanOrEqual(
       15,
     );
+    expect(rawMeasurement.performancePresentation).toMatchObject({
+      camera: { height: 480, width: 640 },
+      composition: {
+        cameraLayerActive: "true",
+        mirrored: "true",
+        videoOpacity: "0.68",
+      },
+      cursorRenderFps: null,
+    });
+    expect(rawMeasurement.performancePresentation.scenarios).toHaveLength(2);
+    expect(
+      rawMeasurement.performancePresentation.inference.rateFps,
+    ).toBeGreaterThanOrEqual(15);
+    for (const scenario of rawMeasurement.performancePresentation.scenarios) {
+      expect(scenario.frameTiming.minimumFps).toBeGreaterThanOrEqual(45);
+    }
+  });
+
+  it("defines the explicit single-stream performance presentation", () => {
+    const boundary = read("app/_components/artifact-boundary.tsx");
+    const cameraPanel = read("app/_components/camera-access-panel.tsx");
+    const css = read("app/globals.css");
+    const graphScene = read("app/_components/graph-scene.tsx");
+    const performanceRoute = read("app/perform/page.tsx");
+
+    expect(performanceRoute).toContain("<ArtifactBoundary performanceMode />");
+    expect(boundary).toContain('get("fixture") === "camera-free"');
+    expect(graphScene).toContain("data-presentation={");
+    expect(graphScene).toContain('type: "TOGGLE_LAYER"');
+    expect(cameraPanel).toContain("performance-camera-layer__video");
+    expect(cameraPanel).toContain("Camera stays off until you enable it");
+    expect(cameraPanel).toContain("watchCameraStreamEnded");
+    expect(cameraPanel).toContain("pageVisibleRef.current");
+    expect(cameraPanel).toContain('router.push("/demo")');
+    expect(css).toContain(
+      '.scene-shell[data-presentation="performance"] .scene-canvas',
+    );
+    expect(css).toContain("--performance-video-opacity");
+    expect(css).toContain("prefers-reduced-motion: reduce");
   });
 
   it("documents topology keyboard controls", () => {

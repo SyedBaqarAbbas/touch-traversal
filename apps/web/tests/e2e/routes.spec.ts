@@ -11,6 +11,7 @@ import {
 const routes = [
   ["/", "Explore the topologies of your thoughts."],
   ["/demo", "Graph artifact boundary"],
+  ["/perform", "Webcam graph performance"],
   ["/calibration", "Calibrate hand traversal."],
   ["/debug", "Graph diagnostics"],
 ] as const;
@@ -215,6 +216,187 @@ test("/demo shows camera-active indicator and disable action", async ({
   );
   await expect(
     page.getByRole("button", { name: "Enable hand camera" }),
+  ).toBeVisible();
+});
+
+test("/perform camera-free fixture composites the graph and preserves scene state", async ({
+  page,
+}, testInfo) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () =>
+          Promise.reject(new Error("fixture must not request a device")),
+      },
+    });
+  });
+  await page.goto("/perform?fixture=camera-free");
+
+  const scene = page.locator(".scene-shell");
+  const cameraLayer = page.locator(".performance-camera-layer");
+  await expect(scene).toHaveAttribute("data-presentation", "performance");
+  await expect(scene).toHaveAttribute("data-motion", "full");
+  await expect(cameraLayer).toHaveAttribute("data-active", "false");
+  await expect(
+    page.getByText("Camera stays off until you enable it"),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await expect(cameraLayer).toHaveAttribute("data-active", "true");
+  await expect(page.getByText("camera fixture / no device")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Disable camera" }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", { name: /Constellations before filing/ })
+    .click();
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "A memory observatory",
+  );
+
+  await page.getByRole("button", { name: "Graph only" }).click();
+  await expect(scene).toHaveAttribute("data-performance-layer", "graph-only");
+  await expect(page.locator(".scene-selected-card")).toContainText(
+    "A memory observatory",
+  );
+  await page.getByRole("button", { name: "Show video layer" }).click();
+  await expect(scene).toHaveAttribute("data-performance-layer", "video");
+
+  const mirror = page.getByRole("button", { name: "mirror" });
+  await expect(mirror).toHaveAttribute("aria-pressed", "true");
+  await mirror.click();
+  await expect(scene).toHaveAttribute("data-performance-mirrored", "false");
+
+  await page
+    .getByRole("button", { name: "Graph and video emphasis: balanced" })
+    .click();
+  await expect(scene).toHaveAttribute("data-performance-emphasis", "graph");
+  const framingBefore = await cameraLayer.getAttribute("data-framing-revision");
+  await page.getByRole("button", { name: "reset framing" }).click();
+  await expect(cameraLayer).not.toHaveAttribute(
+    "data-framing-revision",
+    framingBefore ?? "0",
+  );
+  await attachVisual(page, testInfo, "performance-camera-free");
+});
+
+test("/perform denial falls back to a complete graph path", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () =>
+          Promise.reject(new DOMException("denied", "NotAllowedError")),
+      },
+    });
+  });
+  await page.goto("/perform");
+
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await expect(page.getByText("camera unavailable")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Retry camera" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: /Constellations before filing/ })
+    .click({ force: true });
+  await expect(page.getByText("focused / focus")).toBeVisible({
+    timeout: focusSettleTimeoutMs,
+  });
+});
+
+test("/perform reuses one stream, stops it on exit, and handles track end", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 640;
+          canvas.height = 480;
+          const stream = canvas.captureStream(5);
+          const track = stream.getVideoTracks()[0]!;
+          const nativeStop = track.stop.bind(track);
+          track.stop = () => {
+            const stops = Number(sessionStorage.getItem("mock-camera-stops"));
+            sessionStorage.setItem("mock-camera-stops", String(stops + 1));
+            nativeStop();
+          };
+          const requests = Number(
+            sessionStorage.getItem("mock-camera-requests"),
+          );
+          sessionStorage.setItem("mock-camera-requests", String(requests + 1));
+          (
+            window as typeof window & { __endMockCameraTrack?: () => void }
+          ).__endMockCameraTrack = () =>
+            track.dispatchEvent(new Event("ended"));
+          return Promise.resolve(stream);
+        },
+      },
+    });
+  });
+  await page.goto("/perform");
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await expect(page.getByText("camera active / local only")).toBeVisible();
+
+  await page.getByRole("button", { name: "Graph only" }).click();
+  await page.getByRole("button", { name: "Show video layer" }).click();
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("mock-camera-requests")),
+  ).toBe("1");
+
+  await page.evaluate(() =>
+    (
+      window as typeof window & { __endMockCameraTrack?: () => void }
+    ).__endMockCameraTrack?.(),
+  );
+  await expect(page.getByText("camera error")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Retry camera" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Retry camera" }).click();
+  await expect(page.getByText("camera active / local only")).toBeVisible();
+  await page.getByRole("button", { name: "exit performance" }).click();
+  await expect(page).toHaveURL(/\/demo\/?$/);
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("mock-camera-requests")),
+  ).toBe("2");
+  expect(
+    Number(
+      await page.evaluate(() => sessionStorage.getItem("mock-camera-stops")),
+    ),
+  ).toBeGreaterThanOrEqual(2);
+});
+
+test("/perform preserves reduced-motion and named controls", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/perform?fixture=camera-free");
+
+  await expect(page.locator(".scene-shell")).toHaveAttribute(
+    "data-motion",
+    "reduced",
+  );
+  await expect(
+    page.getByRole("button", { name: "Graph and video emphasis: balanced" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "mirror" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "reset framing" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "exit performance" }),
   ).toBeVisible();
 });
 
@@ -423,6 +605,42 @@ test("/calibration captures its visual state", async ({ page }, testInfo) => {
     page.getByRole("heading", { level: 1, name: "Calibrate hand traversal." }),
   ).toBeVisible();
   await attachVisual(page, testInfo, "calibration");
+});
+
+test("/demo?input=gesture-fixture manipulates and resets the camera view", async ({
+  page,
+}) => {
+  await page.goto("/demo?input=gesture-fixture");
+  await expect(page.getByText("input / gesture fixture")).toBeVisible();
+
+  const orbit = findGestureFixture(gestureFixtures, "orbit").frames;
+  await injectLandmarkFrames(page, orbit.slice(0, 3));
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "gesture / pinch empty space to grab",
+    { timeout: gestureHintTimeoutMs },
+  );
+
+  await injectLandmarkFrames(page, orbit.slice(3));
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "gesture / orbit · pan · depth zoom",
+    { timeout: gestureHintTimeoutMs },
+  );
+
+  const controls = page.getByRole("complementary", {
+    name: "View manipulation",
+  });
+  await expect(controls.getByRole("button")).toHaveCount(9);
+  await controls.getByRole("button", { name: "Reset view" }).click();
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "view / reset",
+  );
+
+  await page.keyboard.press("Shift+ArrowUp");
+  await page.keyboard.press("+");
+  await page.keyboard.press("0");
+  await expect(page.locator(".scene-gesture-hint")).toContainText(
+    "view / reset",
+  );
 });
 
 test("/demo?input=gesture-fixture routes injected hand gestures", async ({

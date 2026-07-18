@@ -93,6 +93,77 @@ describe("gesture controller", () => {
     expect(actions.some((action) => action.type === "select")).toBe(false);
     expect(actions.some((action) => action.type === "hint")).toBe(false);
   });
+
+  it("routes an empty-space pinch through manipulation while preserving node selection", () => {
+    const emptySpaceActions = runController(
+      findGestureFixture(fixtures, "orbit").frames,
+      {
+        manipulationAllowed: true,
+        safeToReturn: true,
+        targetNodeId: null,
+        topologyMorphing: false,
+      },
+    );
+    const nodeActions = runController(
+      findGestureFixture(fixtures, "stable-pinch").frames,
+      {
+        manipulationAllowed: true,
+        safeToReturn: true,
+        targetNodeId: "node-a",
+        topologyMorphing: false,
+      },
+    );
+
+    expect(emptySpaceActions).toContainEqual({
+      event: { phase: "begin", timestampMs: 160 },
+      timestampMs: 160,
+      type: "manipulation",
+    });
+    expect(
+      emptySpaceActions.some(
+        (action) =>
+          action.type === "manipulation" && action.event.phase === "update",
+      ),
+    ).toBe(true);
+    expect(emptySpaceActions.some((action) => action.type === "select")).toBe(
+      false,
+    );
+    expect(nodeActions).toContainEqual({
+      nodeId: "node-a",
+      timestampMs: 160,
+      type: "select",
+    });
+    expect(nodeActions.some((action) => action.type === "manipulation")).toBe(
+      false,
+    );
+  });
+
+  it("cancels an active grab when a traversal or morph conflict begins", () => {
+    let state = createGestureControllerState();
+    const frames = findGestureFixture(fixtures, "orbit").frames;
+    const actions: GestureControllerAction[] = [];
+    for (const frame of frames) {
+      const update = updateGestureController(state, frame, {
+        manipulationAllowed: frame.timestampMs < 240,
+        safeToReturn: true,
+        targetNodeId: null,
+        topologyMorphing: frame.timestampMs >= 240,
+      });
+      state = update.state;
+      actions.push(...update.actions);
+    }
+
+    expect(actions).toContainEqual({
+      event: {
+        phase: "cancel",
+        reason: "conflict",
+        timestampMs: 240,
+      },
+      timestampMs: 240,
+      type: "manipulation",
+    });
+    expect(actions.some((action) => action.type === "topology")).toBe(false);
+  });
 });
 
 function runController(

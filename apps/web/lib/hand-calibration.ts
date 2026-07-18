@@ -4,18 +4,27 @@ import {
   handCursorScreenStyle,
 } from "@/lib/hand-cursor";
 import { extractHandSignal, type HandSignal } from "@/lib/hand-signals";
+import {
+  defaultHandManipulationConfig,
+  type HandManipulationConfig,
+} from "@/lib/gesture-manipulation";
 import type {
   NormalizedHand,
   NormalizedHandLandmark,
 } from "@/lib/hand-worker-protocol";
 
-export const HAND_CALIBRATION_VERSION = 1;
+export const HAND_CALIBRATION_VERSION = 2;
 export const HAND_CALIBRATION_STORAGE_KEY =
+  "touch-traversal.hand-calibration.v2";
+const LEGACY_HAND_CALIBRATION_STORAGE_KEY =
   "touch-traversal.hand-calibration.v1";
 
 export type HandCalibrationSettings = {
   confidenceFloor: number;
   cursorSmoothingMs: number;
+  depthDeadZoneRatio: number;
+  depthNeutralPalmScale: number;
+  depthRangeRatio: number;
   mirrored: boolean;
   pinchClosedDistance: number;
   pinchOpenDistance: number;
@@ -23,7 +32,7 @@ export type HandCalibrationSettings = {
 };
 
 export type CalibrationStepId =
-  "permission-framing" | "fingertip-motion" | "pinch-threshold";
+  "permission-framing" | "fingertip-motion" | "pinch-threshold" | "depth-range";
 
 export type CalibrationStepState = "active" | "blocked" | "complete";
 
@@ -47,6 +56,9 @@ export type CalibrationHandSummary = {
 export const defaultHandCalibrationSettings: HandCalibrationSettings = {
   confidenceFloor: 0.48,
   cursorSmoothingMs: 42,
+  depthDeadZoneRatio: 0.045,
+  depthNeutralPalmScale: 0.22,
+  depthRangeRatio: 0.45,
   mirrored: true,
   pinchClosedDistance: 0.28,
   pinchOpenDistance: 0.78,
@@ -56,8 +68,12 @@ export const defaultHandCalibrationSettings: HandCalibrationSettings = {
 export function loadHandCalibrationSettings(
   storage: StorageLike,
 ): HandCalibrationSettings {
-  return parseHandCalibrationSettings(
-    storage.getItem(HAND_CALIBRATION_STORAGE_KEY),
+  const current = storage.getItem(HAND_CALIBRATION_STORAGE_KEY);
+  if (current) {
+    return parseHandCalibrationSettings(current);
+  }
+  return migrateLegacyHandCalibrationSettings(
+    storage.getItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY),
   );
 }
 
@@ -67,6 +83,7 @@ export function saveHandCalibrationSettings(
 ): HandCalibrationSettings {
   const sanitized = sanitizeHandCalibrationSettings(settings);
   storage.setItem(HAND_CALIBRATION_STORAGE_KEY, JSON.stringify(sanitized));
+  storage.removeItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY);
   return sanitized;
 }
 
@@ -74,6 +91,7 @@ export function resetHandCalibrationSettings(
   storage: StorageLike,
 ): HandCalibrationSettings {
   storage.removeItem(HAND_CALIBRATION_STORAGE_KEY);
+  storage.removeItem(LEGACY_HAND_CALIBRATION_STORAGE_KEY);
   return defaultHandCalibrationSettings;
 }
 
@@ -124,6 +142,24 @@ export function sanitizeHandCalibrationSettings(
       8,
       160,
     ),
+    depthDeadZoneRatio: readNumber(
+      value.depthDeadZoneRatio,
+      defaultHandCalibrationSettings.depthDeadZoneRatio,
+      0.015,
+      0.12,
+    ),
+    depthNeutralPalmScale: readNumber(
+      value.depthNeutralPalmScale,
+      defaultHandCalibrationSettings.depthNeutralPalmScale,
+      0.05,
+      0.6,
+    ),
+    depthRangeRatio: readNumber(
+      value.depthRangeRatio,
+      defaultHandCalibrationSettings.depthRangeRatio,
+      0.18,
+      0.9,
+    ),
     mirrored:
       typeof value.mirrored === "boolean"
         ? value.mirrored
@@ -146,10 +182,41 @@ export function adjustPinchThresholds(
   });
 }
 
+export function adjustDepthRange(
+  settings: HandCalibrationSettings,
+  direction: "less-sensitive" | "more-sensitive",
+): HandCalibrationSettings {
+  const delta = direction === "more-sensitive" ? -0.05 : 0.05;
+  return sanitizeHandCalibrationSettings({
+    ...settings,
+    depthRangeRatio: settings.depthRangeRatio + delta,
+  });
+}
+
+export function captureNeutralPalmScale(
+  settings: HandCalibrationSettings,
+  palmScale: number,
+): HandCalibrationSettings {
+  return sanitizeHandCalibrationSettings({
+    ...settings,
+    depthNeutralPalmScale: palmScale,
+  });
+}
+
+export function manipulationConfigFromCalibration(
+  settings: HandCalibrationSettings,
+): HandManipulationConfig {
+  return {
+    ...defaultHandManipulationConfig,
+    depthDeadZoneRatio: settings.depthDeadZoneRatio,
+    depthRangeRatio: settings.depthRangeRatio,
+  };
+}
+
 export function buildHandCalibrationSteps(input: {
   cameraStatus: CameraAccessStatus;
   settings: HandCalibrationSettings;
-  signal: Pick<HandSignal, "confidence" | "pinchDistance"> | null;
+  signal: Pick<HandSignal, "confidence" | "palmSize" | "pinchDistance"> | null;
 }): CalibrationStep[] {
   const cameraBlocked =
     input.cameraStatus === "denied" ||
@@ -161,6 +228,11 @@ export function buildHandCalibrationSteps(input: {
   const pinchSeen =
     !!input.signal &&
     input.signal.pinchDistance <= input.settings.pinchOpenDistance;
+  const depthSeen =
+    signalConfident &&
+    !!input.signal &&
+    input.signal.palmSize >= 0.05 &&
+    input.signal.palmSize <= 0.6;
 
   return [
     {
@@ -192,6 +264,16 @@ export function buildHandCalibrationSteps(input: {
       id: "pinch-threshold",
       state: pinchSeen ? "complete" : cameraActive ? "active" : "blocked",
       title: "Pinch threshold",
+    },
+    {
+      detail: depthSeen
+        ? "Palm scale is available as a stable local depth reference. Move closer and farther to check the comfortable range."
+        : cameraActive
+          ? "Hold an open hand at a comfortable neutral depth, then move slightly closer and farther."
+          : "Complete camera permission before tuning depth range.",
+      id: "depth-range",
+      state: depthSeen ? "complete" : cameraActive ? "active" : "blocked",
+      title: "Depth range",
     },
   ];
 }
@@ -284,6 +366,30 @@ function readNumber(
     return fallback;
   }
   return clamp(value, minimum, maximum);
+}
+
+function migrateLegacyHandCalibrationSettings(
+  value: string | null,
+): HandCalibrationSettings {
+  if (!value) {
+    return defaultHandCalibrationSettings;
+  }
+  try {
+    const legacy = JSON.parse(value);
+    if (!isRecord(legacy) || legacy.version !== 1) {
+      return defaultHandCalibrationSettings;
+    }
+    return sanitizeHandCalibrationSettings({
+      ...legacy,
+      depthDeadZoneRatio: defaultHandCalibrationSettings.depthDeadZoneRatio,
+      depthNeutralPalmScale:
+        defaultHandCalibrationSettings.depthNeutralPalmScale,
+      depthRangeRatio: defaultHandCalibrationSettings.depthRangeRatio,
+      version: HAND_CALIBRATION_VERSION,
+    });
+  } catch {
+    return defaultHandCalibrationSettings;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

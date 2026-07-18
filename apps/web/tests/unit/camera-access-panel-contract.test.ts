@@ -16,6 +16,9 @@ describe("camera access panel output contract", () => {
     expect(panelSource).toContain(
       "onLandmarkFrame?: (frame: TimestampedLandmarkFrame) => void",
     );
+    expect(panelSource).toContain(
+      "performance?: PerformanceCameraPresentation",
+    );
     expect(panelSource).toContain("}: CameraAccessPanelProps = {})");
   });
 
@@ -24,5 +27,13 @@ describe("camera access panel output contract", () => {
     expect(panelSource).toContain(
       "onLandmarkFrameRef.current?.(update.landmarkFrame)",
     );
+  });
+
+  it("owns one stream across performance-layer changes and releases it", () => {
+    expect(panelSource).toContain("performance-camera-layer__video");
+    expect(panelSource).toContain("stopCameraStream(streamRef.current)");
+    expect(panelSource).toContain("watchCameraStreamEnded(stream");
+    expect(panelSource).toContain("controller.setTargetFps");
+    expect(panelSource).toContain('router.push("/demo")');
   });
 });

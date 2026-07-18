@@ -1,6 +1,8 @@
 # Visual language
 
-Touch Traversal uses the supplied camera reference as a direction, not as a literal split-screen template. The scene should feel like a sparse nocturnal graph projected into a room: quiet, legible, and mostly empty.
+Touch Traversal uses the supplied camera reference as a direction, not as a literal split-screen
+template. The default graph scene feels like a sparse nocturnal field; opt-in performance mode
+projects that graph over a mirrored person while keeping both layers quiet and legible.
 
 ## Reference audit
 
@@ -42,7 +44,11 @@ Touch Traversal uses the supplied camera reference as a direction, not as a lite
 
 ## Reference translation
 
-The product keeps the reference's bright-node rhythm, fine grayscale relationship lines, small topology explainer, and fingertip point cue. It intentionally does not recreate the camera pane, hand skeleton overlay, dashboard panels, or literal presentation slide.
+The product keeps the reference's bright-node rhythm, fine grayscale relationship lines, small
+topology explainer, and fingertip point cue. Performance mode translates its live-camera
+composition into one full-viewport layer with dark safe-area gradients; it does not recreate the
+hand skeleton overlay, dashboard panels, or literal presentation slide. The default `/demo` route
+still has no visible camera pane.
 
 ## Rejection rules
 

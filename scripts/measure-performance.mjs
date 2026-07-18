@@ -270,6 +270,11 @@ try {
     await page.locator(".scene-shell canvas").waitFor();
     handWorker = await measureHandWorker(page, workerDurationMs);
   }
+  const performancePresentation = await measurePerformancePresentation(
+    page,
+    targetUrl,
+    scenarioDurationMs,
+  );
   const macHardware = readMacHardware();
   const output = {
     benchmark: {
@@ -312,9 +317,11 @@ try {
       "The 300/1500 probes apply the runtime low-quality visible-edge cap and process 900 edges.",
       "The fake camera contains no recognizable hand; a visible cursor rate is null when MediaPipe returns no landmarks.",
       "The checked-in 16-node/48-edge sample selects the high quality preset.",
+      "Performance presentation measurements keep the real visible video layer, sample WebGL graph, and MediaPipe worker active while adding representative synthetic scale work.",
     ],
+    performancePresentation,
     sceneScaleProbes,
-    schemaVersion: 1,
+    schemaVersion: 2,
   };
   const serializedOutput = `${JSON.stringify(output, null, 2)}\n`;
   const outputPath = process.env.PERF_OUTPUT_PATH;
@@ -478,6 +485,163 @@ async function measureHandWorker(page, durationMs) {
       await disableButton.click();
     }
   }
+}
+
+async function measurePerformancePresentation(page, targetUrl, durationMs) {
+  await page.goto(`${targetUrl}/perform`, { waitUntil: "networkidle" });
+  await page.locator(".scene-shell canvas").waitFor();
+  await page.getByRole("button", { name: "Enable hand camera" }).click();
+  await page.waitForFunction(
+    () => {
+      const measurements = window.__touchTraversalWorkerMeasurements;
+      return (
+        measurements.readyAtMs.length > 0 || measurements.errors.length > 0
+      );
+    },
+    undefined,
+    { timeout: 30_000 },
+  );
+  await page.evaluate(() => {
+    const measurements = window.__touchTraversalWorkerMeasurements;
+    measurements.resultArrivalsMs.length = 0;
+    measurements.resultInferenceMs.length = 0;
+    measurements.resultSizes.length = 0;
+    measurements.submissionsMs.length = 0;
+  });
+
+  const browserResult = await page.evaluate(async (measurementDurationMs) => {
+    const definitions = [
+      {
+        edgeCount: 400,
+        nodeCount: 100,
+        processedEdgeCount: 400,
+        quality: "high",
+      },
+      {
+        edgeCount: 1500,
+        nodeCount: 300,
+        processedEdgeCount: 900,
+        quality: "low",
+      },
+    ];
+    const scenarios = [];
+
+    for (const definition of definitions) {
+      const positions = new Float64Array(definition.nodeCount * 3);
+      const landmarks = new Float64Array(21 * 3);
+      const edgeSources = new Uint16Array(definition.processedEdgeCount);
+      const edgeTargets = new Uint16Array(definition.processedEdgeCount);
+      for (let index = 0; index < definition.nodeCount; index += 1) {
+        const offset = index * 3;
+        const angle = (index / definition.nodeCount) * Math.PI * 2;
+        positions[offset] = Math.cos(angle) * 4;
+        positions[offset + 1] = Math.sin(angle) * 4;
+        positions[offset + 2] = Math.sin(angle * 3);
+      }
+      for (let index = 0; index < definition.processedEdgeCount; index += 1) {
+        edgeSources[index] = index % definition.nodeCount;
+        edgeTargets[index] = (index * 17 + 7) % definition.nodeCount;
+      }
+
+      const frameDurationsMs = [];
+      let previousFrameAtMs = null;
+      let checksum = 0;
+      const startedAtMs = performance.now();
+      while (performance.now() - startedAtMs < measurementDurationMs) {
+        const frameAtMs = await new Promise(requestAnimationFrame);
+        if (previousFrameAtMs !== null) {
+          frameDurationsMs.push(frameAtMs - previousFrameAtMs);
+        }
+        const phase = (Math.sin(frameAtMs / 760) + 1) / 2;
+        for (let index = 0; index < definition.processedEdgeCount; index += 1) {
+          const sourceOffset = edgeSources[index] * 3;
+          const targetOffset = edgeTargets[index] * 3;
+          checksum += Math.hypot(
+            positions[targetOffset] - positions[sourceOffset],
+            positions[targetOffset + 1] - positions[sourceOffset + 1],
+            positions[targetOffset + 2] - positions[sourceOffset + 2],
+          );
+        }
+        for (let index = 0; index < landmarks.length; index += 3) {
+          landmarks[index] = landmarks[index] * 0.72 + phase * 0.28;
+          landmarks[index + 1] =
+            landmarks[index + 1] * 0.72 + (1 - phase) * 0.28;
+          checksum += landmarks[index] + landmarks[index + 1];
+        }
+        previousFrameAtMs = frameAtMs;
+      }
+      scenarios.push({
+        ...definition,
+        checksum: Math.round(checksum * 1000) / 1000,
+        frameTiming: summarizeFrameTimes(frameDurationsMs),
+      });
+    }
+
+    const cameraLayer = document.querySelector(".performance-camera-layer");
+    const video = document.querySelector(".performance-camera-layer__video");
+    const canvas = document.querySelector(".scene-canvas");
+    return {
+      camera: video
+        ? { height: video.videoHeight, width: video.videoWidth }
+        : null,
+      composition: {
+        cameraLayerActive: cameraLayer?.getAttribute("data-active"),
+        cameraLayerOpacity: cameraLayer
+          ? getComputedStyle(cameraLayer).opacity
+          : null,
+        canvasZIndex: canvas ? getComputedStyle(canvas).zIndex : null,
+        mirrored: cameraLayer?.getAttribute("data-mirrored"),
+        videoOpacity: video ? getComputedStyle(video).opacity : null,
+      },
+      scenarios,
+    };
+
+    function summarizeFrameTimes(values) {
+      const sorted = [...values].sort((left, right) => left - right);
+      const average =
+        values.reduce((sum, value) => sum + value, 0) /
+        Math.max(1, values.length);
+      const maximum = sorted.at(-1) ?? 0;
+      const p95 = sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)] ?? 0;
+      return {
+        averageFps: round(1000 / Math.max(average, 0.001), 1),
+        averageMs: round(average, 2),
+        maximumMs: round(maximum, 2),
+        minimumFps: round(1000 / Math.max(maximum, 0.001), 1),
+        p95Ms: round(p95, 2),
+        sampleCount: values.length,
+      };
+    }
+
+    function round(value, digits) {
+      const multiplier = 10 ** digits;
+      return Math.round(value * multiplier) / multiplier;
+    }
+  }, durationMs);
+
+  const workerMeasurements = await page.evaluate(
+    () => window.__touchTraversalWorkerMeasurements,
+  );
+  const resultSizes = workerMeasurements.resultSizes;
+  const output = {
+    ...browserResult,
+    cursorRenderFps: null,
+    cursorRenderStatus:
+      "not measurable: the synthetic camera produced no recognized hand",
+    inference: {
+      rateFps: averageFps(workerMeasurements.resultArrivalsMs),
+      resultCount: workerMeasurements.resultArrivalsMs.length,
+      timingMs: summarizeValues(workerMeasurements.resultInferenceMs),
+    },
+    workerFrameSize: resultSizes.at(-1)
+      ? {
+          height: resultSizes.at(-1).height,
+          width: resultSizes.at(-1).width,
+        }
+      : null,
+  };
+  await page.getByRole("button", { name: "Disable camera" }).click();
+  return output;
 }
 
 function summarizeValues(values) {

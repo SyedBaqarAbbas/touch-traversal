@@ -73,7 +73,7 @@ class CliTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0)
-        for command in ("build", "inspect", "validate", "stats"):
+        for command in ("build", "inspect", "validate", "stats", "studio"):
             self.assertIn(command, result.stdout)
 
     def test_version_matches_project_metadata(self) -> None:
@@ -88,6 +88,14 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertEqual(__version__, metadata["project"]["version"])
         self.assertEqual(result.stdout.strip(), f"touch-traversal {__version__}")
+
+    def test_studio_rejects_a_non_loopback_bind_address(self) -> None:
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            exit_code = main(["studio", "--host", "0.0.0.0"])
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("studio host must be a loopback address", stderr.getvalue())
 
     def test_build_exports_the_complete_validated_bundle(self) -> None:
         stdout = io.StringIO()

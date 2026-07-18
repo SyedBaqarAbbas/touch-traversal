@@ -24,16 +24,25 @@ describe("gesture classifier primitives", () => {
   it("loads every deterministic gesture fixture from compact JSON", () => {
     const names = fixtures.map((fixture) => fixture.name).sort();
     expect(names).toEqual([
+      "conflicting-gesture",
+      "empty-space-grab",
+      "grab-release",
       "hand-loss",
+      "hand-loss-mid-grab",
       "idle",
       "left-swipe",
+      "noisy-depth",
       "noisy-pinch",
       "open-palm",
+      "orbit",
+      "pan",
       "pointing",
       "right-swipe",
       "stable-pinch",
+      "zoom-in",
+      "zoom-out",
     ] satisfies GestureFixtureName[]);
-    expect(JSON.stringify(rawFixtures).length).toBeLessThan(16000);
+    expect(JSON.stringify(rawFixtures).length).toBeLessThan(26000);
   });
 
   it("plays fixtures back deterministically with controllable timing", () => {

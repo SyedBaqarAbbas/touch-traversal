@@ -34,6 +34,12 @@ from touch_traversal.ingestion import (
 from touch_traversal.layouts import LayoutError, generate_layouts
 from touch_traversal.models import GraphArtifact, GraphManifest, LayoutArtifact, PipelineReport
 from touch_traversal.relations import generate_nonsemantic_relations
+from touch_traversal.studio_server import (
+    DEFAULT_ALLOWED_ORIGINS,
+    DEFAULT_STUDIO_HOST,
+    DEFAULT_STUDIO_PORT,
+    serve_studio,
+)
 
 _INVALID_INPUT_EXIT_CODE = 2
 
@@ -105,6 +111,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="report statistics for an exported graph (Milestone 1)",
     )
     stats.add_argument("--graph", type=Path, required=True, help="graph JSON path")
+
+    studio = commands.add_parser(
+        "studio",
+        help="run the authenticated loopback companion for personal graph builds",
+    )
+    studio.add_argument(
+        "--host",
+        default=DEFAULT_STUDIO_HOST,
+        help="loopback bind address (non-loopback addresses are rejected)",
+    )
+    studio.add_argument(
+        "--port",
+        type=int,
+        default=DEFAULT_STUDIO_PORT,
+        help="loopback companion port",
+    )
+    studio.add_argument(
+        "--config",
+        type=Path,
+        default=_DEFAULT_CONFIG_PATH,
+        help="pipeline configuration file",
+    )
+    studio.add_argument(
+        "--allow-origin",
+        action="append",
+        dest="allowed_origins",
+        help="additional exact static-site origin allowed to use the companion",
+    )
 
     return parser
 
@@ -215,6 +249,29 @@ def _run_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_studio(args: argparse.Namespace) -> int:
+    config = load_config(args.config)
+    allowed_origins = tuple(
+        dict.fromkeys((*DEFAULT_ALLOWED_ORIGINS, *(args.allowed_origins or ())))
+    )
+    print(
+        f"starting local studio on http://{args.host}:{args.port}; "
+        "note contents stay on this machine and request bodies are not logged"
+    )
+    try:
+        serve_studio(
+            args.host,
+            args.port,
+            config,
+            allowed_origins=allowed_origins,
+        )
+    except ValueError as error:
+        raise CommandInputError(str(error)) from error
+    except KeyboardInterrupt:
+        print("local studio stopped")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse and run a pipeline command with user-facing validation errors."""
     parser = build_parser()
@@ -233,6 +290,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_validate(args)
         if args.command == "stats":
             return _run_stats(args)
+        if args.command == "studio":
+            return _run_studio(args)
     except (
         ArtifactValidationError,
         ArtifactExportError,

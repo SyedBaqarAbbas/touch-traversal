@@ -19,7 +19,7 @@
     "workerDurationMs": 8000
   },
   "browserVersion": "149.0.7827.55",
-  "capturedAt": "2026-07-18T06:17:21.630Z",
+  "capturedAt": "2026-07-18T08:27:33.002Z",
   "environment": {
     "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
     "devicePixelRatio": 1,
@@ -47,20 +47,20 @@
     "errors": [],
     "inference": {
       "durationMs": 8000,
-      "rateFps": 22.5,
-      "resultCount": 179,
+      "rateFps": 22.4,
+      "resultCount": 178,
       "timingMs": {
-        "average": 24.91,
-        "maximum": 68.5,
-        "p95": 26.3,
-        "sampleCount": 179
+        "average": 24.97,
+        "maximum": 69,
+        "p95": 26.2,
+        "sampleCount": 178
       }
     },
-    "mainThreadRenderFps": 108.5,
-    "mainThreadRenderFrameCount": 868,
+    "mainThreadRenderFps": 108.2,
+    "mainThreadRenderFrameCount": 866,
     "ready": true,
-    "submittedFrameRateFps": 21.4,
-    "submittedFrames": 172,
+    "submittedFrameRateFps": 21.3,
+    "submittedFrames": 171,
     "workerFrameSize": {
       "height": 240,
       "width": 320
@@ -82,8 +82,70 @@
     "Scale probes do not instantiate 100/400 or 300/1500 WebGL objects and are not WebGL draw-call benchmarks.",
     "The 300/1500 probes apply the runtime low-quality visible-edge cap and process 900 edges.",
     "The fake camera contains no recognizable hand; a visible cursor rate is null when MediaPipe returns no landmarks.",
-    "The checked-in 16-node/48-edge sample selects the high quality preset."
+    "The checked-in 16-node/48-edge sample selects the high quality preset.",
+    "Performance presentation measurements keep the real visible video layer, sample WebGL graph, and MediaPipe worker active while adding representative synthetic scale work."
   ],
+  "performancePresentation": {
+    "camera": {
+      "height": 480,
+      "width": 640
+    },
+    "composition": {
+      "cameraLayerActive": "true",
+      "cameraLayerOpacity": "1",
+      "canvasZIndex": "1",
+      "mirrored": "true",
+      "videoOpacity": "0.68"
+    },
+    "scenarios": [
+      {
+        "edgeCount": 400,
+        "nodeCount": 100,
+        "processedEdgeCount": 400,
+        "quality": "high",
+        "checksum": 576763.229,
+        "frameTiming": {
+          "averageFps": 109.3,
+          "averageMs": 9.15,
+          "maximumMs": 14.6,
+          "minimumFps": 68.5,
+          "p95Ms": 10.7,
+          "sampleCount": 273
+        }
+      },
+      {
+        "edgeCount": 1500,
+        "nodeCount": 300,
+        "processedEdgeCount": 900,
+        "quality": "low",
+        "checksum": 1337480.637,
+        "frameTiming": {
+          "averageFps": 113.6,
+          "averageMs": 8.81,
+          "maximumMs": 16.8,
+          "minimumFps": 59.5,
+          "p95Ms": 10.8,
+          "sampleCount": 283
+        }
+      }
+    ],
+    "cursorRenderFps": null,
+    "cursorRenderStatus": "not measurable: the synthetic camera produced no recognized hand",
+    "inference": {
+      "rateFps": 22.1,
+      "resultCount": 110,
+      "timingMs": {
+        "average": 26.76,
+        "maximum": 68.4,
+        "p95": 29,
+        "sampleCount": 110
+      }
+    },
+    "workerFrameSize": {
+      "height": 240,
+      "width": 320
+    }
+  },
   "sceneScaleProbes": [
     {
       "edgeCount": 400,
@@ -93,18 +155,18 @@
       "processedEdgeCount": 400,
       "quality": "high",
       "checksum": 622420.152,
-      "durationMs": 2504.8,
+      "durationMs": 2507.7,
       "frameCount": 301,
       "frameTiming": {
-        "averageFps": 120.1,
+        "averageFps": 120,
         "averageMs": 8.33,
-        "maximumMs": 9.9,
-        "minimumFps": 101,
-        "p95Ms": 9.1,
+        "maximumMs": 9.4,
+        "minimumFps": 106.4,
+        "p95Ms": 9.2,
         "sampleCount": 300
       },
       "workloadTiming": {
-        "averageFps": 35833.3,
+        "averageFps": 32717.4,
         "averageMs": 0.03,
         "maximumMs": 0.2,
         "minimumFps": 5000,
@@ -119,24 +181,24 @@
       "nodeCount": 100,
       "processedEdgeCount": 400,
       "quality": "high",
-      "checksum": 637284.311,
-      "durationMs": 2500.2,
-      "frameCount": 300,
+      "checksum": 639408.592,
+      "durationMs": 2506.3,
+      "frameCount": 301,
       "frameTiming": {
         "averageFps": 120,
         "averageMs": 8.33,
-        "maximumMs": 9.3,
-        "minimumFps": 107.5,
-        "p95Ms": 8.8,
-        "sampleCount": 299
+        "maximumMs": 9.4,
+        "minimumFps": 106.4,
+        "p95Ms": 9.3,
+        "sampleCount": 300
       },
       "workloadTiming": {
-        "averageFps": 28301.9,
-        "averageMs": 0.04,
+        "averageFps": 31354.2,
+        "averageMs": 0.03,
         "maximumMs": 0.2,
         "minimumFps": 5000,
         "p95Ms": 0.1,
-        "sampleCount": 300
+        "sampleCount": 301
       }
     },
     {
@@ -146,24 +208,24 @@
       "nodeCount": 100,
       "processedEdgeCount": 400,
       "quality": "high",
-      "checksum": 482175.645,
-      "durationMs": 2500.1,
-      "frameCount": 300,
+      "checksum": 483720.027,
+      "durationMs": 2506.3,
+      "frameCount": 301,
       "frameTiming": {
         "averageFps": 120,
         "averageMs": 8.33,
         "maximumMs": 9.4,
         "minimumFps": 106.4,
         "p95Ms": 9.2,
-        "sampleCount": 299
+        "sampleCount": 300
       },
       "workloadTiming": {
-        "averageFps": 33707.9,
-        "averageMs": 0.03,
-        "maximumMs": 0.2,
-        "minimumFps": 5000,
+        "averageFps": 54727.3,
+        "averageMs": 0.02,
+        "maximumMs": 1.3,
+        "minimumFps": 769.2,
         "p95Ms": 0.1,
-        "sampleCount": 300
+        "sampleCount": 301
       }
     },
     {
@@ -173,24 +235,24 @@
       "nodeCount": 100,
       "processedEdgeCount": 400,
       "quality": "high",
-      "checksum": 622432.107,
-      "durationMs": 2507.6,
-      "frameCount": 301,
+      "checksum": 628635.625,
+      "durationMs": 2505.3,
+      "frameCount": 304,
       "frameTiming": {
-        "averageFps": 120,
-        "averageMs": 8.34,
-        "maximumMs": 9.4,
-        "minimumFps": 106.4,
-        "p95Ms": 9.3,
-        "sampleCount": 300
+        "averageFps": 121.3,
+        "averageMs": 8.24,
+        "maximumMs": 13.6,
+        "minimumFps": 73.5,
+        "p95Ms": 9.4,
+        "sampleCount": 303
       },
       "workloadTiming": {
-        "averageFps": 25948.3,
-        "averageMs": 0.04,
+        "averageFps": 55272.7,
+        "averageMs": 0.02,
         "maximumMs": 0.2,
         "minimumFps": 5000,
         "p95Ms": 0.1,
-        "sampleCount": 301
+        "sampleCount": 304
       }
     },
     {
@@ -200,24 +262,24 @@
       "nodeCount": 300,
       "processedEdgeCount": 900,
       "quality": "low",
-      "checksum": 1358358.898,
-      "durationMs": 2502.3,
-      "frameCount": 292,
+      "checksum": 1428137.609,
+      "durationMs": 2507.8,
+      "frameCount": 307,
       "frameTiming": {
-        "averageFps": 116.7,
-        "averageMs": 8.57,
-        "maximumMs": 14.6,
-        "minimumFps": 68.5,
-        "p95Ms": 10.7,
-        "sampleCount": 291
+        "averageFps": 122.5,
+        "averageMs": 8.16,
+        "maximumMs": 11.2,
+        "minimumFps": 89.3,
+        "p95Ms": 10.4,
+        "sampleCount": 306
       },
       "workloadTiming": {
-        "averageFps": 27809.5,
-        "averageMs": 0.04,
+        "averageFps": 21928.6,
+        "averageMs": 0.05,
         "maximumMs": 0.2,
         "minimumFps": 5000,
         "p95Ms": 0.1,
-        "sampleCount": 292
+        "sampleCount": 307
       }
     },
     {
@@ -227,24 +289,24 @@
       "nodeCount": 300,
       "processedEdgeCount": 900,
       "quality": "low",
-      "checksum": 1436727.743,
-      "durationMs": 2506.2,
-      "frameCount": 298,
+      "checksum": 1504225.019,
+      "durationMs": 2502.1,
+      "frameCount": 312,
       "frameTiming": {
-        "averageFps": 118.9,
-        "averageMs": 8.41,
-        "maximumMs": 11.3,
-        "minimumFps": 88.5,
-        "p95Ms": 10.5,
-        "sampleCount": 297
+        "averageFps": 124.7,
+        "averageMs": 8.02,
+        "maximumMs": 21.5,
+        "minimumFps": 46.5,
+        "p95Ms": 10.3,
+        "sampleCount": 311
       },
       "workloadTiming": {
-        "averageFps": 15935.8,
-        "averageMs": 0.06,
+        "averageFps": 21224.5,
+        "averageMs": 0.05,
         "maximumMs": 0.2,
         "minimumFps": 5000,
         "p95Ms": 0.1,
-        "sampleCount": 298
+        "sampleCount": 312
       }
     },
     {
@@ -254,24 +316,24 @@
       "nodeCount": 300,
       "processedEdgeCount": 900,
       "quality": "low",
-      "checksum": 1145765.668,
-      "durationMs": 2505.6,
-      "frameCount": 316,
+      "checksum": 1089186.884,
+      "durationMs": 2503.6,
+      "frameCount": 301,
       "frameTiming": {
-        "averageFps": 126.3,
-        "averageMs": 7.92,
-        "maximumMs": 13.3,
-        "minimumFps": 75.2,
-        "p95Ms": 9.5,
-        "sampleCount": 315
+        "averageFps": 120.2,
+        "averageMs": 8.32,
+        "maximumMs": 16.2,
+        "minimumFps": 61.7,
+        "p95Ms": 10.7,
+        "sampleCount": 300
       },
       "workloadTiming": {
-        "averageFps": 23939.4,
-        "averageMs": 0.04,
-        "maximumMs": 0.2,
-        "minimumFps": 5000,
+        "averageFps": 21811.6,
+        "averageMs": 0.05,
+        "maximumMs": 0.3,
+        "minimumFps": 3333.3,
         "p95Ms": 0.1,
-        "sampleCount": 316
+        "sampleCount": 301
       }
     },
     {
@@ -281,26 +343,26 @@
       "nodeCount": 300,
       "processedEdgeCount": 900,
       "quality": "low",
-      "checksum": 1376978.481,
-      "durationMs": 2501.6,
-      "frameCount": 296,
+      "checksum": 1400238.031,
+      "durationMs": 2500.7,
+      "frameCount": 301,
       "frameTiming": {
-        "averageFps": 118.3,
-        "averageMs": 8.45,
-        "maximumMs": 15,
-        "minimumFps": 66.7,
-        "p95Ms": 10.6,
-        "sampleCount": 295
+        "averageFps": 120.3,
+        "averageMs": 8.31,
+        "maximumMs": 14.7,
+        "minimumFps": 68,
+        "p95Ms": 10.5,
+        "sampleCount": 300
       },
       "workloadTiming": {
-        "averageFps": 20274,
+        "averageFps": 21500,
         "averageMs": 0.05,
         "maximumMs": 0.2,
         "minimumFps": 5000,
         "p95Ms": 0.1,
-        "sampleCount": 296
+        "sampleCount": 301
       }
     }
   ],
-  "schemaVersion": 1
+  "schemaVersion": 2
 }

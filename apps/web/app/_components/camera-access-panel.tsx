@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
   type MutableRefObject,
@@ -16,6 +17,10 @@ import {
   initialCameraAccessState,
   reduceCameraAccess,
 } from "@/lib/camera-access";
+import {
+  stopCameraStream,
+  watchCameraStreamEnded,
+} from "@/lib/camera-stream-lifecycle";
 import {
   handCursorCopy,
   handCursorFrameFromSignal,
@@ -34,6 +39,11 @@ import {
   createHandTrackingWorkerController,
   type HandTrackingWorkerController,
 } from "@/lib/hand-tracking-client";
+import {
+  performanceCompositionPolicy,
+  type PerformanceEmphasis,
+} from "@/lib/performance-presentation";
+import type { SceneQuality } from "@/lib/performance-policy";
 import type {
   HandWorkerOutboundMessage,
   HandWorkerResultMessage,
@@ -41,17 +51,33 @@ import type {
 
 type HandWorkerPhase = "idle" | "loading" | "ready" | "error";
 
+export type PerformanceCameraPresentation = {
+  emphasis: PerformanceEmphasis;
+  fixture: boolean;
+  framingRevision: number;
+  layerVisible: boolean;
+  mirrored: boolean;
+  onCycleEmphasis: () => void;
+  onResetFraming: () => void;
+  onToggleLayer: () => void;
+  onToggleMirror: () => void;
+  quality: SceneQuality["name"];
+};
+
 export type CameraAccessPanelProps = {
   compact?: boolean;
   onCursorFrame?: (frame: HandCursorFrame | null) => void;
   onLandmarkFrame?: (frame: TimestampedLandmarkFrame) => void;
+  performance?: PerformanceCameraPresentation;
 };
 
 export function CameraAccessPanel({
   compact = false,
   onCursorFrame,
   onLandmarkFrame,
+  performance: performancePresentation,
 }: CameraAccessPanelProps = {}) {
+  const router = useRouter();
   const [state, dispatch] = useReducer(
     reduceCameraAccess,
     initialCameraAccessState,
@@ -63,12 +89,20 @@ export function CameraAccessPanel({
   const workerRef = useRef<HandTrackingWorkerController | null>(null);
   const frameLoopRef = useRef<number | null>(null);
   const cursorLoopRef = useRef<number | null>(null);
+  const detachTrackEndedRef = useRef<(() => void) | null>(null);
+  const pageVisibleRef = useRef(true);
   const handInputRef = useRef<HandInputBridgeState>(
     createHandInputBridgeState(),
   );
   const displayFrameRef = useRef<HandCursorFrame | null>(null);
   const onCursorFrameRef = useRef(onCursorFrame);
   const onLandmarkFrameRef = useRef(onLandmarkFrame);
+  const composition = performancePresentation
+    ? performanceCompositionPolicy(
+        performancePresentation.quality,
+        performancePresentation.emphasis,
+      )
+    : null;
   const copy = cameraAccessCopy(state);
   const handStatus = resolveHandStatus(state.status, cursorFrame);
   const handCopy = handCursorCopy(handStatus);
@@ -84,11 +118,26 @@ export function CameraAccessPanel({
   }, [onCursorFrame, onLandmarkFrame]);
 
   useEffect(() => {
+    workerRef.current?.setTargetFps(composition?.targetInferenceFps ?? 24);
+  }, [composition?.targetInferenceFps]);
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      pageVisibleRef.current = document.visibilityState !== "hidden";
+    };
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
+
+  useEffect(() => {
     return () => {
       stopFrameLoop(frameLoopRef.current);
       stopFrameLoop(cursorLoopRef.current);
       workerRef.current?.dispose();
-      stopStream(streamRef.current);
+      detachTrackEndedRef.current?.();
+      stopCameraStream(streamRef.current);
     };
   }, []);
 
@@ -138,7 +187,10 @@ export function CameraAccessPanel({
   }, [state.status]);
 
   const requestCamera = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
+    if (
+      !performancePresentation?.fixture &&
+      !navigator.mediaDevices?.getUserMedia
+    ) {
       dispatch({ type: "UNSUPPORTED" });
       return;
     }
@@ -152,6 +204,14 @@ export function CameraAccessPanel({
     });
     setWorkerPhase("loading");
     dispatch({ type: "REQUEST" });
+
+    if (performancePresentation?.fixture) {
+      await Promise.resolve();
+      setWorkerPhase("ready");
+      dispatch({ type: "ACTIVE" });
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
@@ -161,8 +221,32 @@ export function CameraAccessPanel({
           width: { ideal: 640 },
         },
       });
-      stopStream(streamRef.current);
+      detachTrackEndedRef.current?.();
+      stopCameraStream(streamRef.current);
       streamRef.current = stream;
+      detachTrackEndedRef.current = watchCameraStreamEnded(stream, () => {
+        stopFrameLoop(frameLoopRef.current);
+        stopFrameLoop(cursorLoopRef.current);
+        workerRef.current?.dispose();
+        workerRef.current = null;
+        detachTrackEndedRef.current?.();
+        detachTrackEndedRef.current = null;
+        stopCameraStream(streamRef.current);
+        streamRef.current = null;
+        resetHandTrackingState({
+          displayFrameRef,
+          handInputRef,
+          onCursorFrame: onCursorFrameRef.current,
+          onLandmarkFrame: onLandmarkFrameRef.current,
+          setCursorFrame,
+        });
+        setWorkerPhase("error");
+        dispatch({
+          message:
+            "Camera stream ended. Retry once the device is available; mouse and keyboard remain available.",
+          type: "ERROR",
+        });
+      });
       void attachStream(videoRef.current, stream);
       startFrameLoop();
       dispatch({ type: "ACTIVE" });
@@ -171,7 +255,9 @@ export function CameraAccessPanel({
       workerRef.current?.dispose();
       workerRef.current = null;
       setWorkerPhase("idle");
-      stopStream(streamRef.current);
+      detachTrackEndedRef.current?.();
+      detachTrackEndedRef.current = null;
+      stopCameraStream(streamRef.current);
       streamRef.current = null;
       dispatch(classifyCameraAccessError(error));
     }
@@ -190,7 +276,9 @@ export function CameraAccessPanel({
       setCursorFrame,
     });
     setWorkerPhase("idle");
-    stopStream(streamRef.current);
+    detachTrackEndedRef.current?.();
+    detachTrackEndedRef.current = null;
+    stopCameraStream(streamRef.current);
     streamRef.current = null;
     dispatch({ type: "DISABLE" });
   };
@@ -201,6 +289,7 @@ export function CameraAccessPanel({
     const tick = () => {
       const video = videoRef.current;
       if (
+        pageVisibleRef.current &&
         video &&
         video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
         video.videoWidth > 0 &&
@@ -211,6 +300,13 @@ export function CameraAccessPanel({
           createHandTrackingWorkerController({
             onMessage: handleWorkerMessage,
             onError: () => {
+              stopFrameLoop(frameLoopRef.current);
+              detachTrackEndedRef.current?.();
+              detachTrackEndedRef.current = null;
+              stopCameraStream(streamRef.current);
+              streamRef.current = null;
+              workerRef.current?.dispose();
+              workerRef.current = null;
               resetHandTrackingState({
                 displayFrameRef,
                 handInputRef,
@@ -227,10 +323,18 @@ export function CameraAccessPanel({
             },
             onResult: handleWorkerResult,
           });
+        controller.setTargetFps(composition?.targetInferenceFps ?? 24);
         workerRef.current = controller;
         void controller
           .submitVideoFrame(video, performance.now())
           .catch((error: unknown) => {
+            stopFrameLoop(frameLoopRef.current);
+            detachTrackEndedRef.current?.();
+            detachTrackEndedRef.current = null;
+            stopCameraStream(streamRef.current);
+            streamRef.current = null;
+            workerRef.current?.dispose();
+            workerRef.current = null;
             resetHandTrackingState({
               displayFrameRef,
               handInputRef,
@@ -257,6 +361,11 @@ export function CameraAccessPanel({
     void requestCamera();
   };
 
+  const handleExitPerformance = () => {
+    disableCamera();
+    router.push("/demo");
+  };
+
   const handleWorkerMessage = (message: HandWorkerOutboundMessage) => {
     if (message.type === "READY") {
       setWorkerPhase("ready");
@@ -274,6 +383,40 @@ export function CameraAccessPanel({
 
   return (
     <>
+      {performancePresentation ? (
+        <div
+          aria-hidden="true"
+          className="performance-camera-layer"
+          data-active={state.status === "active" ? "true" : "false"}
+          data-emphasis={performancePresentation.emphasis}
+          data-fixture={performancePresentation.fixture ? "true" : "false"}
+          data-framing-revision={performancePresentation.framingRevision}
+          data-mirrored={performancePresentation.mirrored ? "true" : "false"}
+          data-visible={performancePresentation.layerVisible ? "true" : "false"}
+          style={performanceVideoStyle(composition?.videoOpacity ?? 0)}
+        >
+          <video
+            className="performance-camera-layer__video"
+            muted
+            playsInline
+            ref={videoRef}
+          />
+          {performancePresentation.fixture ? (
+            <div className="performance-camera-layer__fixture">
+              <span />
+            </div>
+          ) : null}
+          <span className="performance-camera-layer__contrast" />
+        </div>
+      ) : (
+        <video
+          aria-hidden="true"
+          className="camera-access-panel__video"
+          muted
+          playsInline
+          ref={videoRef}
+        />
+      )}
       {cursorFrame?.visible ? (
         <span
           aria-hidden="true"
@@ -290,10 +433,13 @@ export function CameraAccessPanel({
         className="camera-access-panel"
         data-camera-status={state.status}
         data-compact={compact ? "true" : "false"}
+        data-performance={performancePresentation ? "true" : "false"}
       >
         <div className="camera-access-panel__meta">
           <span className="camera-access-panel__status">
-            {copy.statusLabel}
+            {performancePresentation?.fixture && state.status === "active"
+              ? "camera fixture / no device"
+              : copy.statusLabel}
           </span>
           <span
             className="camera-access-panel__hand"
@@ -305,6 +451,12 @@ export function CameraAccessPanel({
         </div>
         {!compact ? <strong>{copy.title}</strong> : null}
         {!compact ? <p>{copy.description}</p> : null}
+        {performancePresentation && state.status !== "active" ? (
+          <p className="performance-camera-consent">
+            Camera stays off until you enable it. Video has no audio and never
+            leaves this browser.
+          </p>
+        ) : null}
         {copy.actionLabel ? (
           <button
             disabled={state.status === "requesting"}
@@ -314,16 +466,54 @@ export function CameraAccessPanel({
             {copy.actionLabel}
           </button>
         ) : null}
-        <video
-          aria-hidden="true"
-          className="camera-access-panel__video"
-          muted
-          playsInline
-          ref={videoRef}
-        />
+        {performancePresentation ? (
+          <div
+            aria-label="Performance presentation"
+            className="performance-presentation-controls"
+          >
+            <button
+              aria-pressed={!performancePresentation.layerVisible}
+              onClick={performancePresentation.onToggleLayer}
+              type="button"
+            >
+              {performancePresentation.layerVisible
+                ? "Graph only"
+                : "Show video layer"}
+            </button>
+            <button
+              aria-label={`Graph and video emphasis: ${performancePresentation.emphasis}`}
+              onClick={performancePresentation.onCycleEmphasis}
+              type="button"
+            >
+              emphasis / {performancePresentation.emphasis}
+            </button>
+            <button
+              aria-pressed={performancePresentation.mirrored}
+              onClick={performancePresentation.onToggleMirror}
+              type="button"
+            >
+              mirror
+            </button>
+            <button
+              onClick={performancePresentation.onResetFraming}
+              type="button"
+            >
+              reset framing
+            </button>
+            <button onClick={handleExitPerformance} type="button">
+              exit performance
+            </button>
+          </div>
+        ) : null}
       </aside>
     </>
   );
+}
+
+function performanceVideoStyle(videoOpacity: number): CSSProperties {
+  return {
+    "--performance-video-opacity": videoOpacity.toFixed(2),
+  } as CSSProperties;
 }
 
 function resolveHandStatus(
@@ -402,11 +592,5 @@ async function attachStream(
 function stopFrameLoop(frameId: number | null) {
   if (frameId != null) {
     window.cancelAnimationFrame(frameId);
-  }
-}
-
-function stopStream(stream: MediaStream | null) {
-  for (const track of stream?.getTracks() ?? []) {
-    track.stop();
   }
 }
