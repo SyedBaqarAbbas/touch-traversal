@@ -1,5 +1,13 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
+import rawGestureFixtures from "../fixtures/gesture-fixtures.json";
+import {
+  expandGestureFixtures,
+  findGestureFixture,
+  type GestureFixtureFile,
+  type TimestampedLandmarkFrame,
+} from "../../lib/gesture-classifier";
+
 const routes = [
   ["/", "Explore the topologies of your thoughts."],
   ["/demo", "Graph artifact boundary"],
@@ -9,6 +17,9 @@ const routes = [
 
 const focusSettleTimeoutMs = 3200;
 const gestureHintTimeoutMs = 4400;
+const gestureFixtures = expandGestureFixtures(
+  rawGestureFixtures as unknown as GestureFixtureFile,
+);
 
 async function restoreSceneHud(page: Page): Promise<void> {
   const scene = page.locator(".scene-shell");
@@ -24,6 +35,80 @@ async function attachVisual(
   await testInfo.attach(name, {
     body: await page.screenshot({ animations: "disabled", fullPage: true }),
     contentType: "image/png",
+  });
+}
+
+async function pointHandCursorAtNode(
+  page: Page,
+  accessibleName: RegExp,
+): Promise<void> {
+  const node = page.getByRole("button", { name: accessibleName });
+  const box = await node.boundingBox();
+  if (!box) {
+    throw new Error(`Could not locate gesture target ${accessibleName}`);
+  }
+  const pointing = findGestureFixture(gestureFixtures, "pointing").frames[0]!;
+  await page.evaluate(
+    ({ center, frame }) => {
+      const timestampMs = performance.now();
+      window.dispatchEvent(
+        new CustomEvent("touch-traversal:hand-cursor-frame", {
+          detail: {
+            confidence: 0.92,
+            pinchProgress: 0,
+            position: {
+              x: (center.x / window.innerWidth) * 2 - 1,
+              y: 1 - (center.y / window.innerHeight) * 2,
+            },
+            status: "tracking",
+            timestampMs,
+            visible: true,
+          },
+        }),
+      );
+      window.dispatchEvent(
+        new CustomEvent("touch-traversal:landmark-frame", {
+          detail: { ...frame, timestampMs },
+        }),
+      );
+    },
+    {
+      center: { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+      frame: pointing,
+    },
+  );
+}
+
+async function injectLandmarkFrames(
+  page: Page,
+  frames: readonly TimestampedLandmarkFrame[],
+): Promise<void> {
+  await page.evaluate((fixtureFrames) => {
+    const startAtMs = performance.now();
+    for (const frame of fixtureFrames) {
+      window.dispatchEvent(
+        new CustomEvent("touch-traversal:landmark-frame", {
+          detail: {
+            ...frame,
+            timestampMs: startAtMs + frame.timestampMs,
+          },
+        }),
+      );
+    }
+  }, frames);
+}
+
+async function releaseHandInput(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const timestampMs = performance.now();
+    window.dispatchEvent(
+      new CustomEvent("touch-traversal:landmark-frame", {
+        detail: { hand: null, timestampMs },
+      }),
+    );
+    window.dispatchEvent(
+      new CustomEvent("touch-traversal:hand-cursor-frame", { detail: null }),
+    );
   });
 }
 
@@ -334,6 +419,14 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
   await page.goto("/demo?input=gesture-fixture");
 
   await expect(page.getByText("input / gesture fixture")).toBeVisible();
+  await pointHandCursorAtNode(page, /Constellations before filing/);
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Constellations before filing",
+  );
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "stable-pinch").frames,
+  );
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / pinch select",
     { timeout: gestureHintTimeoutMs },
@@ -342,6 +435,15 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
     timeout: focusSettleTimeoutMs,
   });
 
+  await releaseHandInput(page);
+  await pointHandCursorAtNode(page, /Orientation before action/);
+  await expect(page.locator(".scene-thought-label--hover")).toContainText(
+    "Orientation before action",
+  );
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "stable-pinch").frames,
+  );
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / pinch traverse",
     { timeout: gestureHintTimeoutMs },
@@ -353,6 +455,11 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
     "The first view should invite orientation before action.",
   );
 
+  await releaseHandInput(page);
+  await injectLandmarkFrames(
+    page,
+    findGestureFixture(gestureFixtures, "right-swipe").frames,
+  );
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / right swipe topology",
     { timeout: gestureHintTimeoutMs },
@@ -361,6 +468,12 @@ test("/demo?input=gesture-fixture routes injected hand gestures", async ({
     "community topology",
   );
 
+  await releaseHandInput(page);
+  const openPalm = findGestureFixture(gestureFixtures, "open-palm").frames[0]!;
+  await injectLandmarkFrames(
+    page,
+    [0, 240, 480].map((timestampMs) => ({ ...openPalm, timestampMs })),
+  );
   await expect(page.locator(".scene-gesture-hint")).toContainText(
     "gesture / open palm return",
     { timeout: gestureHintTimeoutMs },

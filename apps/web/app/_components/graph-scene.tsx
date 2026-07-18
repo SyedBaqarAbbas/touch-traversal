@@ -6,6 +6,7 @@ import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import Link from "next/link";
 import {
   type CSSProperties,
+  type MutableRefObject,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -25,6 +26,13 @@ import {
   type InteractionState,
 } from "@/lib/interaction-model";
 import { layoutMorphDuration } from "@/lib/layout-morph";
+import type { HandCursorFrame } from "@/lib/hand-cursor";
+import type { TimestampedLandmarkFrame } from "@/lib/gesture-classifier";
+import {
+  createGestureControllerState,
+  updateGestureController,
+  type GestureControllerState,
+} from "@/lib/gesture-controller";
 import {
   advanceHoverState,
   createIdleHoverState,
@@ -70,6 +78,10 @@ import {
 } from "@/lib/recording-mode";
 import { selectNodeSummaries, type GraphModel } from "@/lib/graph-model";
 import {
+  handCursorPointer,
+  topologyAfterSwipe,
+} from "@/lib/scene-gesture-input";
+import {
   buildSceneEdges,
   buildFocusSceneNodes,
   buildSceneNodes,
@@ -96,6 +108,9 @@ const REDUCED_MOTION_FOCUS_TRANSITION_MS = 220;
 const REDUCED_MOTION_RETURN_TRANSITION_MS = 240;
 const HUD_IDLE_TIMEOUT_MS = 4200;
 const HUD_ACTIVITY_THROTTLE_MS = 320;
+const MOUSE_HAND_SUPPRESSION_MS = 700;
+const GESTURE_FIXTURE_CURSOR_EVENT = "touch-traversal:hand-cursor-frame";
+const GESTURE_FIXTURE_LANDMARK_EVENT = "touch-traversal:landmark-frame";
 export const SCENE_INTRO_DURATION_MS = 3000;
 
 type PositionMotion = {
@@ -155,6 +170,20 @@ type GestureActionRefs = {
   switchTopology: (nextLayoutName: LayoutName) => void;
 };
 
+type GestureSceneContext = {
+  canSwitchTopology: boolean;
+  hoverNodeId: string | null;
+  interactionMode: InteractionState["mode"];
+  layoutName: LayoutName;
+  selectedNodeId: string | null;
+  temporalAvailable: boolean;
+};
+
+type HandRaycastRequest = {
+  pointer: UnifiedPointer;
+  sequence: number;
+};
+
 export function GraphScene({
   inputMode = "default",
   model,
@@ -187,9 +216,18 @@ export function GraphScene({
     useState(FOCUS_TRANSITION_MS);
   const reducedMotion = usePrefersReducedMotion();
   const lastHudActivityAtRef = useRef(Number.NEGATIVE_INFINITY);
+  const lastMouseActivityAtRef = useRef(Number.NEGATIVE_INFINITY);
   const gestureActionsRef = useRef<GestureActionRefs | null>(null);
-  const gestureFixtureStartedRef = useRef(false);
+  const gestureContextRef = useRef<GestureSceneContext | null>(null);
+  const gestureControllerRef = useRef<GestureControllerState>(
+    createGestureControllerState(),
+  );
+  const handCursorFrameRef = useRef<HandCursorFrame | null>(null);
+  const handPointerActiveRef = useRef(false);
+  const handRaycastRequestRef = useRef<HandRaycastRequest | null>(null);
+  const handRaycastSequenceRef = useRef(0);
   const recordingStartedRef = useRef(false);
+  const sceneShellRef = useRef<HTMLElement>(null);
   const cameraMode = cameraModeForInteraction(interaction);
   const activeTopology = topologyModesByLayout[layoutName];
   const canSwitchTopology =
@@ -200,6 +238,23 @@ export function GraphScene({
   const hoverNodeId = hoverState.hoveredNodeId;
   const previewNodeId = hoverState.previewNodeId;
   const selectedNodeId = interaction.selectedNodeId;
+  useLayoutEffect(() => {
+    gestureContextRef.current = {
+      canSwitchTopology,
+      hoverNodeId,
+      interactionMode: interaction.mode,
+      layoutName,
+      selectedNodeId,
+      temporalAvailable: model.temporal.available,
+    };
+  }, [
+    canSwitchTopology,
+    hoverNodeId,
+    interaction.mode,
+    layoutName,
+    model.temporal.available,
+    selectedNodeId,
+  ]);
   const labelHoverNodeId = selectedNodeId
     ? hoverNodeId
     : (previewNodeId ?? hoverNodeId);
@@ -379,15 +434,21 @@ export function GraphScene({
 
   useEffect(() => {
     const restoreHud = () => noteHudActivity();
+    const trackPointerActivity = (event: PointerEvent) => {
+      if (event.pointerType === "mouse") {
+        lastMouseActivityAtRef.current = performance.now();
+      }
+      restoreHud();
+    };
     window.addEventListener("click", restoreHud);
     window.addEventListener("keydown", restoreHud);
-    window.addEventListener("pointermove", restoreHud);
+    window.addEventListener("pointermove", trackPointerActivity);
     window.addEventListener("touchstart", restoreHud);
     window.addEventListener("wheel", restoreHud);
     return () => {
       window.removeEventListener("click", restoreHud);
       window.removeEventListener("keydown", restoreHud);
-      window.removeEventListener("pointermove", restoreHud);
+      window.removeEventListener("pointermove", trackPointerActivity);
       window.removeEventListener("touchstart", restoreHud);
       window.removeEventListener("wheel", restoreHud);
     };
@@ -397,6 +458,12 @@ export function GraphScene({
     nodeId: string | null,
     pointer: ReturnType<typeof pointerFromThreeEvent>,
   ) => {
+    if (pointer.source === "mouse") {
+      lastMouseActivityAtRef.current = pointer.timestampMs;
+    }
+    if (pointer.source === "hand") {
+      handPointerActiveRef.current = nodeId !== null;
+    }
     dispatch({
       type: "POINTER_CANDIDATE",
       nodeId,
@@ -601,68 +668,146 @@ export function GraphScene({
     };
   });
 
-  useLayoutEffect(() => {
-    if (inputMode !== "gesture-fixture") {
-      gestureFixtureStartedRef.current = false;
+  const routeHandPointer = useCallback(
+    (frame: HandCursorFrame) => {
+      const sceneShell = sceneShellRef.current;
+      if (!sceneShell || !frame.visible || frame.status === "lost") {
+        return;
+      }
+
+      const pointer = handCursorPointer(
+        frame,
+        sceneShell.getBoundingClientRect(),
+      );
+      const nodeId = sceneNodeIdAtPoint(pointer.screen.x, pointer.screen.y);
+      noteHudActivity();
+      if (nodeId) {
+        handPointerActiveRef.current = true;
+        dispatch({ type: "POINTER_CANDIDATE", nodeId, pointer });
+        return;
+      }
+
+      handPointerActiveRef.current = false;
+      handRaycastSequenceRef.current += 1;
+      handRaycastRequestRef.current = {
+        pointer,
+        sequence: handRaycastSequenceRef.current,
+      };
+    },
+    [noteHudActivity],
+  );
+
+  const handleHandCursorFrame = useCallback((frame: HandCursorFrame | null) => {
+    handCursorFrameRef.current = frame;
+    if (frame && frame.visible && frame.status !== "lost") {
       return;
     }
-    if (gestureFixtureStartedRef.current) {
+    handRaycastRequestRef.current = null;
+    if (handPointerActiveRef.current) {
+      handPointerActiveRef.current = false;
+      dispatch({
+        type: "IMMEDIATE_HOVER",
+        nodeId: null,
+        timestampMs: frame?.timestampMs ?? performance.now(),
+      });
+    }
+  }, []);
+
+  const handleLandmarkFrame = useCallback(
+    (frame: TimestampedLandmarkFrame) => {
+      const context = gestureContextRef.current;
+      const actions = gestureActionsRef.current;
+      if (!context || !actions) {
+        return;
+      }
+
+      const update = updateGestureController(
+        gestureControllerRef.current,
+        frame,
+        {
+          mouseSuppressionUntilMs:
+            lastMouseActivityAtRef.current + MOUSE_HAND_SUPPRESSION_MS,
+          safeToReturn:
+            context.selectedNodeId !== null &&
+            context.interactionMode === "FOCUSED",
+          targetNodeId: context.hoverNodeId,
+          topologyMorphing: !context.canSwitchTopology,
+        },
+      );
+      gestureControllerRef.current = update.state;
+
+      for (const action of update.actions) {
+        switch (action.type) {
+          case "pointer": {
+            const cursorFrame = handCursorFrameRef.current;
+            if (cursorFrame) {
+              routeHandPointer(cursorFrame);
+            }
+            break;
+          }
+          case "select": {
+            const traversing =
+              context.selectedNodeId !== null &&
+              context.selectedNodeId !== action.nodeId;
+            actions.showGestureHint(
+              traversing
+                ? "gesture / pinch traverse"
+                : "gesture / pinch select",
+              action.timestampMs,
+            );
+            actions.selectNode(action.nodeId, action.timestampMs);
+            break;
+          }
+          case "return":
+            actions.returnOverview(action.timestampMs);
+            break;
+          case "topology":
+            actions.switchTopology(
+              topologyAfterSwipe(
+                context.layoutName,
+                action.direction,
+                context.temporalAvailable,
+              ),
+            );
+            break;
+          case "hint":
+            if (action.label !== "gesture / pinch select") {
+              actions.showGestureHint(action.label, action.timestampMs);
+            }
+            break;
+        }
+      }
+    },
+    [routeHandPointer],
+  );
+
+  useEffect(() => {
+    if (inputMode !== "gesture-fixture" || recordingMode) {
       return;
     }
 
-    const firstNodeId =
-      nodeSummaries.find(
-        (node) => node.title === "Constellations before filing",
-      )?.id ??
-      nodeSummaries[1]?.id ??
-      nodeSummaries[0]?.id;
-    const traversalNodeId =
-      nodeSummaries.find((node) => node.title === "Orientation before action")
-        ?.id ??
-      nodeSummaries[2]?.id ??
-      firstNodeId;
-    if (!firstNodeId || !traversalNodeId) {
-      return;
-    }
-
-    gestureFixtureStartedRef.current = true;
-    const timers = [
-      window.setTimeout(() => {
-        const timestampMs = performance.now();
-        gestureActionsRef.current?.showGestureHint(
-          "gesture / pinch select",
-          timestampMs,
-        );
-        gestureActionsRef.current?.selectNode(firstNodeId, timestampMs);
-      }, 250),
-      window.setTimeout(() => {
-        const timestampMs = performance.now();
-        gestureActionsRef.current?.showGestureHint(
-          "gesture / pinch traverse",
-          timestampMs,
-        );
-        gestureActionsRef.current?.selectNode(traversalNodeId, timestampMs);
-      }, 2800),
-      window.setTimeout(() => {
-        gestureActionsRef.current?.showGestureHint(
-          "gesture / right swipe topology",
-        );
-        gestureActionsRef.current?.switchTopology("clusters");
-      }, 5400),
-      window.setTimeout(() => {
-        const timestampMs = performance.now();
-        gestureActionsRef.current?.showGestureHint(
-          "gesture / open palm return",
-          timestampMs,
-        );
-        gestureActionsRef.current?.returnOverview(timestampMs);
-      }, 8200),
-    ];
-    return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
-      gestureFixtureStartedRef.current = false;
+    const onCursorFrame = (event: Event) => {
+      handleHandCursorFrame(
+        (event as CustomEvent<HandCursorFrame | null>).detail,
+      );
     };
-  }, [inputMode, nodeSummaries]);
+    const onLandmarkFrame = (event: Event) => {
+      handleLandmarkFrame(
+        (event as CustomEvent<TimestampedLandmarkFrame>).detail,
+      );
+    };
+    window.addEventListener(GESTURE_FIXTURE_CURSOR_EVENT, onCursorFrame);
+    window.addEventListener(GESTURE_FIXTURE_LANDMARK_EVENT, onLandmarkFrame);
+    return () => {
+      window.removeEventListener(GESTURE_FIXTURE_CURSOR_EVENT, onCursorFrame);
+      window.removeEventListener(
+        GESTURE_FIXTURE_LANDMARK_EVENT,
+        onLandmarkFrame,
+      );
+      handleHandCursorFrame(null);
+      gestureControllerRef.current = createGestureControllerState();
+    };
+  }, [handleHandCursorFrame, handleLandmarkFrame, inputMode, recordingMode]);
 
   useLayoutEffect(() => {
     if (!recordingMode) {
@@ -730,8 +875,10 @@ export function GraphScene({
     <main
       className="scene-shell"
       data-hud={hudVisible ? "visible" : "dimmed"}
+      data-input-mode={inputMode}
       data-motion={reducedMotion ? "reduced" : "full"}
       data-presentation={recordingMode ? "recording" : "interactive"}
+      ref={sceneShellRef}
       style={sceneIntroStyle()}
     >
       <Canvas
@@ -773,6 +920,7 @@ export function GraphScene({
           transitionDurationMs={sceneTransitionMs}
         />
         <ThoughtNodeHitTargets
+          handRaycastRequestRef={handRaycastRequestRef}
           nodes={sceneNodes}
           onPointerCandidate={handlePointerCandidate}
         />
@@ -893,6 +1041,7 @@ export function GraphScene({
           <button
             aria-label={`Select ${node.title}`}
             aria-pressed={selectedNodeId === node.id}
+            data-scene-node-id={node.id}
             key={node.id}
             onClick={(event) => selectNode(node.id, event.timeStamp)}
             onPointerEnter={(event) =>
@@ -987,7 +1136,11 @@ export function GraphScene({
         </aside>
       ) : null}
 
-      <CameraAccessPanel compact={recordingMode} />
+      <CameraAccessPanel
+        compact={recordingMode}
+        onCursorFrame={recordingMode ? undefined : handleHandCursorFrame}
+        onLandmarkFrame={recordingMode ? undefined : handleLandmarkFrame}
+      />
 
       {!recordingMode ? (
         <nav
@@ -1425,9 +1578,11 @@ function setVector(target: THREE.Vector3, value: Vec3) {
 }
 
 function ThoughtNodeHitTargets({
+  handRaycastRequestRef,
   nodes,
   onPointerCandidate,
 }: {
+  handRaycastRequestRef: MutableRefObject<HandRaycastRequest | null>;
   nodes: SceneNode[];
   onPointerCandidate: (
     nodeId: string | null,
@@ -1435,6 +1590,9 @@ function ThoughtNodeHitTargets({
   ) => void;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const consumedHandRaycastRef = useRef(0);
+  const handRaycaster = useMemo(() => new THREE.Raycaster(), []);
+  const handPointerNdc = useMemo(() => new THREE.Vector2(), []);
   const scratch = useMemo(() => new THREE.Object3D(), []);
   const material = useMemo(
     () =>
@@ -1470,6 +1628,33 @@ function ThoughtNodeHitTargets({
     mesh.count = nodes.length;
     mesh.instanceMatrix.needsUpdate = true;
   }, [nodes, scratch]);
+
+  useFrame(({ camera }) => {
+    const mesh = meshRef.current;
+    const request = handRaycastRequestRef.current;
+    if (
+      !mesh ||
+      !request ||
+      request.sequence === consumedHandRaycastRef.current
+    ) {
+      return;
+    }
+
+    consumedHandRaycastRef.current = request.sequence;
+    handPointerNdc.set(
+      request.pointer.normalized.x,
+      request.pointer.normalized.y,
+    );
+    handRaycaster.setFromCamera(handPointerNdc, camera);
+    const intersection = handRaycaster.intersectObject(mesh, false)[0];
+    const node =
+      typeof intersection?.instanceId === "number"
+        ? nodes[intersection.instanceId]
+        : null;
+    const nodeId =
+      node && node.selectable > 0 && node.visible > 0 ? node.id : null;
+    onPointerCandidate(nodeId, request.pointer);
+  });
 
   return (
     <instancedMesh
@@ -1660,6 +1845,17 @@ function pointerFromThreeEvent(event: ThreeEvent<PointerEvent>) {
           : "mouse",
     timestampMs: performance.now(),
   });
+}
+
+function sceneNodeIdAtPoint(clientX: number, clientY: number): string | null {
+  for (const element of document.elementsFromPoint(clientX, clientY)) {
+    const nodeElement = element.closest<HTMLElement>("[data-scene-node-id]");
+    const nodeId = nodeElement?.dataset.sceneNodeId;
+    if (nodeId) {
+      return nodeId;
+    }
+  }
+  return null;
 }
 
 function ThoughtNodeInstances({
