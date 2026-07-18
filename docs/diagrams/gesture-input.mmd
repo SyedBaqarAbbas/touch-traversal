@@ -1,0 +1,85 @@
+---
+config:
+  theme: base
+  themeVariables:
+    background: "#ffffff"
+    primaryColor: "#f4f4f4"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#555555"
+    secondaryColor: "#e8eef5"
+    secondaryTextColor: "#111111"
+    secondaryBorderColor: "#385570"
+    tertiaryColor: "#f5f0e8"
+    tertiaryTextColor: "#111111"
+    tertiaryBorderColor: "#765b36"
+    lineColor: "#444444"
+    clusterBkg: "#fafafa"
+    clusterBorder: "#777777"
+    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+  flowchart:
+    curve: linear
+    htmlLabels: false
+    nodeSpacing: 30
+    rankSpacing: 38
+---
+flowchart TB
+    accTitle: Touch Traversal local gesture and unified input flow
+    accDescr: After explicit permission, local camera video is resized and throttled before transfer to a dedicated worker. Local MediaPipe inference returns normalized hand landmarks. Signal extraction, smoothing, and deterministic classifiers produce pointer, select, return, and topology actions for the shared graph interaction state. Mouse and keyboard remain available if camera access or the worker fails.
+
+    subgraph CAPTURE["Explicit, local capture"]
+        direction LR
+        PERMISSION["Enable hand camera"]
+        CAMERA["getUserMedia\nlocal video only"]
+        FRAME["Resize to ≤320 px\nthrottle toward 24 FPS"]
+        PERMISSION --> CAMERA --> FRAME
+    end
+
+    subgraph WORKER["Dedicated hand worker"]
+        direction LR
+        BITMAP["Transfer ImageBitmap"]
+        MEDIAPIPE["Pinned local MediaPipe\nWASM + hand model"]
+        LANDMARKS["Normalized landmarks\nscore + handedness + timestamp"]
+        BITMAP --> MEDIAPIPE --> LANDMARKS
+    end
+
+    subgraph CLASSIFY["Main-thread signal + classifiers"]
+        direction LR
+        SIGNAL["Extract + smooth signal\nfingertip · palm · pinch · velocity"]
+        INTENT["Deterministic intent classifiers\npoint · pinch · swipe · open palm"]
+        CONTROLLER["Gesture controller\ncontext gates + mouse suppression"]
+        SIGNAL --> INTENT --> CONTROLLER
+    end
+
+    subgraph UNIFIED["Unified graph input"]
+        direction LR
+        ACTIONS["Interaction actions\npointer · select · return · topology"]
+        STATE["Graph interaction state\nfocus · traversal · topology"]
+        SCENE["React Three Fiber / WebGL scene"]
+        ACTIONS --> STATE --> SCENE
+    end
+
+    MOUSE["Mouse / pointer"]
+    KEYBOARD["Keyboard"]
+    FALLBACK["Permission or worker failure\nhand input disabled"]
+
+    FRAME --> BITMAP
+    LANDMARKS --> SIGNAL
+    CONTROLLER --> ACTIONS
+    MOUSE --> ACTIONS
+    KEYBOARD --> ACTIONS
+    CAMERA -. "denied / unavailable" .-> FALLBACK
+    MEDIAPIPE -. "typed error" .-> FALLBACK
+    FALLBACK -. "preserve access" .-> MOUSE
+    FALLBACK -. "preserve access" .-> KEYBOARD
+
+    classDef source fill:#f5f0e8,stroke:#765b36,color:#111111;
+    classDef worker fill:#e8eef5,stroke:#385570,color:#111111;
+    classDef process fill:#f4f4f4,stroke:#555555,color:#111111;
+    classDef output fill:#e7f1e8,stroke:#38633d,color:#111111;
+    classDef fallback fill:#f5eded,stroke:#7a4848,color:#111111;
+    class PERMISSION,CAMERA,FRAME,MOUSE,KEYBOARD source;
+    class BITMAP,MEDIAPIPE,LANDMARKS worker;
+    class SIGNAL,INTENT,CONTROLLER process;
+    class ACTIONS,STATE,SCENE output;
+    class FALLBACK fallback;

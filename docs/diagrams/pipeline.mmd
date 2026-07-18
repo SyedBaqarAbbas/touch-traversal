@@ -1,0 +1,67 @@
+---
+config:
+  theme: base
+  themeVariables:
+    background: "#ffffff"
+    primaryColor: "#f4f4f4"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#555555"
+    secondaryColor: "#e8eef5"
+    secondaryTextColor: "#111111"
+    secondaryBorderColor: "#385570"
+    tertiaryColor: "#f5f0e8"
+    tertiaryTextColor: "#111111"
+    tertiaryBorderColor: "#765b36"
+    lineColor: "#444444"
+    clusterBkg: "#fafafa"
+    clusterBorder: "#777777"
+    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+  flowchart:
+    curve: linear
+    htmlLabels: false
+    nodeSpacing: 28
+    rankSpacing: 36
+---
+flowchart TB
+    accTitle: Touch Traversal offline graph pipeline
+    accDescr: Markdown documents are deterministically parsed and chunked with provenance. Explicit, structural, temporal, entity, and semantic evidence becomes relation candidates. Signals are combined, pruned, repaired, clustered, laid out four ways, validated as one bundle, and atomically exported as static JSON.
+
+    subgraph PREP["1 · Source preparation and evidence"]
+        direction LR
+        CORPUS["Markdown corpus"] --> DISCOVER["Stable discovery + parse\nfront matter · headings · links · dates"]
+        DISCOVER --> CHUNKS["Heading-aware chunks\nstable IDs + line provenance"]
+        CHUNKS --> CANDIDATES["Explainable candidates\nexplicit · structural · temporal · entity\nlocal embeddings + semantic top-K"]
+    end
+
+    subgraph GRAPH["2 · Graph shaping"]
+        direction LR
+        COMBINE["Combine weighted signals\nprimary type + confidence\nretain descriptions + evidence"]
+        PRUNE["Deterministic pruning\nscore · degree · density · edge limits"]
+        REPAIR["Repair isolated nodes\npreserve explicit links"]
+        CLUSTER["Seeded communities\nstable IDs + labels"]
+        COMBINE --> PRUNE --> REPAIR --> CLUSTER
+    end
+
+    subgraph OUTPUT["3 · Layout and export"]
+        direction LR
+        LAYOUTS["Four normalized 3D layouts\nsemantic UMAP · community orbits\ntemporal axis · weighted force"]
+        BUNDLE["Build bundle\ngraph · layouts · manifest · report"]
+        VALIDATE["Cross-artifact validation\nmatching IDs + counts + schemas"]
+        EXPORT["Atomic, byte-stable\nJSON export"]
+        LAYOUTS --> BUNDLE --> VALIDATE --> EXPORT
+    end
+
+    CANDIDATES --> COMBINE
+    CLUSTER --> LAYOUTS
+
+    classDef source fill:#f5f0e8,stroke:#765b36,color:#111111;
+    classDef evidence fill:#eef1f4,stroke:#5d6670,color:#111111;
+    classDef process fill:#f4f4f4,stroke:#555555,color:#111111;
+    classDef layout fill:#e8eef5,stroke:#385570,color:#111111;
+    classDef output fill:#e7f1e8,stroke:#38633d,color:#111111;
+    class CORPUS,DISCOVER,CHUNKS source;
+    class CANDIDATES evidence;
+    class COMBINE,PRUNE,REPAIR,CLUSTER,BUNDLE,VALIDATE process;
+    class LAYOUTS layout;
+    class EXPORT output;

@@ -1,0 +1,85 @@
+---
+config:
+  theme: base
+  themeVariables:
+    background: "#ffffff"
+    primaryColor: "#f4f4f4"
+    primaryTextColor: "#111111"
+    primaryBorderColor: "#555555"
+    secondaryColor: "#e8eef5"
+    secondaryTextColor: "#111111"
+    secondaryBorderColor: "#385570"
+    tertiaryColor: "#f5f0e8"
+    tertiaryTextColor: "#111111"
+    tertiaryBorderColor: "#765b36"
+    lineColor: "#444444"
+    clusterBkg: "#fafafa"
+    clusterBorder: "#777777"
+    fontFamily: "ui-sans-serif, system-ui, sans-serif"
+    fontSize: "16px"
+  flowchart:
+    curve: linear
+    htmlLabels: false
+    nodeSpacing: 34
+    rankSpacing: 42
+---
+flowchart TB
+    accTitle: Touch Traversal system architecture
+    accDescr: Fictional Markdown notes pass through a deterministic offline Python pipeline into four static JSON artifacts. The Next.js application validates the bundle, constructs a Graphology model, and renders it with React Three Fiber and WebGL. Mouse, keyboard, and optional local hand input drive the scene without an application backend.
+
+    subgraph SOURCE["Local source"]
+        direction LR
+        NOTES["Fictional Markdown notes"]
+        CONFIG["Validated pipeline config"]
+    end
+
+    subgraph BUILD["Offline build · Python 3.11"]
+        direction LR
+        PIPELINE["Deterministic graph pipeline"]
+        CONTRACT["Cross-artifact validation"]
+    end
+
+    subgraph STATIC["Checked-in static boundary"]
+        direction LR
+        GRAPH["graph.json\nnodes · typed edges · evidence"]
+        LAYOUTS["layouts.json\nsemantic · clusters · temporal · force"]
+        MANIFEST["manifest.json\ncounts · model · config hash"]
+        REPORT["pipeline-report.json\nstatistics · warnings"]
+    end
+
+    subgraph BROWSER["Next.js browser application"]
+        direction LR
+        LOAD["Parallel static fetch"]
+        VALIDATE["Strict Zod bundle validation"]
+        MODEL["Graphology model"]
+        SCENE["React Three Fiber scene"]
+        WEBGL["Three.js / WebGL renderer"]
+    end
+
+    INPUT["Mouse · keyboard\noptional on-device hand input"]
+
+    NOTES --> PIPELINE
+    CONFIG --> PIPELINE
+    PIPELINE --> CONTRACT
+    CONTRACT --> GRAPH
+    CONTRACT --> LAYOUTS
+    CONTRACT --> MANIFEST
+    CONTRACT --> REPORT
+    GRAPH --> LOAD
+    LAYOUTS --> LOAD
+    MANIFEST --> LOAD
+    REPORT --> LOAD
+    LOAD --> VALIDATE
+    VALIDATE --> MODEL
+    MODEL --> SCENE
+    INPUT --> SCENE
+    SCENE --> WEBGL
+
+    classDef source fill:#f5f0e8,stroke:#765b36,color:#111111;
+    classDef process fill:#f4f4f4,stroke:#555555,color:#111111;
+    classDef artifact fill:#e8eef5,stroke:#385570,color:#111111;
+    classDef output fill:#e7f1e8,stroke:#38633d,color:#111111;
+    class NOTES,CONFIG source;
+    class PIPELINE,CONTRACT,LOAD,VALIDATE,MODEL,SCENE,INPUT process;
+    class GRAPH,LAYOUTS,MANIFEST,REPORT artifact;
+    class WEBGL output;
