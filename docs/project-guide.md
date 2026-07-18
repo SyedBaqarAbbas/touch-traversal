@@ -64,7 +64,9 @@ Open `http://localhost:3000/demo`. Other implemented routes are:
 - `/`: product entry and route navigation.
 - `/studio`: explicit personal file/folder preview and loopback graph generation.
 - `/perform`: opt-in mirrored webcam composition with the same graph and hand worker.
-- `/calibration`: explicit camera setup, mirrored preview, landmarks, and pinch-threshold controls.
+- `/calibration`: explicit camera setup, mirrored preview, landmarks, numeric settings, and a
+  production-classifier rehearsal for point, pinch, open palm, horizontal sweep, empty-space grab,
+  orbit, pan, depth zoom, and release.
 - `/tutorial`: resumable eight-step orientation with a camera-free path, visual hand-movement
   cards, and links to ordered practice on the real graph runtime.
 - `/debug`: artifact statistics, raw sample payload, traversal history, and hand diagnostics.
@@ -169,41 +171,47 @@ persistence path; an explicit download is the only durable output.
 
 Classifier/controller modules use hysteresis, holds, cooldowns, and transition guards rather than
 single-frame activation. Recorded privacy-safe fixtures exercise the same runtime cursor and
-landmark handlers used by the live camera path. Recent mouse movement briefly takes precedence to
-avoid simultaneous actions; hand input resumes automatically without disabling either path.
+landmark handlers used by the live camera path. Mouse and fingertip cursors share one hover state,
+and the most recently moved cursor immediately owns the highlight and title label. Recent mouse
+movement suppresses pinch, swipe, and manipulation actions for 700 ms to avoid simultaneous
+commands; it does not suppress visible fingertip hover.
 
 ## Controls and fallbacks
 
 Mouse, keyboard, and optional live hand input share the graph interaction state. Camera permission
 is never required.
 
-| Input                              | Action                                                           |
-| ---------------------------------- | ---------------------------------------------------------------- |
-| Hover a node or a dot-rail item    | Show the thought label and make it the focus candidate.          |
-| Click a node or dot-rail item      | Focus it; selecting an active related target starts traversal.   |
-| Click **return** or press `Escape` | Return to graph overview.                                        |
-| Press `Backspace`                  | Restore the previous focused node when traversal history exists. |
-| Press `1`, `2`, `3`, or `4`        | Select semantic, community, temporal, or force topology.         |
-| Click a topology button            | Select the same topology without a keyboard shortcut.            |
-| Press `A` or `D`                   | Orbit the graph view left or right.                              |
-| Press `Shift` + an arrow key       | Pan the graph view.                                              |
-| Press `+`, `-`, or use the wheel   | Zoom the graph view.                                             |
-| Press `0` or click **Reset view**  | Restore the authored camera view.                                |
-| Click **Enable hand camera**       | Request optional local camera access and start the hand worker.  |
-| Click **Disable camera**           | Stop the tracks and return to mouse/keyboard-only use.           |
-| Open `/perform`                    | Enter camera-off performance presentation without a prompt.      |
-| Click **Graph only**               | Hide video but keep the scene, stream, and hand input mounted.   |
-| Change emphasis or mirror          | Adjust only the visible composition; graph state stays intact.   |
-| Click **exit performance**         | Stop owned tracks and return to `/demo`.                         |
-| Click **Start recording**          | Begin an explicit silent local webcam + graph composition.       |
-| Click **Stop recording**           | Finalize an in-memory local file for download or discard.        |
-| Click **Discard recording**        | Immediately release the local recording and object URL.          |
-| Point at a node                    | Move the live hand cursor and establish the hover target.        |
-| Pinch over a target                | Focus it, or traverse to it when it is an active neighbor.       |
-| Hold an open palm                  | Return from a focused thought to the overview.                   |
-| Swipe horizontally                 | Cycle through the available topology modes.                      |
-| Pinch empty space and move         | Orbit horizontally, pan vertically, and zoom with palm depth.    |
-| Release the empty-space pinch      | End direct view manipulation.                                    |
+| Input                               | Action                                                               |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| Hover a node or a dot-rail item     | Show the thought label and make it the focus candidate.              |
+| Click a node or dot-rail item       | Focus it; selecting an active related target starts traversal.       |
+| Click **hide text** / **show text** | Collapse or restore titles and summaries for the nearest thoughts.   |
+| Click **focus**                     | Focus the latest hovered thought; disabled until one is available.   |
+| Click **overview**                  | Clear a selection; disabled while overview is already active.        |
+| Click **return** or press `Escape`  | Return to graph overview; the button requires an active selection.   |
+| Hover **inspect**                   | Explain the future detailed-reading mode; the button stays disabled. |
+| Press `Backspace`                   | Restore the previous focused node when traversal history exists.     |
+| Press `1`, `2`, `3`, or `4`         | Select semantic, community, temporal, or force topology.             |
+| Click a topology button             | Select the same topology without a keyboard shortcut.                |
+| Press `A` or `D`                    | Orbit the graph view left or right.                                  |
+| Press `Shift` + an arrow key        | Pan the graph view.                                                  |
+| Press `+`, `-`, or use the wheel    | Zoom the graph view.                                                 |
+| Press `0` or click **Reset view**   | Restore the authored camera view.                                    |
+| Click **Enable hand camera**        | Request optional local camera access and start the hand worker.      |
+| Click **Disable camera**            | Stop the tracks and return to mouse/keyboard-only use.               |
+| Open `/perform`                     | Enter camera-off performance presentation without a prompt.          |
+| Click **Graph only**                | Hide video but keep the scene, stream, and hand input mounted.       |
+| Change emphasis or mirror           | Adjust only the visible composition; graph state stays intact.       |
+| Click **exit performance**          | Stop owned tracks and return to `/demo`.                             |
+| Click **Start recording**           | Begin an explicit silent local webcam + graph composition.           |
+| Click **Stop recording**            | Finalize an in-memory local file for download or discard.            |
+| Click **Discard recording**         | Immediately release the local recording and object URL.              |
+| Point at a node                     | Move the live hand cursor and establish the hover target.            |
+| Pinch over a target                 | Focus it, or traverse to it when it is an active neighbor.           |
+| Hold an open palm                   | Return from a focused thought to the overview.                       |
+| Swipe horizontally                  | Cycle through the available topology modes.                          |
+| Pinch empty space and move          | Orbit horizontally, pan vertically, and zoom with palm depth.        |
+| Release the empty-space pinch       | End direct view manipulation.                                        |
 
 Topology shortcuts are ignored while focus is inside an editable control or while a conflicting
 scene transition is active. Temporal topology is disabled, with a reason in the HUD, if the bundle

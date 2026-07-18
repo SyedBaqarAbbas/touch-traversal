@@ -80,6 +80,50 @@ The routes are `/`, `/demo`, `/studio`, `/perform`, `/calibration`, `/tutorial`,
 full-viewport camera composition; the camera stays off until **Enable hand camera** is pressed.
 Mouse and keyboard controls remain available if permission is denied or hand-model loading fails.
 
+## Use the app
+
+### Choose or build a graph
+
+| Goal                                                | Route and requirement                                                                                                   |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Explore the fictional graph                         | Open `/demo`; no companion or camera is required.                                                                       |
+| Turn Markdown or text notes into a graph            | Start the loopback companion, then choose files or a folder in `/studio`.                                               |
+| Reopen a Touch Traversal graph export               | Choose **import private JSON** on `/demo`; no companion is required.                                                    |
+| Inspect the JSON contract or try a complete example | Open **JSON format + example** on `/demo`, or read the [personal graph JSON guide](docs/personal-graph-json-format.md). |
+
+The JSON importer accepts the strict version 1 Touch Traversal session envelope, not arbitrary
+JSON. Its machine-readable contract is
+[`apps/web/public/examples/personal-graph-session.schema.json`](apps/web/public/examples/personal-graph-session.schema.json),
+and the repository includes an importable
+[`Touch Traversal Linear project graph`](apps/web/public/examples/touch-traversal-linear-project.json).
+Selected notes and imported graphs stay local; see [Privacy and current scope](#privacy-and-current-scope)
+for the exact lifecycle.
+
+### Explore and traverse
+
+| Input or control                                        | Result                                                                              |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Hover with the mouse or point with the fingertip cursor | Brighten the thought and show its title. The most recently moved cursor owns hover. |
+| Click or pinch a thought                                | Focus it; repeat on a highlighted connected thought to traverse.                    |
+| **hide text** / **show text**                           | Collapse or restore titles and summaries for the closest ranked thoughts.           |
+| **overview**                                            | Return a selected graph to the full overview.                                       |
+| **focus**                                               | Focus the latest hovered thought; disabled until a valid target exists.             |
+| **inspect**                                             | Reserved for a future detailed-reading mode and therefore disabled.                 |
+| **return**                                              | Return to overview after selection; `Escape` does the same.                         |
+| `1`–`4`                                                 | Switch semantic, community, temporal, or force topology.                            |
+| `A` / `D`, `Shift` + arrows, `+` / `-`, `0`             | Orbit, pan, zoom, or reset the view.                                                |
+
+Every scene-mode button explains itself on hover and remains disabled when it cannot act. The full
+mouse, keyboard, hand, performance, and recording contract is in
+[`docs/interaction-controls.md`](docs/interaction-controls.md).
+
+### Learn and calibrate hand input
+
+`/tutorial` includes the written movement guide and ordered interactive practice. `/calibration`
+rehearses the same production gestures: point, pinch, open-palm return, horizontal topology sweep,
+empty-space grab, orbit, vertical pan, depth zoom, and release. Camera access remains off until
+**Enable hand camera** is selected, and pointing alone never selects a thought.
+
 ## How it works
 
 ```text

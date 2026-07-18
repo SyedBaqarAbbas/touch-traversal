@@ -158,7 +158,11 @@ honors reduced-motion preferences.
 | Input                               | Action                                                                      |
 | ----------------------------------- | --------------------------------------------------------------------------- |
 | Hover or click a node/dot-rail item | Preview or focus a thought; selecting an active neighbor traverses its edge |
-| `Escape` or **return**              | Return to overview                                                          |
+| **hide text** / **show text**       | Collapse or restore text for the closest ranked thoughts                    |
+| **focus**                           | Focus the latest hovered thought; disabled until a target exists            |
+| **overview**                        | Clear a selection and restore the full graph                                |
+| `Escape` or **return**              | Return to overview after selection                                          |
+| **inspect**                         | Explain the future detailed-reading mode; intentionally disabled            |
 | `Backspace`                         | Restore the previous focused thought when traversal history exists          |
 | `1`, `2`, `3`, `4`                  | Semantic, community, temporal, or force topology                            |
 | `A`, `D`                            | Orbit the graph view left or right                                          |
@@ -175,8 +179,9 @@ view shortcuts do not steal input from editable controls or conflicting scene tr
 Camera permission is never requested on load. **Enable hand camera** requests silent video only and
 starts same-origin MediaPipe inference in a browser worker. **Disable camera**, route exit, track
 end, or worker failure stops owned resources; denial or missing hardware leaves mouse and keyboard
-fully available. `/calibration` provides a mirrored preview and versioned numeric pinch, depth, and
-mirror settings.
+fully available. `/calibration` provides a mirrored preview, versioned numeric settings, and a live
+rehearsal of every production gesture listed below, including sweep distance/speed/direction and
+empty-space view manipulation.
 
 | Gesture                                                              | Action                                              |
 | -------------------------------------------------------------------- | --------------------------------------------------- |
@@ -190,8 +195,9 @@ mirror settings.
 | Release the pinch                                                    | End the direct manipulation grab                    |
 
 Node pinches retain selection/traversal priority over empty-space manipulation. Conflicting
-transitions and hand loss cancel a grab safely. Recent mouse movement takes temporary precedence,
-then hand input resumes automatically.
+transitions and hand loss cancel a grab safely. Mouse and fingertip cursors share one hover state,
+so whichever cursor moved most recently owns the highlight and title label. Recent mouse movement
+suppresses pinch, swipe, and manipulation actions for 700 ms, but does not suppress fingertip hover.
 
 ## Performance presentation and local recording
 

@@ -4,6 +4,10 @@ The **import private JSON** control on `/demo` accepts one version 1 session env
 The browser parses and validates the complete session before replacing the active in-memory graph.
 It does not upload the file or retain it after a page reload.
 
+This control does not convert arbitrary JSON, Markdown, or text. Use `/studio` plus the local
+companion to turn `.md`, `.markdown`, or `.txt` notes into a graph. In the demo, open **JSON format +
+example** to download the canonical schema or an importable example without leaving the page.
+
 ```json
 {
   "sessionVersion": 1,

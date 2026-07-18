@@ -37,6 +37,16 @@ disable, hand loss, and worker failure do not affect these controls. Reset has n
 horizontal hand movement is reserved for orbit, while the named buttons and `Shift` + left/right
 provide horizontal pan.
 
+## Pointer hover and action ownership
+
+The mouse and visible fingertip cursor feed the same node-hover state. Moving either cursor over a
+thought immediately brightens it and shows the same title label; whichever cursor moved most
+recently owns hover. Losing the tracked hand does not clear a newer mouse-owned hover.
+
+The 700 ms recent-mouse guard applies only to pinch, swipe, and direct-manipulation actions. It does
+not delay fingertip hover feedback. This keeps the visible cursor responsive while preventing an
+incidental gesture command during active mouse control.
+
 ## Conflict matrix
 
 | Condition at pinch begin or during grab             | Result                                                             |
