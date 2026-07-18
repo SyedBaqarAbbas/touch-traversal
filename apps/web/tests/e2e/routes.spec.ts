@@ -29,7 +29,14 @@ async function restoreSceneHud(page: Page): Promise<void> {
       element.getAnimations().map((animation) => animation.finished),
     );
   });
-  await page.mouse.move(32, 32);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new PointerEvent("pointermove", {
+        bubbles: true,
+        pointerType: "mouse",
+      }),
+    );
+  });
   await expect(scene).toHaveAttribute("data-hud", "visible");
 }
 
@@ -385,8 +392,7 @@ test("/demo visual states cover temporal mode, hover, focus, and HUD idle", asyn
 
   await page.waitForTimeout(4500);
   await expect(scene).toHaveAttribute("data-hud", "dimmed");
-  await page.mouse.move(32, 32);
-  await expect(scene).toHaveAttribute("data-hud", "visible");
+  await restoreSceneHud(page);
 });
 
 test("/demo respects reduced-motion media preferences", async ({
