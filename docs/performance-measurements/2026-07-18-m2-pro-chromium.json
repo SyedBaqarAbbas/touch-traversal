@@ -1,0 +1,306 @@
+{
+  "benchmark": {
+    "cameraRequest": {
+      "audio": false,
+      "video": {
+        "facingMode": "user",
+        "idealHeight": 480,
+        "idealWidth": 640
+      }
+    },
+    "cameraSource": "Chromium privacy-safe synthetic video device",
+    "chromiumFlags": [
+      "--use-fake-device-for-media-stream",
+      "--use-fake-ui-for-media-stream"
+    ],
+    "route": "/demo?input=mouse",
+    "scenarioDurationMs": 2500,
+    "targetUrl": "http://127.0.0.1:3012",
+    "workerDurationMs": 8000
+  },
+  "browserVersion": "149.0.7827.55",
+  "capturedAt": "2026-07-18T06:17:21.630Z",
+  "environment": {
+    "browserUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
+    "devicePixelRatio": 1,
+    "hardwareConcurrency": 10,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)",
+    "sampleGraph": {
+      "edgeCount": 48,
+      "nodeCount": 16,
+      "quality": "high"
+    },
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "handWorker": {
+    "camera": {
+      "height": 480,
+      "readyState": 4,
+      "width": 640
+    },
+    "cursorRenderFps": null,
+    "cursorRenderStatus": "not measurable: the synthetic camera produced no recognized hand",
+    "detectedHandFrames": 0,
+    "errors": [],
+    "inference": {
+      "durationMs": 8000,
+      "rateFps": 22.5,
+      "resultCount": 179,
+      "timingMs": {
+        "average": 24.91,
+        "maximum": 68.5,
+        "p95": 26.3,
+        "sampleCount": 179
+      }
+    },
+    "mainThreadRenderFps": 108.5,
+    "mainThreadRenderFrameCount": 868,
+    "ready": true,
+    "submittedFrameRateFps": 21.4,
+    "submittedFrames": 172,
+    "workerFrameSize": {
+      "height": 240,
+      "width": 320
+    }
+  },
+  "host": {
+    "architecture": "arm64",
+    "cpu": "Apple M2 Pro",
+    "deviceName": "MacBook Pro",
+    "gpu": "Apple M2 Pro",
+    "gpuCores": 16,
+    "hardwareModel": "Mac14,9",
+    "logicalCores": 10,
+    "memoryGiB": 16,
+    "operatingSystem": "darwin 25.5.0"
+  },
+  "notes": [
+    "Scene scale probes add deterministic JavaScript position, focus, edge, morph, and landmark work while the checked-in sample WebGL scene remains active.",
+    "Scale probes do not instantiate 100/400 or 300/1500 WebGL objects and are not WebGL draw-call benchmarks.",
+    "The 300/1500 probes apply the runtime low-quality visible-edge cap and process 900 edges.",
+    "The fake camera contains no recognizable hand; a visible cursor rate is null when MediaPipe returns no landmarks.",
+    "The checked-in 16-node/48-edge sample selects the high quality preset."
+  ],
+  "sceneScaleProbes": [
+    {
+      "edgeCount": 400,
+      "id": "overview-100-400",
+      "mode": "overview",
+      "nodeCount": 100,
+      "processedEdgeCount": 400,
+      "quality": "high",
+      "checksum": 622420.152,
+      "durationMs": 2504.8,
+      "frameCount": 301,
+      "frameTiming": {
+        "averageFps": 120.1,
+        "averageMs": 8.33,
+        "maximumMs": 9.9,
+        "minimumFps": 101,
+        "p95Ms": 9.1,
+        "sampleCount": 300
+      },
+      "workloadTiming": {
+        "averageFps": 35833.3,
+        "averageMs": 0.03,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 301
+      }
+    },
+    {
+      "edgeCount": 400,
+      "id": "focus-100-400",
+      "mode": "focus",
+      "nodeCount": 100,
+      "processedEdgeCount": 400,
+      "quality": "high",
+      "checksum": 637284.311,
+      "durationMs": 2500.2,
+      "frameCount": 300,
+      "frameTiming": {
+        "averageFps": 120,
+        "averageMs": 8.33,
+        "maximumMs": 9.3,
+        "minimumFps": 107.5,
+        "p95Ms": 8.8,
+        "sampleCount": 299
+      },
+      "workloadTiming": {
+        "averageFps": 28301.9,
+        "averageMs": 0.04,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 300
+      }
+    },
+    {
+      "edgeCount": 400,
+      "id": "morph-100-400",
+      "mode": "morph",
+      "nodeCount": 100,
+      "processedEdgeCount": 400,
+      "quality": "high",
+      "checksum": 482175.645,
+      "durationMs": 2500.1,
+      "frameCount": 300,
+      "frameTiming": {
+        "averageFps": 120,
+        "averageMs": 8.33,
+        "maximumMs": 9.4,
+        "minimumFps": 106.4,
+        "p95Ms": 9.2,
+        "sampleCount": 299
+      },
+      "workloadTiming": {
+        "averageFps": 33707.9,
+        "averageMs": 0.03,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 300
+      }
+    },
+    {
+      "edgeCount": 400,
+      "id": "hand-tracking-100-400",
+      "mode": "hand-tracking",
+      "nodeCount": 100,
+      "processedEdgeCount": 400,
+      "quality": "high",
+      "checksum": 622432.107,
+      "durationMs": 2507.6,
+      "frameCount": 301,
+      "frameTiming": {
+        "averageFps": 120,
+        "averageMs": 8.34,
+        "maximumMs": 9.4,
+        "minimumFps": 106.4,
+        "p95Ms": 9.3,
+        "sampleCount": 300
+      },
+      "workloadTiming": {
+        "averageFps": 25948.3,
+        "averageMs": 0.04,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 301
+      }
+    },
+    {
+      "edgeCount": 1500,
+      "id": "overview-300-1500",
+      "mode": "overview",
+      "nodeCount": 300,
+      "processedEdgeCount": 900,
+      "quality": "low",
+      "checksum": 1358358.898,
+      "durationMs": 2502.3,
+      "frameCount": 292,
+      "frameTiming": {
+        "averageFps": 116.7,
+        "averageMs": 8.57,
+        "maximumMs": 14.6,
+        "minimumFps": 68.5,
+        "p95Ms": 10.7,
+        "sampleCount": 291
+      },
+      "workloadTiming": {
+        "averageFps": 27809.5,
+        "averageMs": 0.04,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 292
+      }
+    },
+    {
+      "edgeCount": 1500,
+      "id": "focus-300-1500",
+      "mode": "focus",
+      "nodeCount": 300,
+      "processedEdgeCount": 900,
+      "quality": "low",
+      "checksum": 1436727.743,
+      "durationMs": 2506.2,
+      "frameCount": 298,
+      "frameTiming": {
+        "averageFps": 118.9,
+        "averageMs": 8.41,
+        "maximumMs": 11.3,
+        "minimumFps": 88.5,
+        "p95Ms": 10.5,
+        "sampleCount": 297
+      },
+      "workloadTiming": {
+        "averageFps": 15935.8,
+        "averageMs": 0.06,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 298
+      }
+    },
+    {
+      "edgeCount": 1500,
+      "id": "morph-300-1500",
+      "mode": "morph",
+      "nodeCount": 300,
+      "processedEdgeCount": 900,
+      "quality": "low",
+      "checksum": 1145765.668,
+      "durationMs": 2505.6,
+      "frameCount": 316,
+      "frameTiming": {
+        "averageFps": 126.3,
+        "averageMs": 7.92,
+        "maximumMs": 13.3,
+        "minimumFps": 75.2,
+        "p95Ms": 9.5,
+        "sampleCount": 315
+      },
+      "workloadTiming": {
+        "averageFps": 23939.4,
+        "averageMs": 0.04,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 316
+      }
+    },
+    {
+      "edgeCount": 1500,
+      "id": "hand-tracking-300-1500",
+      "mode": "hand-tracking",
+      "nodeCount": 300,
+      "processedEdgeCount": 900,
+      "quality": "low",
+      "checksum": 1376978.481,
+      "durationMs": 2501.6,
+      "frameCount": 296,
+      "frameTiming": {
+        "averageFps": 118.3,
+        "averageMs": 8.45,
+        "maximumMs": 15,
+        "minimumFps": 66.7,
+        "p95Ms": 10.6,
+        "sampleCount": 295
+      },
+      "workloadTiming": {
+        "averageFps": 20274,
+        "averageMs": 0.05,
+        "maximumMs": 0.2,
+        "minimumFps": 5000,
+        "p95Ms": 0.1,
+        "sampleCount": 296
+      }
+    }
+  ],
+  "schemaVersion": 1
+}

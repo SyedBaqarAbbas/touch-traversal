@@ -147,11 +147,33 @@ describe("web application contract", () => {
 
   it("documents mouse-route performance measurements", () => {
     const performanceReport = readRoot("docs/performance-report.md");
+    const rawMeasurement = JSON.parse(
+      readRoot("docs/performance-measurements/2026-07-18-m2-pro-chromium.json"),
+    );
 
     expect(performanceReport).toContain("/demo?input=mouse");
     expect(performanceReport).toContain("overview-300-1500");
+    expect(performanceReport).toContain("morph-300-1500");
+    expect(performanceReport).toContain("hand-tracking-300-1500");
+    expect(performanceReport).toContain("performance-measurements/");
+    expect(performanceReport).toContain("16 nodes and 48 edges");
+    expect(performanceReport).toContain("not a WebGL draw benchmark");
     expect(performanceReport).toContain("Minimum acceptable threshold: 45 FPS");
     expect(performanceReport).toContain("cap visible edges at 900");
+    expect(rawMeasurement.environment.sampleGraph).toEqual({
+      edgeCount: 48,
+      nodeCount: 16,
+      quality: "high",
+    });
+    expect(rawMeasurement.sceneScaleProbes).toHaveLength(8);
+    expect(rawMeasurement.handWorker).toMatchObject({
+      cursorRenderFps: null,
+      detectedHandFrames: 0,
+      ready: true,
+    });
+    expect(rawMeasurement.handWorker.inference.rateFps).toBeGreaterThanOrEqual(
+      15,
+    );
   });
 
   it("documents topology keyboard controls", () => {

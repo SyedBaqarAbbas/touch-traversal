@@ -1,6 +1,6 @@
 export type ScenePerformanceScenario = {
   id: string;
-  mode: "overview" | "focus";
+  mode: "overview" | "focus" | "morph" | "hand-tracking";
   nodeCount: number;
   edgeCount: number;
 };
@@ -47,6 +47,13 @@ export const decorativeDowngradeOrder = [
 export const scenePerformanceScenarios: ScenePerformanceScenario[] = [
   { id: "overview-100-400", mode: "overview", nodeCount: 100, edgeCount: 400 },
   { id: "focus-100-400", mode: "focus", nodeCount: 100, edgeCount: 400 },
+  { id: "morph-100-400", mode: "morph", nodeCount: 100, edgeCount: 400 },
+  {
+    id: "hand-tracking-100-400",
+    mode: "hand-tracking",
+    nodeCount: 100,
+    edgeCount: 400,
+  },
   {
     id: "overview-300-1500",
     mode: "overview",
@@ -54,6 +61,18 @@ export const scenePerformanceScenarios: ScenePerformanceScenario[] = [
     edgeCount: 1500,
   },
   { id: "focus-300-1500", mode: "focus", nodeCount: 300, edgeCount: 1500 },
+  {
+    id: "morph-300-1500",
+    mode: "morph",
+    nodeCount: 300,
+    edgeCount: 1500,
+  },
+  {
+    id: "hand-tracking-300-1500",
+    mode: "hand-tracking",
+    nodeCount: 300,
+    edgeCount: 1500,
+  },
 ];
 
 export function chooseSceneQuality(input: {
